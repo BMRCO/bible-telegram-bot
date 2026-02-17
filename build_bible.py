@@ -5,7 +5,6 @@ import zipfile
 import requests
 import xml.etree.ElementTree as ET
 
-# Louis Segond 1910 (fraLSG) em USFX (domaine public)
 USFX_ZIP_URL = "https://ebible.org/Scriptures/fraLSG_usfx.zip"
 OUT_DIR = "bible"
 
@@ -38,22 +37,22 @@ def safe_filename(name: str) -> str:
     return t
 
 def download_zip(url: str) -> bytes:
-    r = requests.get(url, timeout=90)
+    r = requests.get(url, timeout=120)
     r.raise_for_status()
     return r.content
 
-def extract_usfx_files(zip_bytes: bytes) -> dict:
-    z = zipfile.ZipFile(io.BytesIO(zip_bytes))
-    files = {}
-    for name in z.namelist():
-        low = name.lower()
-        if low.endswith(".usfx") or low.endswith(".xml"):
-            files[name] = z.read(name)
-    return files
+def parse_usfx_book_id(root: ET.Element) -> str | None:
+    # Procura um elemento <book id="GEN" ...> (ou variantes)
+    for el in root.iter():
+        tag = el.tag.lower()
+        if tag.endswith("book"):
+            bid = el.attrib.get("id") or el.attrib.get("code") or el.attrib.get("book")
+            if bid:
+                return bid.strip()
+    return None
 
-def parse_usfx_book(xml_bytes: bytes) -> dict:
-    root = ET.fromstring(xml_bytes)
-
+def parse_usfx_chapters(root: ET.Element) -> dict:
+    # saída: { "1": { "1": "texto", ... }, ... }
     chapters = {}
     current_ch = None
     current_vs = None
@@ -91,24 +90,32 @@ def main():
     os.makedirs(OUT_DIR, exist_ok=True)
 
     zip_bytes = download_zip(USFX_ZIP_URL)
-    files = extract_usfx_files(zip_bytes)
+    z = zipfile.ZipFile(io.BytesIO(zip_bytes))
 
     created = 0
-    for fname, content in files.items():
-        base = os.path.basename(fname).split(".")[0].upper()
 
-        # tenta achar o ID do livro no nome do ficheiro (GEN, MAT, etc.)
-        candidates = [base, base[:3], base[:4]]
-        book_id = next((c for c in candidates if c in BOOK_MAP), None)
-        if not book_id:
+    for name in z.namelist():
+        low = name.lower()
+        if not (low.endswith(".usfx") or low.endswith(".xml")):
+            continue
+
+        content = z.read(name)
+
+        try:
+            root = ET.fromstring(content)
+        except ET.ParseError:
+            continue
+
+        book_id = parse_usfx_book_id(root)
+        if not book_id or book_id not in BOOK_MAP:
             continue
 
         book_name = BOOK_MAP[book_id]
-        data = parse_usfx_book(content)
+        chapters = parse_usfx_chapters(root)
 
         out_path = os.path.join(OUT_DIR, safe_filename(book_name) + ".json")
         with open(out_path, "w", encoding="utf-8") as f:
-            json.dump({book_name: data}, f, ensure_ascii=False)
+            json.dump({book_name: chapters}, f, ensure_ascii=False)
 
         created += 1
 
