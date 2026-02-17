@@ -40,38 +40,39 @@ def safe_filename(name: str) -> str:
     return t
 
 def download_zip(url: str) -> bytes:
-    r = requests.get(url, timeout=120)
+    r = requests.get(url, timeout=180)
     r.raise_for_status()
     return r.content
 
 def clean_usfm_text(s: str) -> str:
-    """
-    Remove códigos comuns do USFM/footnotes/strong:
-    - \w ... \w* (mantém só a palavra)
-    - \x ... \x* (remove crossrefs)
-    - |strong="Hxxxx" e outros pipes
-    - outros marcadores \abc
+    r"""
+    Limpa marcadores USFM/Strong/crossrefs para ficar só texto legível.
+
+    Exemplos removidos:
+    - \w mot|strong="Hxxxx"\w*  -> mot
+    - \x ... \x*  (cross references)
+    - |strong="Hxxxx" (atributos após pipe)
+    - marcadores \abc e \abc*
     """
     if not s:
         return ""
 
-    # 1) manter só o texto dentro de \w ...\w*
-    # Ex: \w commencement|strong="H7225"\w*  -> commencement
+    # Mantém só o texto dentro de \w ...\w*
     s = re.sub(r'\\w\s+([^\\]+?)\\w\*', r'\1', s)
 
-    # 2) remover blocos de cross-reference \x ... \x*
+    # Remove crossrefs \x ... \x*
     s = re.sub(r'\\x\s+.*?\\x\*', ' ', s)
 
-    # 3) remover atributos após pipe, tipo |strong="H7225"
+    # Remove atributos após pipe (ex: |strong="H7225")
     s = re.sub(r'\|[^ \t]+', '', s)
 
-    # 4) remover quaisquer marcadores restantes \abc ou \abc*
+    # Remove marcadores restantes \abc ou \abc*
     s = re.sub(r'\\[a-zA-Z0-9]+\*?', '', s)
 
-    # 5) limpar colchetes restantes que às vezes sobram
+    # Remove brackets soltos
     s = s.replace("[", "").replace("]", "")
 
-    # 6) normalizar espaços
+    # Normaliza espaços
     s = " ".join(s.split()).strip()
     return s
 
@@ -122,7 +123,6 @@ def parse_usfm_to_chapters(usfm_text: str):
         if line.startswith("\\v "):
             if current_c is None:
                 continue
-            # \v 1 ou \v 1-2
             m = re.match(r"\\v\s+([0-9]+)(?:-[0-9]+)?\s*(.*)", line)
             if m:
                 current_v = m.group(1)
