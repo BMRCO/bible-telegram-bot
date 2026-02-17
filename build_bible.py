@@ -27,10 +27,12 @@ BOOK_MAP = {
 }
 
 def safe_filename(name: str) -> str:
-    import re
     t = name.lower()
-    repl = (("é","e"),("è","e"),("ê","e"),("ë","e"),("à","a"),("â","a"),
-            ("î","i"),("ï","i"),("ô","o"),("ù","u"),("û","u"),
+    repl = (("é","e"),("è","e"),("ê","e"),("ë","e"),
+            ("à","a"),("â","a"),
+            ("î","i"),("ï","i"),
+            ("ô","o"),
+            ("ù","u"),("û","u"),
             ("ç","c"),("œ","oe"))
     for a, b in repl:
         t = t.replace(a, b)
@@ -42,7 +44,38 @@ def download_zip(url: str) -> bytes:
     r.raise_for_status()
     return r.content
 
-def parse_usfm_to_chapters(usfm_text: str) -> tuple[str | None, dict]:
+def clean_usfm_text(s: str) -> str:
+    """
+    Remove códigos comuns do USFM/footnotes/strong:
+    - \w ... \w* (mantém só a palavra)
+    - \x ... \x* (remove crossrefs)
+    - |strong="Hxxxx" e outros pipes
+    - outros marcadores \abc
+    """
+    if not s:
+        return ""
+
+    # 1) manter só o texto dentro de \w ...\w*
+    # Ex: \w commencement|strong="H7225"\w*  -> commencement
+    s = re.sub(r'\\w\s+([^\\]+?)\\w\*', r'\1', s)
+
+    # 2) remover blocos de cross-reference \x ... \x*
+    s = re.sub(r'\\x\s+.*?\\x\*', ' ', s)
+
+    # 3) remover atributos após pipe, tipo |strong="H7225"
+    s = re.sub(r'\|[^ \t]+', '', s)
+
+    # 4) remover quaisquer marcadores restantes \abc ou \abc*
+    s = re.sub(r'\\[a-zA-Z0-9]+\*?', '', s)
+
+    # 5) limpar colchetes restantes que às vezes sobram
+    s = s.replace("[", "").replace("]", "")
+
+    # 6) normalizar espaços
+    s = " ".join(s.split()).strip()
+    return s
+
+def parse_usfm_to_chapters(usfm_text: str):
     """
     Retorna (book_id, chapters)
     chapters: { "1": { "1": "texto", ... }, ... }
@@ -52,14 +85,16 @@ def parse_usfm_to_chapters(usfm_text: str) -> tuple[str | None, dict]:
     current_c = None
     current_v = None
 
-    # Normaliza quebras de linha
     lines = usfm_text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
 
     def append_to_current(extra: str):
         nonlocal chapters, current_c, current_v
         if current_c and current_v and extra.strip():
+            extra_clean = clean_usfm_text(extra)
+            if not extra_clean:
+                return
             prev = chapters[current_c].get(current_v, "")
-            joined = (prev + " " + extra.strip()).strip()
+            joined = (prev + " " + extra_clean).strip()
             chapters[current_c][current_v] = " ".join(joined.split())
 
     for line in lines:
@@ -86,19 +121,23 @@ def parse_usfm_to_chapters(usfm_text: str) -> tuple[str | None, dict]:
         # \v 1 texto...
         if line.startswith("\\v "):
             if current_c is None:
-                # se aparecer verso antes do capítulo, ignora
                 continue
             # \v 1 ou \v 1-2
             m = re.match(r"\\v\s+([0-9]+)(?:-[0-9]+)?\s*(.*)", line)
             if m:
                 current_v = m.group(1)
                 text = m.group(2).strip()
-                chapters[current_c][current_v] = " ".join(text.split())
+                chapters[current_c][current_v] = clean_usfm_text(text)
             continue
 
         # Continuação do verso (linhas sem marcadores)
         if current_c and current_v and not line.startswith("\\"):
             append_to_current(line)
+
+    # Limpeza final (segurança)
+    for ch in list(chapters.keys()):
+        for v in list(chapters[ch].keys()):
+            chapters[ch][v] = clean_usfm_text(chapters[ch][v])
 
     return book_id, chapters
 
@@ -116,7 +155,6 @@ def main():
 
         raw = z.read(name)
 
-        # tentar UTF-8; fallback latin-1
         try:
             text = raw.decode("utf-8")
         except UnicodeDecodeError:
