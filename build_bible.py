@@ -1,11 +1,12 @@
 import io
 import os
+import re
 import json
 import zipfile
 import requests
-import xml.etree.ElementTree as ET
 
-USFX_ZIP_URL = "https://ebible.org/Scriptures/fraLSG_usfx.zip"
+# Louis Segond 1910 (fraLSG) em USFM (domaine public)
+USFM_ZIP_URL = "https://ebible.org/Scriptures/fraLSG_usfm.zip"
 OUT_DIR = "bible"
 
 BOOK_MAP = {
@@ -41,78 +42,93 @@ def download_zip(url: str) -> bytes:
     r.raise_for_status()
     return r.content
 
-def parse_usfx_book_id(root: ET.Element) -> str | None:
-    # Procura um elemento <book id="GEN" ...> (ou variantes)
-    for el in root.iter():
-        tag = el.tag.lower()
-        if tag.endswith("book"):
-            bid = el.attrib.get("id") or el.attrib.get("code") or el.attrib.get("book")
-            if bid:
-                return bid.strip()
-    return None
+def parse_usfm_to_chapters(usfm_text: str) -> tuple[str | None, dict]:
+    """
+    Retorna (book_id, chapters)
+    chapters: { "1": { "1": "texto", ... }, ... }
+    """
+    book_id = None
+    chapters: dict[str, dict[str, str]] = {}
+    current_c = None
+    current_v = None
 
-def parse_usfx_chapters(root: ET.Element) -> dict:
-    # saída: { "1": { "1": "texto", ... }, ... }
-    chapters = {}
-    current_ch = None
-    current_vs = None
-    buf = []
+    # Normaliza quebras de linha
+    lines = usfm_text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
 
-    def flush():
-        nonlocal buf, current_ch, current_vs
-        if current_ch and current_vs and buf:
-            text = " ".join("".join(buf).split())
-            chapters.setdefault(current_ch, {})[current_vs] = text
-        buf = []
+    def append_to_current(extra: str):
+        nonlocal chapters, current_c, current_v
+        if current_c and current_v and extra.strip():
+            prev = chapters[current_c].get(current_v, "")
+            joined = (prev + " " + extra.strip()).strip()
+            chapters[current_c][current_v] = " ".join(joined.split())
 
-    for el in root.iter():
-        tag = el.tag.lower()
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
 
-        if tag.endswith("c") and el.attrib.get("id"):
-            flush()
-            current_ch = el.attrib["id"]
-            current_vs = None
+        # \id GEN ...
+        if line.startswith("\\id "):
+            parts = line.split()
+            if len(parts) >= 2:
+                book_id = parts[1].strip()
+            continue
 
-        if tag.endswith("v") and el.attrib.get("id"):
-            flush()
-            current_vs = el.attrib["id"]
+        # \c 1
+        if line.startswith("\\c "):
+            m = re.match(r"\\c\s+(\d+)", line)
+            if m:
+                current_c = m.group(1)
+                chapters.setdefault(current_c, {})
+                current_v = None
+            continue
 
-        if current_ch and current_vs:
-            if el.text:
-                buf.append(el.text)
-            if el.tail:
-                buf.append(el.tail)
+        # \v 1 texto...
+        if line.startswith("\\v "):
+            if current_c is None:
+                # se aparecer verso antes do capítulo, ignora
+                continue
+            # \v 1 ou \v 1-2
+            m = re.match(r"\\v\s+([0-9]+)(?:-[0-9]+)?\s*(.*)", line)
+            if m:
+                current_v = m.group(1)
+                text = m.group(2).strip()
+                chapters[current_c][current_v] = " ".join(text.split())
+            continue
 
-    flush()
-    return chapters
+        # Continuação do verso (linhas sem marcadores)
+        if current_c and current_v and not line.startswith("\\"):
+            append_to_current(line)
+
+    return book_id, chapters
 
 def main():
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    zip_bytes = download_zip(USFX_ZIP_URL)
+    zip_bytes = download_zip(USFM_ZIP_URL)
     z = zipfile.ZipFile(io.BytesIO(zip_bytes))
 
     created = 0
-
     for name in z.namelist():
         low = name.lower()
-        if not (low.endswith(".usfx") or low.endswith(".xml")):
+        if not (low.endswith(".usfm") or low.endswith(".sfm") or low.endswith(".txt")):
             continue
 
-        content = z.read(name)
+        raw = z.read(name)
 
+        # tentar UTF-8; fallback latin-1
         try:
-            root = ET.fromstring(content)
-        except ET.ParseError:
-            continue
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw.decode("latin-1")
 
-        book_id = parse_usfx_book_id(root)
+        book_id, chapters = parse_usfm_to_chapters(text)
         if not book_id or book_id not in BOOK_MAP:
+            continue
+        if not chapters:
             continue
 
         book_name = BOOK_MAP[book_id]
-        chapters = parse_usfx_chapters(root)
-
         out_path = os.path.join(OUT_DIR, safe_filename(book_name) + ".json")
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump({book_name: chapters}, f, ensure_ascii=False)
