@@ -15,6 +15,9 @@ BIBLE_DIR = "bible"
 FONT_SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 FONT_SANS = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
+WATERMARK = "@appbible"  # marca d’água discreta
+
+
 def safe_filename(name: str) -> str:
     import re
     t = name.lower()
@@ -29,54 +32,106 @@ def safe_filename(name: str) -> str:
     t = re.sub(r"[^a-z0-9]+", "_", t).strip("_")
     return t
 
+
 def load_json(path):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
+
 def save_json(path, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
 
 def load_book(book_name: str) -> dict:
     path = f"{BIBLE_DIR}/{safe_filename(book_name)}.json"
     data = load_json(path)
     return data[book_name]
 
+
 def send_photo(path, caption):
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
     with open(path, "rb") as f:
         r = requests.post(
             url,
-            data={"chat_id": CHANNEL, "caption": caption, "parse_mode": "HTML"},
+            data={
+                "chat_id": CHANNEL,
+                "caption": caption,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True
+            },
             files={"photo": f},
             timeout=30
         )
     r.raise_for_status()
 
+
 def make_image(text, ref):
     W, H = 1080, 1080
-    img = Image.new("RGB", (W, H), (18, 18, 24))
-    draw = ImageDraw.Draw(img)
 
+    # Fundo com gradiente escuro suave
+    img = Image.new("RGB", (W, H), (10, 10, 14))
+    draw = ImageDraw.Draw(img)
+    for y in range(H):
+        v = int(10 + (y / H) * 18)
+        draw.line([(0, y), (W, y)], fill=(v, v, v + 6))
+
+    # Moldura dourada elegante
+    gold = (195, 165, 90)
+    gold2 = (140, 120, 65)
+
+    margin = 60
+    draw.rounded_rectangle(
+        [margin, margin, W - margin, H - margin],
+        radius=28,
+        outline=gold,
+        width=6
+    )
+    draw.rounded_rectangle(
+        [margin + 14, margin + 14, W - margin - 14, H - margin - 14],
+        radius=22,
+        outline=gold2,
+        width=2
+    )
+
+    # Tipografia
     font = ImageFont.truetype(FONT_SERIF, 56)
     small = ImageFont.truetype(FONT_SANS, 34)
+    tiny = ImageFont.truetype(FONT_SANS, 28)
 
+    # Texto do versículo
     lines = textwrap.wrap(text, width=34)
-    y = 200
-    for line in lines[:10]:
-        draw.text((90, y), line, font=font, fill=(245, 245, 245))
-        y += 80
+    line_h = 78
+    text_h = min(len(lines), 10) * line_h
+    y0 = int((H - text_h) * 0.40)
 
-    draw.text((90, H - 200), ref, font=small, fill=(200, 200, 210))
-    draw.text((90, H - 150), "Louis Segond (1910) • Domaine public", font=small, fill=(160, 160, 170))
+    x = 110
+    y = y0
+    for line in lines[:10]:
+        draw.text((x, y), line, font=font, fill=(245, 245, 245))
+        y += line_h
+
+    # Separador dourado
+    draw.line([(110, H - 245), (W - 110, H - 245)], fill=gold2, width=2)
+
+    # Rodapé esquerdo
+    draw.text((110, H - 220), ref, font=small, fill=(220, 220, 230))
+    draw.text((110, H - 170), "Louis Segond (1910) • Domaine public", font=tiny, fill=(175, 175, 185))
+
+    # Marca d’água discreta (rodapé direito)
+    wm_font = ImageFont.truetype(FONT_SANS, 28)
+    wm_w = draw.textlength(WATERMARK, font=wm_font)
+    draw.text((W - 110 - wm_w, H - 170), WATERMARK, font=wm_font, fill=(145, 145, 155))
 
     out = "verse.png"
     img.save(out, "PNG")
     return out
 
+
 def reshuffle_index(index):
     random.shuffle(index)
     save_json(INDEX_FILE, index)
+
 
 def main():
     index = load_json(INDEX_FILE)
@@ -84,7 +139,7 @@ def main():
 
     i = int(progress.get("i", 0))
 
-    # Se chegou ao fim → rebaralhar automaticamente
+    # Se chegou ao fim, rebaralha e recomeça
     if i >= len(index):
         reshuffle_index(index)
         index = load_json(INDEX_FILE)
@@ -104,6 +159,7 @@ def main():
     progress["mode"] = "random"
     progress["i"] = i + 1
     save_json(PROGRESS_FILE, progress)
+
 
 if __name__ == "__main__":
     main()
