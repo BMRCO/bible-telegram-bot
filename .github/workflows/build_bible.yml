@@ -1,0 +1,28 @@
+name: Build Bible files (LS1910)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Build bible
+        run: python build_bible.py
+
+      - name: Commit bible files
+        run: |
+          git config user.name "bible-telegram-bot"
+          git config user.email "bible-telegram-bot@users.noreply.github.com"
+          git add bible/
+          git commit -m "Add LS1910 bible files" || exit 0
+          git push
