@@ -46,33 +46,31 @@ def download_zip(url: str) -> bytes:
 
 def clean_usfm_text(s: str) -> str:
     r"""
-    Limpa marcadores USFM/Strong/crossrefs para ficar só texto legível.
+    Limpa marcadores USFM/Strong/crossrefs mas mantém o texto natural (apóstrofos, acentos, etc).
 
-    Exemplos removidos:
+    Remove:
     - \w mot|strong="Hxxxx"\w*  -> mot
-    - \x ... \x*  (cross references)
-    - |strong="Hxxxx" (atributos após pipe)
+    - \x ... \x* (cross references)
+    - |strong="Hxxxx" e outros atributos após pipe
     - marcadores \abc e \abc*
     """
     if not s:
         return ""
 
-    # Mantém só o texto dentro de \w ...\w*
+    # Mantém o texto dentro de \w ...\w*
+    # Ex: \w commencement|strong="H7225"\w* -> commencement
     s = re.sub(r'\\w\s+([^\\]+?)\\w\*', r'\1', s)
 
-    # Remove crossrefs \x ... \x*
+    # Remove blocos de cross-ref: \x ... \x*
     s = re.sub(r'\\x\s+.*?\\x\*', ' ', s)
 
-    # Remove atributos após pipe (ex: |strong="H7225")
+    # Remove atributos após pipe (|strong=..., |lemma=..., etc)
     s = re.sub(r'\|[^ \t]+', '', s)
 
     # Remove marcadores restantes \abc ou \abc*
     s = re.sub(r'\\[a-zA-Z0-9]+\*?', '', s)
 
-    # Remove brackets soltos
-    s = s.replace("[", "").replace("]", "")
-
-    # Normaliza espaços
+    # Normaliza espaços (não mexe em apóstrofos nem acentos)
     s = " ".join(s.split()).strip()
     return s
 
@@ -123,6 +121,8 @@ def parse_usfm_to_chapters(usfm_text: str):
         if line.startswith("\\v "):
             if current_c is None:
                 continue
+
+            # \v 1 ou \v 1-2
             m = re.match(r"\\v\s+([0-9]+)(?:-[0-9]+)?\s*(.*)", line)
             if m:
                 current_v = m.group(1)
@@ -130,7 +130,7 @@ def parse_usfm_to_chapters(usfm_text: str):
                 chapters[current_c][current_v] = clean_usfm_text(text)
             continue
 
-        # Continuação do verso (linhas sem marcadores)
+        # Continuação do versículo (linha sem marcador)
         if current_c and current_v and not line.startswith("\\"):
             append_to_current(line)
 
