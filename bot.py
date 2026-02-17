@@ -2,6 +2,7 @@ import os
 import json
 import textwrap
 import requests
+import random
 from PIL import Image, ImageDraw, ImageFont
 
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
@@ -73,16 +74,23 @@ def make_image(text, ref):
     img.save(out, "PNG")
     return out
 
+def reshuffle_index(index):
+    random.shuffle(index)
+    save_json(INDEX_FILE, index)
+
 def main():
-    idx = load_json(INDEX_FILE)  # lista: [[book, ch, v], ...]
+    index = load_json(INDEX_FILE)
     progress = load_json(PROGRESS_FILE)
 
     i = int(progress.get("i", 0))
-    if i >= len(idx):
-        # recomeçar (mantém random atual; se quiser novo random, rode build_index novamente)
+
+    # Se chegou ao fim → rebaralhar automaticamente
+    if i >= len(index):
+        reshuffle_index(index)
+        index = load_json(INDEX_FILE)
         i = 0
 
-    book, chapter, verse = idx[i]
+    book, chapter, verse = index[i]
     book_data = load_book(book)
 
     text = book_data[str(chapter)][str(verse)]
