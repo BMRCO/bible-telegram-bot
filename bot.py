@@ -8,27 +8,11 @@ TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 CHANNEL = os.environ["TELEGRAM_CHANNEL"]
 
 PROGRESS_FILE = "progress.json"
+INDEX_FILE = "verses_index.json"
 BIBLE_DIR = "bible"
 
 FONT_SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 FONT_SANS = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-
-# IMPORTANTE: os nomes aqui têm de bater com os nomes dentro dos JSON gerados.
-# (No teu build, os ficheiros são tipo genese.json, matthieu.json, etc.)
-BOOK_ORDER = [
-    "Genèse","Exode","Lévitique","Nombres","Deutéronome",
-    "Josué","Juges","Ruth","1 Samuel","2 Samuel","1 Rois","2 Rois",
-    "1 Chroniques","2 Chroniques","Esdras","Néhémie","Esther",
-    "Job","Psaumes","Proverbes","Ecclésiaste","Cantique des Cantiques",
-    "Ésaïe","Jérémie","Lamentations","Ézéchiel","Daniel",
-    "Osée","Joël","Amos","Abdias","Jonas","Michée","Nahum","Habacuc",
-    "Sophonie","Aggée","Zacharie","Malachie",
-    "Matthieu","Marc","Luc","Jean","Actes",
-    "Romains","1 Corinthiens","2 Corinthiens","Galates","Éphésiens",
-    "Philippiens","Colossiens","1 Thessaloniciens","2 Thessaloniciens",
-    "1 Timothée","2 Timothée","Tite","Philémon","Hébreux",
-    "Jacques","1 Pierre","2 Pierre","1 Jean","2 Jean","3 Jean","Jude","Apocalypse"
-]
 
 def safe_filename(name: str) -> str:
     import re
@@ -55,19 +39,14 @@ def save_json(path, data):
 def load_book(book_name: str) -> dict:
     path = f"{BIBLE_DIR}/{safe_filename(book_name)}.json"
     data = load_json(path)
-    return data[book_name]  # {chapter:{verse:text}}
+    return data[book_name]
 
 def send_photo(path, caption):
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
     with open(path, "rb") as f:
         r = requests.post(
             url,
-            data={
-                "chat_id": CHANNEL,
-                "caption": caption,
-                "parse_mode": "HTML",
-                "disable_web_page_preview": True
-            },
+            data={"chat_id": CHANNEL, "caption": caption, "parse_mode": "HTML"},
             files={"photo": f},
             timeout=30
         )
@@ -75,7 +54,7 @@ def send_photo(path, caption):
 
 def make_image(text, ref):
     W, H = 1080, 1080
-    img = Image.new("RGB", (W, H), (18, 18, 24))  # fundo minimalista
+    img = Image.new("RGB", (W, H), (18, 18, 24))
     draw = ImageDraw.Draw(img)
 
     font = ImageFont.truetype(FONT_SERIF, 56)
@@ -94,47 +73,18 @@ def make_image(text, ref):
     img.save(out, "PNG")
     return out
 
-def next_ref(book, chapter, verse, book_data):
-    ch_keys = sorted(book_data.keys(), key=lambda x: int(x))
-    ch = str(chapter)
-    v = str(verse)
-
-    if ch not in book_data:
-        # fallback para primeiro capítulo
-        ch = ch_keys[0]
-        chapter = int(ch)
-        v = "1"
-        verse = 1
-
-    verse_keys = sorted(book_data[ch].keys(), key=lambda x: int(x))
-    if v not in book_data[ch]:
-        v = verse_keys[0]
-        verse = int(v)
-
-    vi = verse_keys.index(str(verse))
-    # próximo versículo
-    if vi + 1 < len(verse_keys):
-        return book, chapter, int(verse_keys[vi + 1])
-
-    # próximo capítulo
-    ci = ch_keys.index(str(chapter))
-    if ci + 1 < len(ch_keys):
-        return book, int(ch_keys[ci + 1]), 1
-
-    # próximo livro
-    bi = BOOK_ORDER.index(book)
-    if bi + 1 < len(BOOK_ORDER):
-        return BOOK_ORDER[bi + 1], 1, 1
-
-    return None, None, None
-
 def main():
+    idx = load_json(INDEX_FILE)  # lista: [[book, ch, v], ...]
     progress = load_json(PROGRESS_FILE)
-    book = progress.get("book", "Genèse")
-    chapter = int(progress.get("chapter", 1))
-    verse = int(progress.get("verse", 1))
 
+    i = int(progress.get("i", 0))
+    if i >= len(idx):
+        # recomeçar (mantém random atual; se quiser novo random, rode build_index novamente)
+        i = 0
+
+    book, chapter, verse = idx[i]
     book_data = load_book(book)
+
     text = book_data[str(chapter)][str(verse)]
     ref = f"{book} {chapter}:{verse}"
 
@@ -143,14 +93,8 @@ def main():
 
     send_photo(img_path, caption)
 
-    nb, nc, nv = next_ref(book, chapter, verse, book_data)
-    if nb is None:
-        progress["done"] = True
-    else:
-        progress["book"] = nb
-        progress["chapter"] = nc
-        progress["verse"] = nv
-
+    progress["mode"] = "random"
+    progress["i"] = i + 1
     save_json(PROGRESS_FILE, progress)
 
 if __name__ == "__main__":
