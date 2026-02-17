@@ -1,5 +1,4 @@
 {
-  "book": "Genèse",
-  "chapter": 1,
-  "verse": 3
+  "mode": "random",
+  "i": 0
 }
