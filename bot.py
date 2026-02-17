@@ -15,7 +15,7 @@ BIBLE_DIR = "bible"
 FONT_SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 FONT_SANS = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
-WATERMARK = "@appbible"  # marca d’água discreta
+WATERMARK = "@appbible"
 
 
 def safe_filename(name: str) -> str:
@@ -66,62 +66,109 @@ def send_photo(path, caption):
     r.raise_for_status()
 
 
+def _wrap_to_width(draw: ImageDraw.ImageDraw, text: str, font: ImageFont.FreeTypeFont, max_width_px: int):
+    """
+    Quebra o texto em linhas para caber em max_width_px.
+    """
+    words = text.replace("\n", " ").split()
+    if not words:
+        return [""]
+
+    lines = []
+    current = words[0]
+    for w in words[1:]:
+        candidate = current + " " + w
+        if draw.textlength(candidate, font=font) <= max_width_px:
+            current = candidate
+        else:
+            lines.append(current)
+            current = w
+    lines.append(current)
+    return lines
+
+
+def _fit_text(draw: ImageDraw.ImageDraw, text: str, max_width_px: int, max_height_px: int,
+              max_font_size: int = 62, min_font_size: int = 34, line_spacing_ratio: float = 0.28):
+    """
+    Ajusta automaticamente o tamanho da fonte e as linhas para caber no bloco.
+    Retorna (font, lines, line_h).
+    """
+    # tentativa: vai reduzindo o tamanho até caber
+    for size in range(max_font_size, min_font_size - 1, -2):
+        font = ImageFont.truetype(FONT_SERIF, size)
+
+        lines = _wrap_to_width(draw, text, font, max_width_px)
+
+        # altura por linha baseada no tamanho
+        line_h = int(size * (1.0 + line_spacing_ratio))
+        total_h = line_h * len(lines)
+
+        # se houver linhas demais, tenta permitir “mais compressão” com fonte menor
+        if total_h <= max_height_px:
+            # também garante que nenhuma linha passa do width (por segurança)
+            if all(draw.textlength(line, font=font) <= max_width_px for line in lines):
+                return font, lines, line_h
+
+    # fallback
+    font = ImageFont.truetype(FONT_SERIF, min_font_size)
+    lines = _wrap_to_width(draw, text, font, max_width_px)
+    line_h = int(min_font_size * (1.0 + line_spacing_ratio))
+    return font, lines, line_h
+
+
 def make_image(text, ref):
     W, H = 1080, 1080
 
-    # Fundo com gradiente escuro suave
+    # Fundo gradiente escuro suave
     img = Image.new("RGB", (W, H), (10, 10, 14))
     draw = ImageDraw.Draw(img)
     for y in range(H):
         v = int(10 + (y / H) * 18)
         draw.line([(0, y), (W, y)], fill=(v, v, v + 6))
 
-    # Moldura dourada elegante
+    # Moldura dourada
     gold = (195, 165, 90)
     gold2 = (140, 120, 65)
 
     margin = 60
-    draw.rounded_rectangle(
-        [margin, margin, W - margin, H - margin],
-        radius=28,
-        outline=gold,
-        width=6
-    )
-    draw.rounded_rectangle(
-        [margin + 14, margin + 14, W - margin - 14, H - margin - 14],
-        radius=22,
-        outline=gold2,
-        width=2
-    )
+    draw.rounded_rectangle([margin, margin, W - margin, H - margin],
+                           radius=28, outline=gold, width=6)
+    draw.rounded_rectangle([margin + 14, margin + 14, W - margin - 14, H - margin - 14],
+                           radius=22, outline=gold2, width=2)
 
-    # Tipografia
-    font = ImageFont.truetype(FONT_SERIF, 56)
-    small = ImageFont.truetype(FONT_SANS, 34)
-    tiny = ImageFont.truetype(FONT_SANS, 28)
+    # Área útil dentro da moldura
+    pad_x = 110
+    top_y = 150
+    bottom_y = 300  # reserva para a linha dourada + rodapé
+    max_w = W - 2 * pad_x
+    max_h = H - top_y - bottom_y
 
-    # Texto do versículo
-    lines = textwrap.wrap(text, width=34)
-    line_h = 78
-    text_h = min(len(lines), 10) * line_h
-    y0 = int((H - text_h) * 0.40)
+    # Ajuste automático (para nunca sair fora)
+    font, lines, line_h = _fit_text(draw, text, max_w, max_h)
 
-    x = 110
-    y = y0
-    for line in lines[:10]:
+    # Centralizar verticalmente dentro do bloco
+    total_h = line_h * len(lines)
+    y = top_y + max(0, (max_h - total_h) // 2)
+    x = pad_x
+
+    for line in lines:
         draw.text((x, y), line, font=font, fill=(245, 245, 245))
         y += line_h
 
-    # Separador dourado
-    draw.line([(110, H - 245), (W - 110, H - 245)], fill=gold2, width=2)
+    # Rodapé + separador
+    small = ImageFont.truetype(FONT_SANS, 34)
+    tiny = ImageFont.truetype(FONT_SANS, 28)
 
-    # Rodapé esquerdo
-    draw.text((110, H - 220), ref, font=small, fill=(220, 220, 230))
-    draw.text((110, H - 170), "Louis Segond (1910) • Domaine public", font=tiny, fill=(175, 175, 185))
+    sep_y = H - 245
+    draw.line([(pad_x, sep_y), (W - pad_x, sep_y)], fill=gold2, width=2)
 
-    # Marca d’água discreta (rodapé direito)
+    draw.text((pad_x, H - 220), ref, font=small, fill=(220, 220, 230))
+    draw.text((pad_x, H - 170), "Louis Segond (1910) • Domaine public", font=tiny, fill=(175, 175, 185))
+
+    # watermark à direita
     wm_font = ImageFont.truetype(FONT_SANS, 28)
     wm_w = draw.textlength(WATERMARK, font=wm_font)
-    draw.text((W - 110 - wm_w, H - 170), WATERMARK, font=wm_font, fill=(145, 145, 155))
+    draw.text((W - pad_x - wm_w, H - 170), WATERMARK, font=wm_font, fill=(145, 145, 155))
 
     out = "verse.png"
     img.save(out, "PNG")
@@ -134,12 +181,12 @@ def reshuffle_index(index):
 
 
 def main():
-    index = load_json(INDEX_FILE)
+    index = load_json(INDEX_FILE)  # [[book, chapter, verse], ...]
     progress = load_json(PROGRESS_FILE)
 
     i = int(progress.get("i", 0))
 
-    # Se chegou ao fim, rebaralha e recomeça
+    # rebaralha ao chegar ao fim
     if i >= len(index):
         reshuffle_index(index)
         index = load_json(INDEX_FILE)
@@ -148,10 +195,10 @@ def main():
     book, chapter, verse = index[i]
     book_data = load_book(book)
 
-    text = book_data[str(chapter)][str(verse)]
+    verse_text = book_data[str(chapter)][str(verse)]
     ref = f"{book} {chapter}:{verse}"
 
-    img_path = make_image(text, ref)
+    img_path = make_image(verse_text, ref)
     caption = f"📖 <b>{ref}</b>\n#versetdujour"
 
     send_photo(img_path, caption)
