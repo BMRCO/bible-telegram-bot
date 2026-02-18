@@ -1,0 +1,25 @@
+name: Build promises + jesus indexes
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build alt indexes
+        run: python build_alt_indexes.py
+
+      - name: Commit indexes
+        run: |
+          git config user.name "bible-telegram-bot"
+          git config user.email "bible-telegram-bot@users.noreply.github.com"
+          git add promises_index.json jesus_index.json
+          git commit -m "Update promises/jesus indexes" || exit 0
+          git push

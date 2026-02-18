@@ -1,4 +1,6 @@
 {
-  "mode": "random",
-  "i": 8
+  "mode": "alt",
+  "next": "promise",
+  "i_promise": 0,
+  "i_jesus": 0
 }
