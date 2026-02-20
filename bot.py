@@ -1,6 +1,7 @@
 import os
 import json
 import random
+import re
 import requests
 from PIL import Image, ImageDraw, ImageFont
 
@@ -17,8 +18,28 @@ FONT_SANS = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 WATERMARK = "@appbible"
 
 
+# ---------------------------------------------------
+# LIMPEZA DE TEXTO (REMOVE STRONG, \+w, \w, tags etc)
+# ---------------------------------------------------
+def clean_text(text: str) -> str:
+    # Remove padrões tipo \+w
+    text = re.sub(r"\\\+?w", "", text)
+
+    # Remove tags strong="H1234"
+    text = re.sub(r'strong="[^"]+"', "", text)
+
+    # Remove barras invertidas soltas
+    text = text.replace("\\", "")
+
+    # Remove múltiplos espaços
+    text = re.sub(r"\s+", " ", text)
+
+    return text.strip()
+
+
+# ---------------------------------------------------
+
 def safe_filename(name: str) -> str:
-    import re
     t = name.lower()
     repl = (("é", "e"), ("è", "e"), ("ê", "e"), ("ë", "e"),
             ("à", "a"), ("â", "a"),
@@ -45,7 +66,7 @@ def save_json(path, data):
 def load_book(book_name: str) -> dict:
     path = f"{BIBLE_DIR}/{safe_filename(book_name)}.json"
     data = load_json(path)
-    return data[book_name]  # {chapter:{verse:text}}
+    return data[book_name]
 
 
 def send_photo(path, caption):
@@ -56,8 +77,7 @@ def send_photo(path, caption):
             data={
                 "chat_id": CHANNEL,
                 "caption": caption,
-                "parse_mode": "HTML",
-                "disable_web_page_preview": True
+                "parse_mode": "HTML"
             },
             files={"photo": f},
             timeout=30
@@ -65,17 +85,19 @@ def send_photo(path, caption):
     r.raise_for_status()
 
 
-def _wrap_to_width(draw: ImageDraw.ImageDraw, text: str, font, max_width_px: int):
-    words = text.replace("\n", " ").split()
-    if not words:
-        return [""]
+# ---------------------------------------------------
+# TEXTO NA IMAGEM
+# ---------------------------------------------------
 
+def wrap_text(draw, text, font, max_width):
+    words = text.split()
     lines = []
     current = words[0]
+
     for w in words[1:]:
-        candidate = current + " " + w
-        if draw.textlength(candidate, font=font) <= max_width_px:
-            current = candidate
+        test = current + " " + w
+        if draw.textlength(test, font=font) <= max_width:
+            current = test
         else:
             lines.append(current)
             current = w
@@ -83,134 +105,110 @@ def _wrap_to_width(draw: ImageDraw.ImageDraw, text: str, font, max_width_px: int
     return lines
 
 
-def _fit_text(draw: ImageDraw.ImageDraw, text: str, max_width_px: int, max_height_px: int,
-              max_font_size: int = 62, min_font_size: int = 34, line_spacing_ratio: float = 0.28):
-    for size in range(max_font_size, min_font_size - 1, -2):
-        font = ImageFont.truetype(FONT_SERIF, size)
-        lines = _wrap_to_width(draw, text, font, max_width_px)
-        line_h = int(size * (1.0 + line_spacing_ratio))
-        total_h = line_h * len(lines)
-        if total_h <= max_height_px and all(draw.textlength(line, font=font) <= max_width_px for line in lines):
-            return font, lines, line_h
-
-    font = ImageFont.truetype(FONT_SERIF, min_font_size)
-    lines = _wrap_to_width(draw, text, font, max_width_px)
-    line_h = int(min_font_size * (1.0 + line_spacing_ratio))
-    return font, lines, line_h
-
-
 def make_image(text: str, ref: str, tag_label: str) -> str:
     W, H = 1080, 1080
-
-    # Fundo gradiente escuro suave
-    img = Image.new("RGB", (W, H), (10, 10, 14))
+    img = Image.new("RGB", (W, H), (15, 15, 20))
     draw = ImageDraw.Draw(img)
-    for y in range(H):
-        v = int(10 + (y / H) * 18)
-        draw.line([(0, y), (W, y)], fill=(v, v, v + 6))
 
-    # Moldura dourada elegante
     gold = (195, 165, 90)
-    gold2 = (140, 120, 65)
-
     margin = 60
-    draw.rounded_rectangle([margin, margin, W - margin, H - margin],
-                           radius=28, outline=gold, width=6)
-    draw.rounded_rectangle([margin + 14, margin + 14, W - margin - 14, H - margin - 14],
-                           radius=22, outline=gold2, width=2)
 
-    # Área útil dentro da moldura
-    pad_x = 110
-    top_y = 150
-    bottom_y = 300
-    max_w = W - 2 * pad_x
-    max_h = H - top_y - bottom_y
+    draw.rounded_rectangle(
+        [margin, margin, W - margin, H - margin],
+        radius=30, outline=gold, width=6
+    )
 
-    # Ajuste automático do texto (nunca sai fora)
-    font, lines, line_h = _fit_text(draw, text, max_w, max_h)
-    total_h = line_h * len(lines)
-    y = top_y + max(0, (max_h - total_h) // 2)
+    pad = 140
+    max_width = W - pad * 2
 
+    font_size = 60
+    font = ImageFont.truetype(FONT_SERIF, font_size)
+
+    while True:
+        lines = wrap_text(draw, text, font, max_width)
+        total_height = len(lines) * (font_size + 10)
+        if total_height < 550 or font_size < 36:
+            break
+        font_size -= 2
+        font = ImageFont.truetype(FONT_SERIF, font_size)
+
+    y = 220
     for line in lines:
-        draw.text((pad_x, y), line, font=font, fill=(245, 245, 245))
-        y += line_h
+        draw.text((pad, y), line, font=font, fill=(240, 240, 240))
+        y += font_size + 10
 
-    # Rodapé + separador
-    small = ImageFont.truetype(FONT_SANS, 34)
-    tiny = ImageFont.truetype(FONT_SANS, 28)
-    label_font = ImageFont.truetype(FONT_SANS, 28)
+    small = ImageFont.truetype(FONT_SANS, 30)
 
-    sep_y = H - 245
-    draw.line([(pad_x, sep_y), (W - pad_x, sep_y)], fill=gold2, width=2)
+    draw.text((pad, H - 300), tag_label, font=small, fill=(170, 170, 180))
+    draw.text((pad, H - 250), ref, font=small, fill=(220, 220, 230))
+    draw.text((pad, H - 210),
+              "Louis Segond (1910) • Domaine public",
+              font=small, fill=(170, 170, 180))
 
-    # etiqueta (PROMESSE / PAROLES DE JÉSUS)
-    draw.text((pad_x, H - 270), tag_label, font=label_font, fill=(175, 175, 185))
-
-    draw.text((pad_x, H - 220), ref, font=small, fill=(220, 220, 230))
-    draw.text((pad_x, H - 170), "Louis Segond (1910) • Domaine public", font=tiny, fill=(175, 175, 185))
-
-    # watermark à direita
-    wm_font = ImageFont.truetype(FONT_SANS, 28)
-    wm_w = draw.textlength(WATERMARK, font=wm_font)
-    draw.text((W - pad_x - wm_w, H - 170), WATERMARK, font=wm_font, fill=(145, 145, 155))
+    wm_width = draw.textlength(WATERMARK, font=small)
+    draw.text((W - pad - wm_width, H - 210),
+              WATERMARK, font=small, fill=(150, 150, 160))
 
     out = "verse.png"
-    img.save(out, "PNG")
+    img.save(out)
     return out
 
 
-def load_list(path: str):
+# ---------------------------------------------------
+# SELEÇÃO CURADA
+# ---------------------------------------------------
+
+def load_list(path):
     arr = load_json(path)
-    if not isinstance(arr, list) or not arr:
-        raise RuntimeError(f"Lista vazia ou inválida: {path}")
+    if not arr:
+        raise RuntimeError("Lista vazia")
     return arr
 
 
-def reshuffle_if_needed(path: str, i: int):
+def reshuffle_if_needed(path, index):
     arr = load_list(path)
-    if i >= len(arr):
+    if index >= len(arr):
         random.shuffle(arr)
         save_json(path, arr)
-        arr = load_list(path)
-        i = 0
-    return arr, i
+        index = 0
+    return arr, index
 
 
-def pick_from_curated(path: str, i_key: str, progress: dict):
-    i = int(progress.get(i_key, 0))
-    arr, i = reshuffle_if_needed(path, i)
-    book, ch, v = arr[i]
-    progress[i_key] = i + 1
-    return str(book), int(ch), int(v)
+def pick_from_curated(path, key, progress):
+    index = progress.get(key, 0)
+    arr, index = reshuffle_if_needed(path, index)
+    book, ch, v = arr[index]
+    progress[key] = index + 1
+    return book, ch, v
 
+
+# ---------------------------------------------------
 
 def main():
     progress = load_json(PROGRESS_FILE)
-
-    # alternância permanente
     next_kind = progress.get("next", "promise")
 
     if next_kind == "promise":
-        book, chapter, verse = pick_from_curated(PROMISES_LIST, "i_promise", progress)
-        tag_label = "PROMESSE"
+        book, ch, v = pick_from_curated(PROMISES_LIST, "i_promise", progress)
+        tag = "PROMESSE"
         hashtags = "#promesse #versetdujour"
         progress["next"] = "jesus"
     else:
-        book, chapter, verse = pick_from_curated(JESUS_LIST, "i_jesus", progress)
-        tag_label = "PAROLES DE JÉSUS"
+        book, ch, v = pick_from_curated(JESUS_LIST, "i_jesus", progress)
+        tag = "PAROLES DE JÉSUS"
         hashtags = "#jesus #versetdujour"
         progress["next"] = "promise"
 
     book_data = load_book(book)
-    text = book_data[str(chapter)][str(verse)]
-    ref = f"{book} {chapter}:{verse}"
+    raw_text = book_data[str(ch)][str(v)]
+    text = clean_text(raw_text)
 
-    img_path = make_image(text, ref, tag_label)
+    ref = f"{book} {ch}:{v}"
+
+    img = make_image(text, ref, tag)
     caption = f"📖 <b>{ref}</b>\n{hashtags}"
 
-    send_photo(img_path, caption)
-
-    progress["mode"] = "alt_curated"
+    send_photo(img, caption)
     save_json(PROGRESS_FILE, progress)
 
 
