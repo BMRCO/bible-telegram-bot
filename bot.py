@@ -2,7 +2,6 @@ import os
 import json
 import random
 import re
-import datetime as dt
 import requests
 from PIL import Image, ImageDraw, ImageFont
 
@@ -16,80 +15,47 @@ BIBLE_DIR = "bible"
 
 FONT_SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 FONT_SANS = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
 WATERMARK = "@appbible"
 
-
-# -----------------------------
-# THÈME DU JOUR (série hebdo)
-# -----------------------------
-# 0=Lundi ... 6=Dimanche
-THEMES = [
-    ("PAIX", "#paix"),
-    ("FOI", "#foi"),
-    ("ESPOIR", "#espoir"),
-    ("FORCE", "#force"),
-    ("PROTECTION", "#protection"),
-    ("AMOUR", "#amour"),
-    ("GRÂCE", "#grace"),
-]
-
-def theme_today():
-    wd = dt.datetime.utcnow().weekday()
-    label, tag = THEMES[wd]
-    return label, tag
+# Hashtags fixas (como pediste)
+FIXED_HASHTAGS = "#LaBible.app #LSG1910 #versetdujour"
 
 
-# -----------------------------
-# Limpeza + tipografia francesa
-# -----------------------------
+# ---------------------------------------------------
+# LIMPEZA + TIPOGRAFIA (FR) + ASPAS «…» SEMPRE
+# ---------------------------------------------------
 def clean_text(text: str) -> str:
     if not text:
         return ""
 
-    # Remove marcações tipo \+w, \w, etc.
-    text = re.sub(r"\\\+?w\b", "", text)
-    text = re.sub(r"\\[a-zA-Z0-9]+\*?", "", text)
+    # Remove padrões Strong/USFM comuns
+    text = re.sub(r"\\\+?w\b", "", text)                 # \+w / \w
+    text = re.sub(r'strong="[^"]+"', "", text)          # strong="H1234"
+    text = re.sub(r"\|[^ \t]+", "", text)               # |strong=...
+    text = re.sub(r"\\[a-zA-Z0-9]+\*?", "", text)        # \x \v etc (caso apareçam)
+    text = text.replace("\\", "")                        # barras invertidas soltas
 
-    # Remove strong="H1234" e similares
-    text = re.sub(r'\bstrong="[^"]+"', "", text)
-
-    # Remove pipes restantes |something=...
-    text = re.sub(r"\|[^ \t]+", "", text)
-
-    # Remove barras invertidas soltas
-    text = text.replace("\\", "")
-
-    # Normaliza apóstrofos
+    # Normaliza apóstrofos para tipográfico
     text = text.replace("’", "'")
-    text = re.sub(r"\b([cdjlmntsCDJLMNTS])'", r"\1’", text)  # c' -> c’ etc.
-
-    # Converte aspas "..." para « ... » (tipografia FR)
-    # (apenas quando há pares "texto")
-    def repl_quotes(m):
-        inner = m.group(1).strip()
-        return f"« {inner} »"
-    text = re.sub(r'"([^"]+)"', repl_quotes, text)
-
-    # Corrige casos frequentes: "Dit l’Éternel" -> ", dit l’Éternel"
-    # Só aplica se NÃO houver vírgula antes.
-    text = re.sub(r"(?<![,;:])\s+Dit\s+(l[’']Éternel)", r", dit \1", text)
-    text = re.sub(r"(?<![,;:])\s+Dit\s+(l[’']Eternel)", r", dit \1", text)
+    text = re.sub(r"\b([cdjlmntsCDJLMNTS])'", r"\1’", text)  # c' -> c’
 
     # Espaçamento francês antes de ; : ? !
-    # Remove espaços errados e aplica espaço fino normal (aqui usamos espaço normal).
     text = re.sub(r"\s*([;:?!])", r" \1", text)
-    # Remove espaço antes de vírgula e ponto
+    # Remove espaço antes de , e .
     text = re.sub(r"\s+([,.])", r"\1", text)
 
     # Normaliza espaços
     text = re.sub(r"\s+", " ", text).strip()
 
+    # Aspas francesas sempre no versículo (se ainda não tiver)
+    if "«" not in text and "»" not in text:
+        text = f"« {text} »"
+
     return text
 
 
-# -----------------------------
-# Helpers de ficheiros/bíblia
-# -----------------------------
+# ---------------------------------------------------
 def safe_filename(name: str) -> str:
     t = name.lower()
     repl = (("é", "e"), ("è", "e"), ("ê", "e"), ("ë", "e"),
@@ -117,7 +83,7 @@ def save_json(path, data):
 def load_book(book_name: str) -> dict:
     path = f"{BIBLE_DIR}/{safe_filename(book_name)}.json"
     data = load_json(path)
-    return data[book_name]  # {chapter:{verse:text}}
+    return data[book_name]
 
 
 def send_photo(path, caption):
@@ -137,9 +103,9 @@ def send_photo(path, caption):
     r.raise_for_status()
 
 
-# -----------------------------
-# Texto na imagem (auto-fit)
-# -----------------------------
+# ---------------------------------------------------
+# TEXTO NA IMAGEM (auto-fit)
+# ---------------------------------------------------
 def _wrap_to_width(draw: ImageDraw.ImageDraw, text: str, font, max_width_px: int):
     words = text.replace("\n", " ").split()
     if not words:
@@ -174,7 +140,7 @@ def _fit_text(draw: ImageDraw.ImageDraw, text: str, max_width_px: int, max_heigh
     return font, lines, line_h
 
 
-def make_image(text: str, ref: str, tag_label: str, theme_label: str) -> str:
+def make_image(text: str, ref: str) -> str:
     W, H = 1080, 1080
 
     # Fundo gradiente escuro suave
@@ -197,7 +163,7 @@ def make_image(text: str, ref: str, tag_label: str, theme_label: str) -> str:
     # Área útil dentro da moldura
     pad_x = 110
     top_y = 150
-    bottom_y = 320  # +20 para caber a linha THÈME
+    bottom_y = 300
     max_w = W - 2 * pad_x
     max_h = H - top_y - bottom_y
 
@@ -213,14 +179,9 @@ def make_image(text: str, ref: str, tag_label: str, theme_label: str) -> str:
     # Rodapé + separador
     small = ImageFont.truetype(FONT_SANS, 34)
     tiny = ImageFont.truetype(FONT_SANS, 28)
-    label_font = ImageFont.truetype(FONT_SANS, 28)
 
     sep_y = H - 245
     draw.line([(pad_x, sep_y), (W - pad_x, sep_y)], fill=gold2, width=2)
-
-    # Etiquetas
-    draw.text((pad_x, H - 290), f"THÈME : {theme_label}", font=label_font, fill=(160, 160, 170))
-    draw.text((pad_x, H - 270), tag_label, font=label_font, fill=(175, 175, 185))
 
     draw.text((pad_x, H - 220), ref, font=small, fill=(220, 220, 230))
     draw.text((pad_x, H - 170), "Louis Segond (1910) • Domaine public", font=tiny, fill=(175, 175, 185))
@@ -235,9 +196,9 @@ def make_image(text: str, ref: str, tag_label: str, theme_label: str) -> str:
     return out
 
 
-# -----------------------------
-# Seleção curada + rebaralhar
-# -----------------------------
+# ---------------------------------------------------
+# SELEÇÃO CURADA + rebaralhar
+# ---------------------------------------------------
 def load_list(path: str):
     arr = load_json(path)
     if not isinstance(arr, list) or not arr:
@@ -263,26 +224,18 @@ def pick_from_curated(path: str, i_key: str, progress: dict):
     return str(book), int(ch), int(v)
 
 
-# -----------------------------
-# Main
-# -----------------------------
+# ---------------------------------------------------
 def main():
     progress = load_json(PROGRESS_FILE)
 
-    theme_label, theme_tag = theme_today()
-
-    # Alternância diária permanente
+    # Alternância diária permanente (mantemos, mas não mostramos na imagem)
     next_kind = progress.get("next", "promise")
 
     if next_kind == "promise":
         book, chapter, verse = pick_from_curated(PROMISES_LIST, "i_promise", progress)
-        tag_label = "PROMESSE"
-        hashtags = f"#promesse #versetdujour {theme_tag}"
         progress["next"] = "jesus"
     else:
         book, chapter, verse = pick_from_curated(JESUS_LIST, "i_jesus", progress)
-        tag_label = "PAROLES DE JÉSUS"
-        hashtags = f"#jesus #versetdujour {theme_tag}"
         progress["next"] = "promise"
 
     book_data = load_book(book)
@@ -291,12 +244,12 @@ def main():
 
     ref = f"{book} {chapter}:{verse}"
 
-    img_path = make_image(text, ref, tag_label, theme_label)
-    caption = f"📖 <b>{ref}</b>\n{hashtags}"
+    img_path = make_image(text, ref)
+    caption = f"📖 <b>{ref}</b>\n{FIXED_HASHTAGS}"
 
     send_photo(img_path, caption)
 
-    progress["mode"] = "alt_curated_theme"
+    progress["mode"] = "alt_curated_no_labels"
     save_json(PROGRESS_FILE, progress)
 
 
