@@ -144,4 +144,75 @@ def make_image(text: str, ref: str, tag_label: str) -> str:
     draw.line([(pad_x, sep_y), (W - pad_x, sep_y)], fill=gold2, width=2)
 
     # etiqueta (PROMESSE / PAROLES DE JÉSUS)
-    draw.text((pad_x, H - 270), tag_label, font=label_font, fill=(175, 175,
+    draw.text((pad_x, H - 270), tag_label, font=label_font, fill=(175, 175, 185))
+
+    draw.text((pad_x, H - 220), ref, font=small, fill=(220, 220, 230))
+    draw.text((pad_x, H - 170), "Louis Segond (1910) • Domaine public", font=tiny, fill=(175, 175, 185))
+
+    # watermark à direita
+    wm_font = ImageFont.truetype(FONT_SANS, 28)
+    wm_w = draw.textlength(WATERMARK, font=wm_font)
+    draw.text((W - pad_x - wm_w, H - 170), WATERMARK, font=wm_font, fill=(145, 145, 155))
+
+    out = "verse.png"
+    img.save(out, "PNG")
+    return out
+
+
+def load_list(path: str):
+    arr = load_json(path)
+    if not isinstance(arr, list) or not arr:
+        raise RuntimeError(f"Lista vazia ou inválida: {path}")
+    return arr
+
+
+def reshuffle_if_needed(path: str, i: int):
+    arr = load_list(path)
+    if i >= len(arr):
+        random.shuffle(arr)
+        save_json(path, arr)
+        arr = load_list(path)
+        i = 0
+    return arr, i
+
+
+def pick_from_curated(path: str, i_key: str, progress: dict):
+    i = int(progress.get(i_key, 0))
+    arr, i = reshuffle_if_needed(path, i)
+    book, ch, v = arr[i]
+    progress[i_key] = i + 1
+    return str(book), int(ch), int(v)
+
+
+def main():
+    progress = load_json(PROGRESS_FILE)
+
+    # alternância permanente
+    next_kind = progress.get("next", "promise")
+
+    if next_kind == "promise":
+        book, chapter, verse = pick_from_curated(PROMISES_LIST, "i_promise", progress)
+        tag_label = "PROMESSE"
+        hashtags = "#promesse #versetdujour"
+        progress["next"] = "jesus"
+    else:
+        book, chapter, verse = pick_from_curated(JESUS_LIST, "i_jesus", progress)
+        tag_label = "PAROLES DE JÉSUS"
+        hashtags = "#jesus #versetdujour"
+        progress["next"] = "promise"
+
+    book_data = load_book(book)
+    text = book_data[str(chapter)][str(verse)]
+    ref = f"{book} {chapter}:{verse}"
+
+    img_path = make_image(text, ref, tag_label)
+    caption = f"📖 <b>{ref}</b>\n{hashtags}"
+
+    send_photo(img_path, caption)
+
+    progress["mode"] = "alt_curated"
+    save_json(PROGRESS_FILE, progress)
+
+
+if __name__ == "__main__":
+    main()
