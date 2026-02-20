@@ -17,13 +17,11 @@ FONT_SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 FONT_SANS = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 WATERMARK = "@appbible"
-
-# Hashtags finais
 FIXED_HASHTAGS = "#LaBible #LSG1910 #versetdujour"
 
 
 # ---------------------------------------------------
-# LIMPEZA + TIPOGRAFIA + ASPAS «…»
+# LIMPEZA + ASPAS FR
 # ---------------------------------------------------
 def clean_text(text: str) -> str:
     if not text:
@@ -53,6 +51,8 @@ def clean_text(text: str) -> str:
     return text
 
 
+# ---------------------------------------------------
+# Helpers
 # ---------------------------------------------------
 def safe_filename(name: str) -> str:
     t = name.lower()
@@ -102,13 +102,51 @@ def send_photo(path, caption):
 
 
 # ---------------------------------------------------
-# TEXTO NA IMAGEM (auto-fit)
+# Render helpers (premium)
 # ---------------------------------------------------
+def draw_text_shadow(draw: ImageDraw.ImageDraw, xy, text, font, fill, shadow_fill, shadow_offset=(2, 2)):
+    x, y = xy
+    sx, sy = shadow_offset
+    draw.text((x + sx, y + sy), text, font=font, fill=shadow_fill)
+    draw.text((x, y), text, font=font, fill=fill)
+
+
+def make_background(draw: ImageDraw.ImageDraw, W: int, H: int):
+    # Gradiente vertical suave
+    for y in range(H):
+        t = y / max(1, (H - 1))
+        # topo mais escuro, base levemente mais clara/azulada
+        r = int(8 + t * 10)
+        g = int(8 + t * 10)
+        b = int(14 + t * 14)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # Vinheta (escurece cantos)
+    # Desenha retângulos concêntricos transparentes “simulados”
+    # (PIL sem alpha aqui: fazemos linhas/retângulos leves)
+    steps = 55
+    for i in range(steps):
+        inset = int(i * 6)
+        if inset * 2 >= min(W, H):
+            break
+        alpha = i / steps
+        # escurece com intensidade leve
+        shade = int(18 * alpha)
+        draw.rounded_rectangle(
+            [inset, inset, W - inset, H - inset],
+            radius=30,
+            outline=(shade, shade, shade),
+            width=2
+        )
+
+
 def _wrap_to_width(draw, text, font, max_width_px):
     words = text.split()
+    if not words:
+        return [""]
+
     lines = []
     current = words[0]
-
     for w in words[1:]:
         candidate = current + " " + w
         if draw.textlength(candidate, font=font) <= max_width_px:
@@ -116,73 +154,99 @@ def _wrap_to_width(draw, text, font, max_width_px):
         else:
             lines.append(current)
             current = w
-
     lines.append(current)
     return lines
 
 
 def _fit_text(draw, text, max_width_px, max_height_px):
-    for size in range(62, 32, -2):
+    # tenta tamanhos de fonte maiores -> menores
+    for size in range(66, 34, -2):
         font = ImageFont.truetype(FONT_SERIF, size)
         lines = _wrap_to_width(draw, text, font, max_width_px)
-        line_h = int(size * 1.25)
+        line_h = int(size * 1.28)
         total_h = line_h * len(lines)
-
         if total_h <= max_height_px:
             return font, lines, line_h
 
     font = ImageFont.truetype(FONT_SERIF, 34)
     lines = _wrap_to_width(draw, text, font, max_width_px)
-    line_h = int(34 * 1.25)
+    line_h = int(34 * 1.28)
     return font, lines, line_h
 
 
 def make_image(text: str, ref: str) -> str:
     W, H = 1080, 1080
-
-    img = Image.new("RGB", (W, H), (10, 10, 14))
+    img = Image.new("RGB", (W, H), (0, 0, 0))
     draw = ImageDraw.Draw(img)
 
+    make_background(draw, W, H)
+
+    # Moldura premium (dupla)
     gold = (195, 165, 90)
     gold2 = (140, 120, 65)
 
     margin = 60
     draw.rounded_rectangle([margin, margin, W - margin, H - margin],
-                           radius=28, outline=gold, width=6)
-    draw.rounded_rectangle([margin + 14, margin + 14, W - margin - 14, H - margin - 14],
-                           radius=22, outline=gold2, width=2)
+                           radius=30, outline=gold, width=6)
 
-    pad_x = 110
+    inner = margin + 16
+    draw.rounded_rectangle([inner, inner, W - inner, H - inner],
+                           radius=26, outline=gold2, width=2)
+
+    # Área do texto
+    pad_x = 115
     top_y = 150
-    bottom_y = 260  # mais espaço para o texto
-
+    bottom_y = 305
     max_w = W - 2 * pad_x
     max_h = H - top_y - bottom_y
 
     font, lines, line_h = _fit_text(draw, text, max_w, max_h)
+
     total_h = line_h * len(lines)
-    y = top_y + (max_h - total_h) // 2
+    y = top_y + max(0, (max_h - total_h) // 2)
+
+    # Texto com sombra suave
+    text_fill = (245, 245, 245)
+    shadow_fill = (0, 0, 0)
 
     for line in lines:
-        draw.text((pad_x, y), line, font=font, fill=(245, 245, 245))
+        draw_text_shadow(
+            draw,
+            (pad_x, y),
+            line,
+            font=font,
+            fill=text_fill,
+            shadow_fill=shadow_fill,
+            shadow_offset=(2, 2)
+        )
         y += line_h
 
+    # Rodapé
     small = ImageFont.truetype(FONT_SANS, 34)
     tiny = ImageFont.truetype(FONT_SANS, 28)
 
-    sep_y = H - 220
+    sep_y = H - 240
     draw.line([(pad_x, sep_y), (W - pad_x, sep_y)], fill=gold2, width=2)
 
-    # Só referência + watermark
-    draw.text((pad_x, H - 190), ref, font=small, fill=(220, 220, 230))
+    # Ref + LSG 1910 + watermark
+    draw_text_shadow(
+        draw,
+        (pad_x, H - 200),
+        ref,
+        font=small,
+        fill=(225, 225, 235),
+        shadow_fill=(0, 0, 0),
+        shadow_offset=(1, 1)
+    )
+
+    draw.text((pad_x, H - 165), "LSG 1910", font=tiny, fill=(175, 175, 185))
 
     wm_font = ImageFont.truetype(FONT_SANS, 28)
     wm_w = draw.textlength(WATERMARK, font=wm_font)
-    draw.text((W - pad_x - wm_w, H - 190),
-              WATERMARK, font=wm_font, fill=(145, 145, 155))
+    draw.text((W - pad_x - wm_w, H - 165), WATERMARK, font=wm_font, fill=(150, 150, 160))
 
     out = "verse.png"
-    img.save(out)
+    img.save(out, "PNG")
     return out
 
 
