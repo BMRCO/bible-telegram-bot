@@ -1,6 +1,6 @@
 {
-  "mode": "alt",
+  "mode": "alt_curated",
   "next": "promise",
-  "i_promise": 5,
-  "i_jesus": 5
+  "i_promise": 0,
+  "i_jesus": 0
 }
