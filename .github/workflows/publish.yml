@@ -3,7 +3,10 @@ name: Post daily verse
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 6 * * *"
+    - cron: "0 6 * * *"  # 06:00 UTC (FR: 07:00 inverno / 08:00 verão)
+
+permissions:
+  contents: write
 
 jobs:
   run:
@@ -19,7 +22,9 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Post verse
         env:
@@ -27,10 +32,14 @@ jobs:
           TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
         run: python bot.py
 
-      - name: Commit progress
+      - name: Commit updates (progress + lists if changed)
         run: |
           git config user.name "bible-telegram-bot"
           git config user.email "bible-telegram-bot@users.noreply.github.com"
-          git add progress.json
+
+          # adiciona progresso e listas (caso tenham sido baralhadas/atualizadas)
+          git add progress.json promesses_curated.json jesus_curated.json || true
+
+          # se não houver mudanças, não falha
           git commit -m "Update progress" || exit 0
           git push
