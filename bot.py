@@ -1,3 +1,5 @@
+# VERSÃO SIGNATURE STABLE PRO
+
 import os
 import json
 import random
@@ -21,35 +23,35 @@ FIXED_HASHTAGS = "#LaBible #LSG1910 #versetdujour"
 
 
 # ---------------------------------------------------
-# CLEAN + FRENCH TYPOGRAPHY
+# CLEAN TEXT (corrigido)
 # ---------------------------------------------------
 def clean_text(text: str) -> str:
     if not text:
         return ""
 
-    text = re.sub(r"\\\+?w\b", "", text)
-    text = re.sub(r'strong="[^"]+"', "", text)
-    text = re.sub(r"\|[^ \t]+", "", text)
-    text = re.sub(r"\\[a-zA-Z0-9]+\*?", "", text)
-    text = text.replace("\\", "")
+    # Remove apenas marcações técnicas
+    text = re.sub(r'\\\+?w\b', '', text)
+    text = re.sub(r'strong="[^"]+"', '', text)
+    text = re.sub(r'\|[^ \t]+', '', text)
+    text = re.sub(r'\\[a-zA-Z0-9]+\*?', '', text)
 
-    text = re.sub(r"\s+", " ", text).strip()
+    text = re.sub(r'\s+', ' ', text).strip()
 
-    # Corrige A → À no início de frase
-    text = re.sub(r"(^|\. )A ", r"\1À ", text)
+    # Corrige A → À início frase
+    text = re.sub(r'(^|\. )A ', r'\1À ', text)
 
     # Espaçamento francês
-    text = re.sub(r"\s*([;:?!])", r" \1", text)
+    text = re.sub(r'\s*([;:?!])', r' \1', text)
 
-    # Garante ponto final
-    if not text.endswith((".", "!", "?", "»")):
-        text += "."
+    # Não tocar nos apóstrofos reais!
+    # Apenas normaliza aspas curvas
+    text = text.replace("’", "'")
 
-    # Aspas françaises
-    if not text.startswith("«"):
-        text = f"« {text} »"
+    # Garante ponto final se faltar
+    if not text.endswith(('.', '!', '?')):
+        text += '.'
 
-    return text
+    return f"« {text} »"
 
 
 # ---------------------------------------------------
@@ -88,11 +90,7 @@ def send_photo(path,caption):
     with open(path,"rb") as f:
         r = requests.post(
             url,
-            data={
-                "chat_id":CHANNEL,
-                "caption":caption,
-                "parse_mode":"HTML"
-            },
+            data={"chat_id":CHANNEL,"caption":caption,"parse_mode":"HTML"},
             files={"photo":f},
             timeout=30
         )
@@ -100,55 +98,31 @@ def send_photo(path,caption):
 
 
 # ---------------------------------------------------
-# SIGNATURE DESIGN
+# BACKGROUND PREMIUM
 # ---------------------------------------------------
 def make_background(W,H):
     img = Image.new("RGB",(W,H))
     draw = ImageDraw.Draw(img)
 
-    # Gradiente suave
     for y in range(H):
-        t = y / H
-        r = int(12 + t*15)
-        g = int(12 + t*15)
-        b = int(18 + t*20)
+        t = y/H
+        r = int(10 + t*18)
+        g = int(10 + t*18)
+        b = int(18 + t*25)
         draw.line([(0,y),(W,y)],fill=(r,g,b))
 
-    # Blur leve para efeito cinematográfico
-    img = img.filter(ImageFilter.GaussianBlur(1.2))
-    return img
-
-
-def draw_glow_border(draw,W,H):
-    gold = (195,165,90)
-    glow = (120,100,60)
-
-    margin = 60
-
-    # glow
-    for i in range(8):
-        draw.rounded_rectangle(
-            [margin-i,margin-i,W-margin+i,H-margin+i],
-            radius=32,
-            outline=glow,
-            width=1
-        )
-
-    draw.rounded_rectangle(
-        [margin,margin,W-margin,H-margin],
-        radius=30,
-        outline=gold,
-        width=6
-    )
+    return img.filter(ImageFilter.GaussianBlur(0.8))
 
 
 def wrap_text(draw,text,font,max_w):
     words=text.split()
     lines=[]
     current=words[0]
+
     for w in words[1:]:
-        if draw.textlength(current+" "+w,font=font)<=max_w:
-            current+=" "+w
+        test=current+" "+w
+        if draw.textlength(test,font=font)<=max_w:
+            current=test
         else:
             lines.append(current)
             current=w
@@ -161,33 +135,34 @@ def make_image(text,ref):
     img=make_background(W,H)
     draw=ImageDraw.Draw(img)
 
-    draw_glow_border(draw,W,H)
+    gold=(195,165,90)
+    margin=60
+
+    draw.rounded_rectangle([margin,margin,W-margin,H-margin],
+                           radius=30,outline=gold,width=6)
 
     pad_x=130
-    top=200
-    bottom=320
+    top=180
+    bottom=350   # MAIS ESPAÇO INFERIOR
 
     max_w=W-2*pad_x
     max_h=H-top-bottom
 
-    font_size=64
-    font=ImageFont.truetype(FONT_SERIF,font_size)
+    # AUTO FIT REAL
+    for size in range(66,36,-2):
+        font=ImageFont.truetype(FONT_SERIF,size)
+        lines=wrap_text(draw,text,font,max_w)
+        line_h=int(size*1.35)
+        if line_h*len(lines)<=max_h:
+            break
 
-    lines=wrap_text(draw,text,font,max_w)
-    line_h=int(font_size*1.35)
-
-    total_h=line_h*len(lines)
-    y=top+(max_h-total_h)//2
-
-    text_color=(245,245,245)
-    shadow=(0,0,0)
+    y=top+(max_h-line_h*len(lines))//2
 
     for line in lines:
-        draw.text((pad_x+2,y+2),line,font=font,fill=shadow)
-        draw.text((pad_x,y),line,font=font,fill=text_color)
+        draw.text((pad_x+2,y+2),line,font=font,fill=(0,0,0))
+        draw.text((pad_x,y),line,font=font,fill=(245,245,245))
         y+=line_h
 
-    # Ref + version
     small=ImageFont.truetype(FONT_SANS,36)
     tiny=ImageFont.truetype(FONT_SANS,28)
 
