@@ -1,5 +1,3 @@
-# VERSÃO SIGNATURE STABLE PRO
-
 import os
 import json
 import random
@@ -23,34 +21,33 @@ FIXED_HASHTAGS = "#LaBible #LSG1910 #versetdujour"
 
 
 # ---------------------------------------------------
-# CLEAN TEXT (corrigido)
+# CLEAN TEXT (seguro + francês)
 # ---------------------------------------------------
 def clean_text(text: str) -> str:
     if not text:
         return ""
 
-    # Remove apenas marcações técnicas
+    # remove apenas marcações técnicas
     text = re.sub(r'\\\+?w\b', '', text)
     text = re.sub(r'strong="[^"]+"', '', text)
     text = re.sub(r'\|[^ \t]+', '', text)
     text = re.sub(r'\\[a-zA-Z0-9]+\*?', '', text)
-
     text = re.sub(r'\s+', ' ', text).strip()
 
-    # Corrige A → À início frase
+    # A → À no início de frase
     text = re.sub(r'(^|\. )A ', r'\1À ', text)
 
-    # Espaçamento francês
+    # espaço francês antes de ; : ? !
     text = re.sub(r'\s*([;:?!])', r' \1', text)
 
-    # Não tocar nos apóstrofos reais!
-    # Apenas normaliza aspas curvas
+    # normaliza apóstrofos (sem destruir)
     text = text.replace("’", "'")
 
-    # Garante ponto final se faltar
+    # ponto final se faltar (antes das aspas)
     if not text.endswith(('.', '!', '?')):
         text += '.'
 
+    # aspas francesas sempre
     return f"« {text} »"
 
 
@@ -90,143 +87,177 @@ def send_photo(path,caption):
     with open(path,"rb") as f:
         r = requests.post(
             url,
-            data={"chat_id":CHANNEL,"caption":caption,"parse_mode":"HTML"},
-            files={"photo":f},
+            data={
+                "chat_id": CHANNEL,
+                "caption": caption,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True
+            },
+            files={"photo": f},
             timeout=30
         )
     r.raise_for_status()
 
 
 # ---------------------------------------------------
-# BACKGROUND PREMIUM
+# SIGNATURE BACKGROUND
 # ---------------------------------------------------
-def make_background(W,H):
-    img = Image.new("RGB",(W,H))
+def make_background(W, H):
+    img = Image.new("RGB", (W, H))
     draw = ImageDraw.Draw(img)
 
     for y in range(H):
-        t = y/H
-        r = int(10 + t*18)
-        g = int(10 + t*18)
-        b = int(18 + t*25)
-        draw.line([(0,y),(W,y)],fill=(r,g,b))
+        t = y / H
+        r = int(10 + t * 18)
+        g = int(10 + t * 18)
+        b = int(18 + t * 25)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
 
     return img.filter(ImageFilter.GaussianBlur(0.8))
 
 
-def wrap_text(draw,text,font,max_w):
-    words=text.split()
-    lines=[]
-    current=words[0]
+def wrap_text(draw, text, font, max_w):
+    words = text.split()
+    if not words:
+        return [""]
 
+    lines = []
+    current = words[0]
     for w in words[1:]:
-        test=current+" "+w
-        if draw.textlength(test,font=font)<=max_w:
-            current=test
+        test = current + " " + w
+        if draw.textlength(test, font=font) <= max_w:
+            current = test
         else:
             lines.append(current)
-            current=w
+            current = w
     lines.append(current)
     return lines
 
 
-def make_image(text,ref):
-    W,H=1080,1080
-    img=make_background(W,H)
-    draw=ImageDraw.Draw(img)
+def make_image(text, ref):
+    W, H = 1080, 1080
+    img = make_background(W, H)
+    draw = ImageDraw.Draw(img)
 
-    gold=(195,165,90)
-    margin=60
+    gold = (195, 165, 90)
+    gold2 = (140, 120, 65)
 
-    draw.rounded_rectangle([margin,margin,W-margin,H-margin],
-                           radius=30,outline=gold,width=6)
+    margin = 60
+    draw.rounded_rectangle([margin, margin, W - margin, H - margin],
+                           radius=30, outline=gold, width=6)
 
-    pad_x=130
-    top=180
-    bottom=350   # MAIS ESPAÇO INFERIOR
+    inner = margin + 16
+    draw.rounded_rectangle([inner, inner, W - inner, H - inner],
+                           radius=26, outline=gold2, width=2)
 
-    max_w=W-2*pad_x
-    max_h=H-top-bottom
+    # área editorial
+    pad_x = 140
+    top = 190
+    bottom = 350  # margem segura para ref/linha
 
-    # AUTO FIT REAL
-    for size in range(66,36,-2):
-        font=ImageFont.truetype(FONT_SERIF,size)
-        lines=wrap_text(draw,text,font,max_w)
-        line_h=int(size*1.35)
-        if line_h*len(lines)<=max_h:
+    max_w = W - 2 * pad_x
+    max_h = H - top - bottom
+
+    # auto-fit
+    chosen_font = None
+    chosen_lines = None
+    chosen_line_h = None
+
+    for size in range(66, 36, -2):
+        font = ImageFont.truetype(FONT_SERIF, size)
+        lines = wrap_text(draw, text, font, max_w)
+        line_h = int(size * 1.35)
+        if line_h * len(lines) <= max_h:
+            chosen_font = font
+            chosen_lines = lines
+            chosen_line_h = line_h
             break
 
-    y=top+(max_h-line_h*len(lines))//2
+    if chosen_font is None:
+        chosen_font = ImageFont.truetype(FONT_SERIF, 36)
+        chosen_lines = wrap_text(draw, text, chosen_font, max_w)
+        chosen_line_h = int(36 * 1.35)
 
-    for line in lines:
-        draw.text((pad_x+2,y+2),line,font=font,fill=(0,0,0))
-        draw.text((pad_x,y),line,font=font,fill=(245,245,245))
-        y+=line_h
+    total_h = chosen_line_h * len(chosen_lines)
+    y = top + max(0, (max_h - total_h) // 2)
 
-    small=ImageFont.truetype(FONT_SANS,36)
-    tiny=ImageFont.truetype(FONT_SANS,28)
+    # estilo editorial: centrado tipo poesia
+    for line in chosen_lines:
+        line_w = draw.textlength(line, font=chosen_font)
+        x = (W - line_w) // 2
 
-    draw.line([(pad_x,H-260),(W-pad_x,H-260)],fill=(150,130,70),width=2)
+        # sombra subtil
+        draw.text((x + 2, y + 2), line, font=chosen_font, fill=(0, 0, 0))
+        draw.text((x, y), line, font=chosen_font, fill=(245, 245, 245))
+        y += chosen_line_h
 
-    draw.text((pad_x,H-220),ref,font=small,fill=(220,220,230))
-    draw.text((pad_x,H-180),"LSG 1910",font=tiny,fill=(170,170,180))
+    # rodapé
+    small = ImageFont.truetype(FONT_SANS, 36)
+    tiny = ImageFont.truetype(FONT_SANS, 28)
 
-    wm_w=draw.textlength(WATERMARK,font=tiny)
-    draw.text((W-pad_x-wm_w,H-180),WATERMARK,font=tiny,fill=(150,150,160))
+    draw.line([(pad_x, H - 260), (W - pad_x, H - 260)], fill=(150, 130, 70), width=2)
 
-    out="verse.png"
-    img.save(out)
+    draw.text((pad_x, H - 220), ref, font=small, fill=(220, 220, 230))
+    draw.text((pad_x, H - 180), "LSG 1910", font=tiny, fill=(170, 170, 180))
+
+    wm_w = draw.textlength(WATERMARK, font=tiny)
+    draw.text((W - pad_x - wm_w, H - 180), WATERMARK, font=tiny, fill=(150, 150, 160))
+
+    out = "verse.png"
+    img.save(out, "PNG")
     return out
 
 
 # ---------------------------------------------------
+# SELEÇÃO CURADA
+# ---------------------------------------------------
 def load_list(path):
-    arr=load_json(path)
+    arr = load_json(path)
     if not arr:
         raise RuntimeError("Lista vazia")
     return arr
 
 
-def reshuffle_if_needed(path,index):
-    arr=load_list(path)
-    if index>=len(arr):
+def reshuffle_if_needed(path, index):
+    arr = load_list(path)
+    if index >= len(arr):
         random.shuffle(arr)
-        save_json(path,arr)
-        index=0
-    return arr,index
+        save_json(path, arr)
+        index = 0
+    return arr, index
 
 
-def pick_from_curated(path,key,progress):
-    index=progress.get(key,0)
-    arr,index=reshuffle_if_needed(path,index)
-    book,ch,v=arr[index]
-    progress[key]=index+1
-    return book,ch,v
+def pick_from_curated(path, key, progress):
+    index = progress.get(key, 0)
+    arr, index = reshuffle_if_needed(path, index)
+    book, ch, v = arr[index]
+    progress[key] = index + 1
+    return book, ch, v
 
 
 def main():
-    progress=load_json(PROGRESS_FILE)
-    next_kind=progress.get("next","promise")
+    progress = load_json(PROGRESS_FILE)
+    next_kind = progress.get("next", "promise")
 
-    if next_kind=="promise":
-        book,ch,v=pick_from_curated(PROMISES_LIST,"i_promise",progress)
-        progress["next"]="jesus"
+    if next_kind == "promise":
+        book, ch, v = pick_from_curated(PROMISES_LIST, "i_promise", progress)
+        progress["next"] = "jesus"
     else:
-        book,ch,v=pick_from_curated(JESUS_LIST,"i_jesus",progress)
-        progress["next"]="promise"
+        book, ch, v = pick_from_curated(JESUS_LIST, "i_jesus", progress)
+        progress["next"] = "promise"
 
-    book_data=load_book(book)
-    raw_text=book_data[str(ch)][str(v)]
-    text=clean_text(raw_text)
+    book_data = load_book(book)
+    raw_text = book_data[str(ch)][str(v)]
+    text = clean_text(raw_text)
 
-    ref=f"{book} {ch}:{v}"
+    ref = f"{book} {ch}:{v}"
 
-    img=make_image(text,ref)
-    caption=f"📖 <b>{ref}</b>\n{FIXED_HASHTAGS}"
+    img = make_image(text, ref)
+    caption = f"📖 <b>{ref}</b>\n{FIXED_HASHTAGS}"
 
-    send_photo(img,caption)
-    save_json(PROGRESS_FILE,progress)
+    send_photo(img, caption)
+    save_json(PROGRESS_FILE, progress)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()
