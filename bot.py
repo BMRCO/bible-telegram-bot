@@ -9,20 +9,45 @@ TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 CHANNEL = os.environ["TELEGRAM_CHANNEL"]
 
 PROGRESS_FILE = "progress.json"
-PROMISES_LIST = "promesses_curated.json"
-JESUS_LIST = "jesus_curated.json"
 BIBLE_DIR = "bible"
 
 FONT_SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
-FONT_SANS = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+FONT_SANS  = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
-WATERMARK = "@appbible"
-FIXED_HASHTAGS = "#LaBible #LSG1910 #versetdujour"
-MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
+WATERMARK     = "@appbible"
+MINI_APP_URL  = "https://t.me/BIBLE_APP_BOT/labible"
+
+# Categorias em rotação com emoji temático
+CATEGORIES = [
+    {
+        "key":   "i_promise",
+        "file":  "promesses_curated.json",
+        "emoji": "🌿",
+        "tag":   "#Promesse"
+    },
+    {
+        "key":   "i_jesus",
+        "file":  "jesus_curated.json",
+        "emoji": "✝️",
+        "tag":   "#ParoleDeJésus"
+    },
+    {
+        "key":   "i_psaume",
+        "file":  "psaumes_curated.json",
+        "emoji": "🎵",
+        "tag":   "#Psaume"
+    },
+    {
+        "key":   "i_proverbe",
+        "file":  "proverbes_curated.json",
+        "emoji": "💡",
+        "tag":   "#Sagesse"
+    },
+]
 
 
 # ---------------------------------------------------
-# CLEAN TEXT (seguro + francês)
+# CLEAN TEXT
 # ---------------------------------------------------
 def clean_text(text: str) -> str:
     if not text:
@@ -40,7 +65,6 @@ def clean_text(text: str) -> str:
     return f"« {text} »"
 
 
-# ---------------------------------------------------
 def safe_filename(name: str) -> str:
     t = name.lower()
     repl = (("é","e"),("è","e"),("ê","e"),("ë","e"),
@@ -60,9 +84,9 @@ def load_json(path):
         return json.load(f)
 
 
-def save_json(path,data):
+def save_json(path, data):
     with open(path,"w",encoding="utf-8") as f:
-        json.dump(data,f,ensure_ascii=False,indent=2)
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
 
 def load_book(book_name):
@@ -72,16 +96,13 @@ def load_book(book_name):
 
 
 # ---------------------------------------------------
-# ENVIO COM BOUTON MINI APP
+# ENVOI AVEC BOUTON MINI APP
 # ---------------------------------------------------
 def send_photo(path, caption):
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
     reply_markup = json.dumps({
         "inline_keyboard": [[
-            {
-                "text": "📖 Lire dans LaBible.app",
-                "url": MINI_APP_URL
-            }
+            {"text": "📖 Lire dans LaBible.app", "url": MINI_APP_URL}
         ]]
     })
     with open(path, "rb") as f:
@@ -101,7 +122,7 @@ def send_photo(path, caption):
 
 
 # ---------------------------------------------------
-# SIGNATURE BACKGROUND
+# IMAGE
 # ---------------------------------------------------
 def make_background(W, H):
     img = Image.new("RGB", (W, H))
@@ -134,34 +155,29 @@ def wrap_text(draw, text, font, max_w):
 
 def make_image(text, ref):
     W, H = 1080, 1080
-    img = make_background(W, H)
+    img  = make_background(W, H)
     draw = ImageDraw.Draw(img)
 
-    gold = (195, 165, 90)
+    gold  = (195, 165, 90)
     gold2 = (140, 120, 65)
 
     margin = 60
     draw.rounded_rectangle([margin, margin, W - margin, H - margin],
-                           radius=30, outline=gold, width=6)
-
+                            radius=30, outline=gold, width=6)
     inner = margin + 16
     draw.rounded_rectangle([inner, inner, W - inner, H - inner],
-                           radius=26, outline=gold2, width=2)
+                            radius=26, outline=gold2, width=2)
 
-    pad_x = 140
-    top = 190
+    pad_x  = 140
+    top    = 190
     bottom = 350
+    max_w  = W - 2 * pad_x
+    max_h  = H - top - bottom
 
-    max_w = W - 2 * pad_x
-    max_h = H - top - bottom
-
-    chosen_font = None
-    chosen_lines = None
-    chosen_line_h = None
-
+    chosen_font = chosen_lines = chosen_line_h = None
     for size in range(66, 36, -2):
-        font = ImageFont.truetype(FONT_SERIF, size)
-        lines = wrap_text(draw, text, font, max_w)
+        font   = ImageFont.truetype(FONT_SERIF, size)
+        lines  = wrap_text(draw, text, font, max_w)
         line_h = int(size * 1.35)
         if line_h * len(lines) <= max_h:
             chosen_font = font
@@ -170,8 +186,8 @@ def make_image(text, ref):
             break
 
     if chosen_font is None:
-        chosen_font = ImageFont.truetype(FONT_SERIF, 36)
-        chosen_lines = wrap_text(draw, text, chosen_font, max_w)
+        chosen_font   = ImageFont.truetype(FONT_SERIF, 36)
+        chosen_lines  = wrap_text(draw, text, chosen_font, max_w)
         chosen_line_h = int(36 * 1.35)
 
     total_h = chosen_line_h * len(chosen_lines)
@@ -181,14 +197,14 @@ def make_image(text, ref):
         line_w = draw.textlength(line, font=chosen_font)
         x = (W - line_w) // 2
         draw.text((x + 2, y + 2), line, font=chosen_font, fill=(0, 0, 0))
-        draw.text((x, y), line, font=chosen_font, fill=(245, 245, 245))
+        draw.text((x, y),         line, font=chosen_font, fill=(245, 245, 245))
         y += chosen_line_h
 
     small = ImageFont.truetype(FONT_SANS, 36)
-    tiny = ImageFont.truetype(FONT_SANS, 28)
+    tiny  = ImageFont.truetype(FONT_SANS, 28)
 
     draw.line([(pad_x, H - 260), (W - pad_x, H - 260)], fill=(150, 130, 70), width=2)
-    draw.text((pad_x, H - 220), ref, font=small, fill=(220, 220, 230))
+    draw.text((pad_x, H - 220), ref,      font=small, fill=(220, 220, 230))
     draw.text((pad_x, H - 180), "LSG 1910", font=tiny, fill=(170, 170, 180))
 
     wm_w = draw.textlength(WATERMARK, font=tiny)
@@ -200,12 +216,12 @@ def make_image(text, ref):
 
 
 # ---------------------------------------------------
-# SELEÇÃO CURADA
+# SELECÇÃO EM ROTAÇÃO
 # ---------------------------------------------------
 def load_list(path):
     arr = load_json(path)
     if not arr:
-        raise RuntimeError("Lista vazia")
+        raise RuntimeError(f"Lista vazia: {path}")
     return arr
 
 
@@ -218,32 +234,29 @@ def reshuffle_if_needed(path, index):
     return arr, index
 
 
-def pick_from_curated(path, key, progress):
-    index = progress.get(key, 0)
-    arr, index = reshuffle_if_needed(path, index)
+def pick_from_category(cat, progress):
+    index      = progress.get(cat["key"], 0)
+    arr, index = reshuffle_if_needed(cat["file"], index)
     book, ch, v = arr[index]
-    progress[key] = index + 1
+    progress[cat["key"]] = index + 1
     return book, ch, v
 
 
 def main():
-    progress = load_json(PROGRESS_FILE)
-    next_kind = progress.get("next", "promise")
+    progress   = load_json(PROGRESS_FILE)
+    cat_index  = progress.get("cat_index", 0) % len(CATEGORIES)
+    cat        = CATEGORIES[cat_index]
 
-    if next_kind == "promise":
-        book, ch, v = pick_from_curated(PROMISES_LIST, "i_promise", progress)
-        progress["next"] = "jesus"
-    else:
-        book, ch, v = pick_from_curated(JESUS_LIST, "i_jesus", progress)
-        progress["next"] = "promise"
+    book, ch, v = pick_from_category(cat, progress)
+    progress["cat_index"] = (cat_index + 1) % len(CATEGORIES)
 
     book_data = load_book(book)
-    raw_text = book_data[str(ch)][str(v)]
-    text = clean_text(raw_text)
-    ref = f"{book} {ch}:{v}"
+    raw_text  = book_data[str(ch)][str(v)]
+    text      = clean_text(raw_text)
+    ref       = f"{book} {ch}:{v}"
 
-    img = make_image(text, ref)
-    caption = f"📖 <b>{ref}</b>\n{FIXED_HASHTAGS}"
+    img     = make_image(text, ref)
+    caption = f"{cat['emoji']} <b>{ref}</b>\n#LaBible #LSG1910 #versetdujour {cat['tag']}"
 
     send_photo(img, caption)
     save_json(PROGRESS_FILE, progress)
