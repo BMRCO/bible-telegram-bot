@@ -2,6 +2,7 @@ import os
 import json
 import random
 import re
+import datetime
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
@@ -14,36 +15,47 @@ BIBLE_DIR = "bible"
 FONT_SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 FONT_SANS  = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
-WATERMARK     = "@appbible"
-MINI_APP_URL  = "https://t.me/BIBLE_APP_BOT/labible"
+WATERMARK    = "@appbible"
+MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
 
-# Categorias em rotação com emoji temático
-CATEGORIES = [
-    {
+# Categorias disponíveis
+CATEGORIES = {
+    "promise": {
         "key":   "i_promise",
         "file":  "promesses_curated.json",
         "emoji": "🌿",
         "tag":   "#Promesse"
     },
-    {
+    "jesus": {
         "key":   "i_jesus",
         "file":  "jesus_curated.json",
         "emoji": "✝️",
         "tag":   "#ParoleDeJésus"
     },
-    {
+    "psaume": {
         "key":   "i_psaume",
         "file":  "psaumes_curated.json",
         "emoji": "🎵",
         "tag":   "#Psaume"
     },
-    {
+    "proverbe": {
         "key":   "i_proverbe",
         "file":  "proverbes_curated.json",
         "emoji": "💡",
         "tag":   "#Sagesse"
     },
-]
+}
+
+# Rotation par jour de la semaine (0=lundi … 6=dimanche)
+DAY_SCHEDULE = {
+    0: "promise",   # Lundi
+    1: "proverbe",  # Mardi
+    2: "jesus",     # Mercredi
+    3: "psaume",    # Jeudi
+    4: "promise",   # Vendredi
+    5: "proverbe",  # Samedi
+    6: "psaume",    # Dimanche
+}
 
 
 # ---------------------------------------------------
@@ -180,8 +192,8 @@ def make_image(text, ref):
         lines  = wrap_text(draw, text, font, max_w)
         line_h = int(size * 1.35)
         if line_h * len(lines) <= max_h:
-            chosen_font = font
-            chosen_lines = lines
+            chosen_font   = font
+            chosen_lines  = lines
             chosen_line_h = line_h
             break
 
@@ -204,8 +216,8 @@ def make_image(text, ref):
     tiny  = ImageFont.truetype(FONT_SANS, 28)
 
     draw.line([(pad_x, H - 260), (W - pad_x, H - 260)], fill=(150, 130, 70), width=2)
-    draw.text((pad_x, H - 220), ref,      font=small, fill=(220, 220, 230))
-    draw.text((pad_x, H - 180), "LSG 1910", font=tiny, fill=(170, 170, 180))
+    draw.text((pad_x, H - 220), ref,        font=small, fill=(220, 220, 230))
+    draw.text((pad_x, H - 180), "LSG 1910", font=tiny,  fill=(170, 170, 180))
 
     wm_w = draw.textlength(WATERMARK, font=tiny)
     draw.text((W - pad_x - wm_w, H - 180), WATERMARK, font=tiny, fill=(150, 150, 160))
@@ -216,12 +228,12 @@ def make_image(text, ref):
 
 
 # ---------------------------------------------------
-# SELECÇÃO EM ROTAÇÃO
+# SÉLECTION PAR JOUR
 # ---------------------------------------------------
 def load_list(path):
     arr = load_json(path)
     if not arr:
-        raise RuntimeError(f"Lista vazia: {path}")
+        raise RuntimeError(f"Liste vide : {path}")
     return arr
 
 
@@ -235,20 +247,22 @@ def reshuffle_if_needed(path, index):
 
 
 def pick_from_category(cat, progress):
-    index      = progress.get(cat["key"], 0)
-    arr, index = reshuffle_if_needed(cat["file"], index)
-    book, ch, v = arr[index]
+    index        = progress.get(cat["key"], 0)
+    arr, index   = reshuffle_if_needed(cat["file"], index)
+    book, ch, v  = arr[index]
     progress[cat["key"]] = index + 1
     return book, ch, v
 
 
 def main():
-    progress   = load_json(PROGRESS_FILE)
-    cat_index  = progress.get("cat_index", 0) % len(CATEGORIES)
-    cat        = CATEGORIES[cat_index]
+    progress = load_json(PROGRESS_FILE)
+
+    # Choisit la catégorie selon le jour de la semaine
+    weekday = datetime.datetime.utcnow().weekday()  # 0=lundi … 6=dimanche
+    cat_name = DAY_SCHEDULE[weekday]
+    cat      = CATEGORIES[cat_name]
 
     book, ch, v = pick_from_category(cat, progress)
-    progress["cat_index"] = (cat_index + 1) % len(CATEGORIES)
 
     book_data = load_book(book)
     raw_text  = book_data[str(ch)][str(v)]
