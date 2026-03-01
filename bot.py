@@ -132,25 +132,6 @@ def send_photo(path, caption):
         )
     r.raise_for_status()
 
-    # Desafixar todas as mensagens anteriores
-    requests.post(
-        f"https://api.telegram.org/bot{TOKEN}/unpinAllChatMessages",
-        data={"chat_id": CHANNEL},
-        timeout=10
-    )
-
-    # Fixar apenas a nova mensagem
-    message_id = r.json()["result"]["message_id"]
-    requests.post(
-        f"https://api.telegram.org/bot{TOKEN}/pinChatMessage",
-        data={
-            "chat_id": CHANNEL,
-            "message_id": message_id,
-            "disable_notification": True
-        },
-        timeout=10
-    )
-
 
 # ---------------------------------------------------
 # IMAGE
