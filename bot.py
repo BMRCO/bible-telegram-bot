@@ -132,6 +132,18 @@ def send_photo(path, caption):
         )
     r.raise_for_status()
 
+    # Fixar a mensagem no canal automaticamente
+    message_id = r.json()["result"]["message_id"]
+    requests.post(
+        f"https://api.telegram.org/bot{TOKEN}/pinChatMessage",
+        data={
+            "chat_id": CHANNEL,
+            "message_id": message_id,
+            "disable_notification": True  # sem notificação de "mensagem fixada"
+        },
+        timeout=10
+    )
+
 
 # ---------------------------------------------------
 # IMAGE
