@@ -13,7 +13,9 @@ PROMISES_LIST = "promesses_curated.json"
 JESUS_LIST = "jesus_curated.json"
 BIBLE_DIR = "bible"
 
-FONT_SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
+# EB Garamond desde o repositório
+FONT_SERIF = "fonts/EBGaramond-Regular.ttf"
+FONT_ITALIC = "fonts/EBGaramond-Italic.ttf"
 FONT_SANS = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 WATERMARK = "@appbible"
@@ -22,26 +24,22 @@ MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
 
 
 # ---------------------------------------------------
-# CLEAN TEXT (seguro + francês)
+# CLEAN TEXT
 # ---------------------------------------------------
 def clean_text(text: str) -> str:
     if not text:
         return ""
-
     text = re.sub(r'\\\+?w\b', '', text)
     text = re.sub(r'strong="[^"]+"', '', text)
     text = re.sub(r'\|[^ \t]+', '', text)
     text = re.sub(r'\\[a-zA-Z0-9]+\*?', '', text)
     text = re.sub(r'\s+', ' ', text).strip()
-
     text = re.sub(r'(^|\. )A ', r'\1À ', text)
     text = re.sub(r'\s*([;:?!])', r' \1', text)
-    text = text.replace("'", "'")
-
+    text = text.replace("'", "\u2019")
     if not text.endswith(('.', '!', '?')):
         text += '.'
-
-    return f"« {text} »"
+    return f"\u00ab {text} \u00bb"
 
 
 # ---------------------------------------------------
@@ -76,12 +74,10 @@ def load_book(book_name):
 
 
 # ---------------------------------------------------
-# ENVIO COM BOUTON MINI APP ← NOVO
+# ENVIO COM BOUTON MINI APP
 # ---------------------------------------------------
 def send_photo(path, caption):
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
-
-    # Inline button que ouvre la Mini App
     reply_markup = json.dumps({
         "inline_keyboard": [[
             {
@@ -90,7 +86,6 @@ def send_photo(path, caption):
             }
         ]]
     })
-
     with open(path, "rb") as f:
         r = requests.post(
             url,
@@ -99,7 +94,7 @@ def send_photo(path, caption):
                 "caption": caption,
                 "parse_mode": "HTML",
                 "disable_web_page_preview": True,
-                "reply_markup": reply_markup  # ← NOVO
+                "reply_markup": reply_markup
             },
             files={"photo": f},
             timeout=30
@@ -108,19 +103,17 @@ def send_photo(path, caption):
 
 
 # ---------------------------------------------------
-# SIGNATURE BACKGROUND
+# BACKGROUND
 # ---------------------------------------------------
 def make_background(W, H):
     img = Image.new("RGB", (W, H))
     draw = ImageDraw.Draw(img)
-
     for y in range(H):
         t = y / H
         r = int(10 + t * 18)
         g = int(10 + t * 18)
         b = int(18 + t * 25)
         draw.line([(0, y), (W, y)], fill=(r, g, b))
-
     return img.filter(ImageFilter.GaussianBlur(0.8))
 
 
@@ -128,7 +121,6 @@ def wrap_text(draw, text, font, max_w):
     words = text.split()
     if not words:
         return [""]
-
     lines = []
     current = words[0]
     for w in words[1:]:
@@ -142,47 +134,52 @@ def wrap_text(draw, text, font, max_w):
     return lines
 
 
+# ---------------------------------------------------
+# IMAGEM COM EB GARAMOND
+# ---------------------------------------------------
 def make_image(text, ref):
     W, H = 1080, 1080
     img = make_background(W, H)
     draw = ImageDraw.Draw(img)
 
-    gold = (195, 165, 90)
+    gold  = (195, 165, 90)
     gold2 = (140, 120, 65)
 
     margin = 60
     draw.rounded_rectangle([margin, margin, W - margin, H - margin],
-                           radius=30, outline=gold, width=6)
-
+                            radius=30, outline=gold, width=6)
     inner = margin + 16
     draw.rounded_rectangle([inner, inner, W - inner, H - inner],
-                           radius=26, outline=gold2, width=2)
+                            radius=26, outline=gold2, width=2)
 
-    pad_x = 140
-    top = 190
-    bottom = 350
+    pad_x  = 120
+    top    = 180
+    bottom = 340
+    max_w  = W - 2 * pad_x
+    max_h  = H - top - bottom
 
-    max_w = W - 2 * pad_x
-    max_h = H - top - bottom
-
+    # Auto-fit com EB Garamond Italic (mais elegante para citações)
     chosen_font = None
     chosen_lines = None
     chosen_line_h = None
 
-    for size in range(66, 36, -2):
-        font = ImageFont.truetype(FONT_SERIF, size)
+    for size in range(72, 38, -2):
+        try:
+            font = ImageFont.truetype(FONT_ITALIC, size)
+        except Exception:
+            font = ImageFont.truetype(FONT_SERIF, size)
         lines = wrap_text(draw, text, font, max_w)
-        line_h = int(size * 1.35)
+        line_h = int(size * 1.42)  # leading generoso — estilo Garamond
         if line_h * len(lines) <= max_h:
-            chosen_font = font
+            chosen_font  = font
             chosen_lines = lines
             chosen_line_h = line_h
             break
 
     if chosen_font is None:
-        chosen_font = ImageFont.truetype(FONT_SERIF, 36)
+        chosen_font  = ImageFont.truetype(FONT_SERIF, 38)
         chosen_lines = wrap_text(draw, text, chosen_font, max_w)
-        chosen_line_h = int(36 * 1.35)
+        chosen_line_h = int(38 * 1.42)
 
     total_h = chosen_line_h * len(chosen_lines)
     y = top + max(0, (max_h - total_h) // 2)
@@ -190,20 +187,26 @@ def make_image(text, ref):
     for line in chosen_lines:
         line_w = draw.textlength(line, font=chosen_font)
         x = (W - line_w) // 2
+        # sombra subtil
         draw.text((x + 2, y + 2), line, font=chosen_font, fill=(0, 0, 0))
-        draw.text((x, y), line, font=chosen_font, fill=(245, 245, 245))
+        # texto principal em creme quente
+        draw.text((x, y), line, font=chosen_font, fill=(242, 235, 218))
         y += chosen_line_h
 
-    small = ImageFont.truetype(FONT_SANS, 36)
-    tiny = ImageFont.truetype(FONT_SANS, 28)
+    # Rodapé — referência em EB Garamond Regular
+    try:
+        font_ref  = ImageFont.truetype(FONT_SERIF, 38)
+        font_meta = ImageFont.truetype(FONT_SERIF, 30)
+    except Exception:
+        font_ref  = ImageFont.truetype(FONT_SANS, 36)
+        font_meta = ImageFont.truetype(FONT_SANS, 28)
 
     draw.line([(pad_x, H - 260), (W - pad_x, H - 260)], fill=(150, 130, 70), width=2)
+    draw.text((pad_x, H - 222), ref, font=font_ref, fill=(220, 220, 230))
+    draw.text((pad_x, H - 178), "LSG 1910", font=font_meta, fill=(170, 170, 180))
 
-    draw.text((pad_x, H - 220), ref, font=small, fill=(220, 220, 230))
-    draw.text((pad_x, H - 180), "LSG 1910", font=tiny, fill=(170, 170, 180))
-
-    wm_w = draw.textlength(WATERMARK, font=tiny)
-    draw.text((W - pad_x - wm_w, H - 180), WATERMARK, font=tiny, fill=(150, 150, 160))
+    wm_w = draw.textlength(WATERMARK, font=font_meta)
+    draw.text((W - pad_x - wm_w, H - 178), WATERMARK, font=font_meta, fill=(150, 150, 160))
 
     out = "verse.png"
     img.save(out, "PNG")
@@ -249,12 +252,11 @@ def main():
         progress["next"] = "promise"
 
     book_data = load_book(book)
-    raw_text = book_data[str(ch)][str(v)]
-    text = clean_text(raw_text)
+    raw_text  = book_data[str(ch)][str(v)]
+    text      = clean_text(raw_text)
+    ref       = f"{book} {ch}:{v}"
 
-    ref = f"{book} {ch}:{v}"
-
-    img = make_image(text, ref)
+    img     = make_image(text, ref)
     caption = f"📖 <b>{ref}</b>\n{FIXED_HASHTAGS}"
 
     send_photo(img, caption)
