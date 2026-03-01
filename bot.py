@@ -18,6 +18,7 @@ FONT_SANS = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 WATERMARK = "@appbible"
 FIXED_HASHTAGS = "#LaBible #LSG1910 #versetdujour"
+MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
 
 
 # ---------------------------------------------------
@@ -27,27 +28,19 @@ def clean_text(text: str) -> str:
     if not text:
         return ""
 
-    # remove apenas marcações técnicas
     text = re.sub(r'\\\+?w\b', '', text)
     text = re.sub(r'strong="[^"]+"', '', text)
     text = re.sub(r'\|[^ \t]+', '', text)
     text = re.sub(r'\\[a-zA-Z0-9]+\*?', '', text)
     text = re.sub(r'\s+', ' ', text).strip()
 
-    # A → À no início de frase
     text = re.sub(r'(^|\. )A ', r'\1À ', text)
-
-    # espaço francês antes de ; : ? !
     text = re.sub(r'\s*([;:?!])', r' \1', text)
+    text = text.replace("'", "'")
 
-    # normaliza apóstrofos (sem destruir)
-    text = text.replace("’", "'")
-
-    # ponto final se faltar (antes das aspas)
     if not text.endswith(('.', '!', '?')):
         text += '.'
 
-    # aspas francesas sempre
     return f"« {text} »"
 
 
@@ -82,16 +75,31 @@ def load_book(book_name):
     return data[book_name]
 
 
-def send_photo(path,caption):
+# ---------------------------------------------------
+# ENVIO COM BOUTON MINI APP ← NOVO
+# ---------------------------------------------------
+def send_photo(path, caption):
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
-    with open(path,"rb") as f:
+
+    # Inline button que ouvre la Mini App
+    reply_markup = json.dumps({
+        "inline_keyboard": [[
+            {
+                "text": "📖 Lire dans LaBible.app",
+                "url": MINI_APP_URL
+            }
+        ]]
+    })
+
+    with open(path, "rb") as f:
         r = requests.post(
             url,
             data={
                 "chat_id": CHANNEL,
                 "caption": caption,
                 "parse_mode": "HTML",
-                "disable_web_page_preview": True
+                "disable_web_page_preview": True,
+                "reply_markup": reply_markup  # ← NOVO
             },
             files={"photo": f},
             timeout=30
@@ -150,15 +158,13 @@ def make_image(text, ref):
     draw.rounded_rectangle([inner, inner, W - inner, H - inner],
                            radius=26, outline=gold2, width=2)
 
-    # área editorial
     pad_x = 140
     top = 190
-    bottom = 350  # margem segura para ref/linha
+    bottom = 350
 
     max_w = W - 2 * pad_x
     max_h = H - top - bottom
 
-    # auto-fit
     chosen_font = None
     chosen_lines = None
     chosen_line_h = None
@@ -181,17 +187,13 @@ def make_image(text, ref):
     total_h = chosen_line_h * len(chosen_lines)
     y = top + max(0, (max_h - total_h) // 2)
 
-    # estilo editorial: centrado tipo poesia
     for line in chosen_lines:
         line_w = draw.textlength(line, font=chosen_font)
         x = (W - line_w) // 2
-
-        # sombra subtil
         draw.text((x + 2, y + 2), line, font=chosen_font, fill=(0, 0, 0))
         draw.text((x, y), line, font=chosen_font, fill=(245, 245, 245))
         y += chosen_line_h
 
-    # rodapé
     small = ImageFont.truetype(FONT_SANS, 36)
     tiny = ImageFont.truetype(FONT_SANS, 28)
 
