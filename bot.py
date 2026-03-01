@@ -10,7 +10,7 @@ TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 CHANNEL = os.environ["TELEGRAM_CHANNEL"]
 
 PROGRESS_FILE = "progress.json"
-BIBLE_DIR = "bible"
+BIBLE_FILE = "bible/lsg1910.json"
 
 FONT_SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 FONT_SANS  = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
@@ -64,18 +64,18 @@ DAY_SCHEDULE = {
 def clean_text(text: str) -> str:
     if not text:
         return ""
-    text = re.sub(r'\\\+?w\b', '', text)
-    text = re.sub(r'strong="[^"]+"', '', text)
-    text = re.sub(r'\|[^ \t]+', '', text)
-    text = re.sub(r'\\[a-zA-Z0-9]+\*?', '', text)
+    # Remover marcador de parágrafo
+    text = text.replace("¶", "").strip()
+    # Normalizar espaços
     text = re.sub(r'\s+', ' ', text).strip()
-    text = re.sub(r'(^|\. )A ', r'\1À ', text)
+    # Espaço francês antes de ; : ? !
     text = re.sub(r'\s*([;:?!])', r' \1', text)
-    text = text.replace("'", "'")
+    # Normalizar apóstrofos
+    text = text.replace("'", "\u2019").replace("'", "\u2019")
+    # Ponto final se faltar
     if not text.endswith(('.', '!', '?')):
         text += '.'
     return f"« {text} »"
-
 
 def safe_filename(name: str) -> str:
     t = name.lower()
@@ -101,10 +101,29 @@ def save_json(path, data):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def load_book(book_name):
-    path = f"{BIBLE_DIR}/{safe_filename(book_name)}.json"
-    data = load_json(path)
-    return data[book_name]
+# Index du fichier Bible chargé une seule fois
+_bible_index = None
+
+def get_bible_index():
+    global _bible_index
+    if _bible_index is None:
+        data = load_json(BIBLE_FILE)
+        # Construit un index: {book_name: {chapter: {verse: text}}}
+        _bible_index = {}
+        for v in data["verses"]:
+            bn = v["book_name"]
+            ch = str(v["chapter"])
+            vs = str(v["verse"])
+            if bn not in _bible_index:
+                _bible_index[bn] = {}
+            if ch not in _bible_index[bn]:
+                _bible_index[bn][ch] = {}
+            _bible_index[bn][ch][vs] = v["text"]
+    return _bible_index
+
+def load_verse(book_name, chapter, verse):
+    index = get_bible_index()
+    return index[book_name][str(chapter)][str(verse)]
 
 
 # ---------------------------------------------------
@@ -264,8 +283,7 @@ def main():
 
     book, ch, v = pick_from_category(cat, progress)
 
-    book_data = load_book(book)
-    raw_text  = book_data[str(ch)][str(v)]
+    raw_text = load_verse(book, ch, v)
     text      = clean_text(raw_text)
     ref       = f"{book} {ch}:{v}"
 
