@@ -44,17 +44,23 @@ CATEGORIES = {
         "emoji": "💡",
         "tag":   "#Sagesse"
     },
+    "prophetie": {
+        "key":   "i_prophetie",
+        "file":  "propheties_curated.json",
+        "emoji": "🔯",
+        "tag":   "#Prophétie"
+    },
 }
 
 # Rotation par jour de la semaine (0=lundi … 6=dimanche)
 DAY_SCHEDULE = {
-    0: "promise",   # Lundi
-    1: "proverbe",  # Mardi
-    2: "jesus",     # Mercredi
-    3: "psaume",    # Jeudi
-    4: "promise",   # Vendredi
-    5: "proverbe",  # Samedi
-    6: "psaume",    # Dimanche
+    0: "promise",    # Lundi
+    1: "proverbe",   # Mardi
+    2: "jesus",      # Mercredi
+    3: "psaume",     # Jeudi
+    4: "prophetie",  # Vendredi
+    5: "proverbe",   # Samedi
+    6: "psaume",     # Dimanche
 }
 
 
