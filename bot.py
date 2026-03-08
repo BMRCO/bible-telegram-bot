@@ -172,13 +172,13 @@ def post_to_facebook(image_path, ref, text, cat):
         f"#LaBible #LSG1910 #VersetDuJour #Bible {cat['tag']} #Foi #Chrétien"
     )
 
-    # 1. Upload de l'image
+    # Upload image + publication en une seule requête
     upload_url = f"https://graph.facebook.com/v19.0/{FB_PAGE_ID}/photos"
     with open(image_path, "rb") as f:
         r = requests.post(
             upload_url,
             data={
-                "caption": fb_message,
+                "message": fb_message,
                 "access_token": FB_PAGE_TOKEN,
             },
             files={"source": f},
