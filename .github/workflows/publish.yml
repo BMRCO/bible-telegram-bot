@@ -2,8 +2,8 @@ name: Post daily verse
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 7 * * *"   # ManhÃ£: 07:00 UTC (FR: 08:00 inverno / 09:00 verÃ£o)
-    - cron: "0 18 * * *"  # Noite: 18:00 UTC (FR: 19:00 inverno / 20:00 verÃ£o)
+    - cron: "0 7 * * *"   # Matin: 07:00 UTC (FR: 08:00 hiver / 09:00 été)
+    - cron: "0 18 * * *"  # Soir: 18:00 UTC (FR: 19:00 hiver / 20:00 été)
 permissions:
   contents: write
 jobs:
@@ -24,6 +24,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
         run: python bot.py
       - name: Commit updates (progress + lists if changed)
         run: |
