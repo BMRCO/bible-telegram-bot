@@ -19,7 +19,7 @@ BIBLE_FILE = "bible/lsg1910.json"
 FONT_SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 FONT_SANS  = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
-WATERMARK    = "@appbible"
+WATERMARK    = "LaBible.app"
 MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
 
 # Categorias disponíveis
