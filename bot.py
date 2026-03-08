@@ -9,6 +9,10 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 CHANNEL = os.environ["TELEGRAM_CHANNEL"]
 
+# Meta Facebook
+FB_PAGE_ID    = os.environ.get("FB_PAGE_ID", "1018605031335601")
+FB_PAGE_TOKEN = os.environ.get("FB_PAGE_TOKEN", "")
+
 PROGRESS_FILE = "progress.json"
 BIBLE_FILE = "bible/lsg1910.json"
 
@@ -70,15 +74,10 @@ DAY_SCHEDULE = {
 def clean_text(text: str) -> str:
     if not text:
         return ""
-    # Remover marcador de parágrafo
     text = text.replace("¶", "").strip()
-    # Normalizar espaços
     text = re.sub(r'\s+', ' ', text).strip()
-    # Espaço francês antes de ; : ? !
     text = re.sub(r'\s*([;:?!])', r' \1', text)
-    # Normalizar apóstrofos
     text = text.replace("'", "\u2019").replace("'", "\u2019")
-    # Ponto final se faltar
     if not text.endswith(('.', '!', '?')):
         text += '.'
     return f"« {text} »"
@@ -114,7 +113,6 @@ def get_bible_index():
     global _bible_index
     if _bible_index is None:
         data = load_json(BIBLE_FILE)
-        # Construit un index: {book_name: {chapter: {verse: text}}}
         _bible_index = {}
         for v in data["verses"]:
             bn = v["book_name"]
@@ -133,7 +131,7 @@ def load_verse(book_name, chapter, verse):
 
 
 # ---------------------------------------------------
-# ENVOI AVEC BOUTON MINI APP
+# ENVOI TELEGRAM
 # ---------------------------------------------------
 def send_photo(path, caption):
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
@@ -156,6 +154,41 @@ def send_photo(path, caption):
             timeout=30
         )
     r.raise_for_status()
+
+
+# ---------------------------------------------------
+# ENVOI FACEBOOK
+# ---------------------------------------------------
+def post_to_facebook(image_path, ref, text, cat):
+    if not FB_PAGE_TOKEN:
+        print("FB_PAGE_TOKEN non défini — publication Facebook ignorée.")
+        return
+
+    # Texte du post Facebook
+    fb_message = (
+        f"{cat['emoji']} {ref}\n\n"
+        f"{text}\n\n"
+        f"📖 Lisez la Bible complète gratuitement sur labible.app\n\n"
+        f"#LaBible #LSG1910 #VersetDuJour #Bible {cat['tag']} #Foi #Chrétien"
+    )
+
+    # 1. Upload de l'image
+    upload_url = f"https://graph.facebook.com/v19.0/{FB_PAGE_ID}/photos"
+    with open(image_path, "rb") as f:
+        r = requests.post(
+            upload_url,
+            data={
+                "caption": fb_message,
+                "access_token": FB_PAGE_TOKEN,
+            },
+            files={"source": f},
+            timeout=60
+        )
+
+    if r.status_code == 200:
+        print(f"✅ Facebook publié : {r.json()}")
+    else:
+        print(f"❌ Erreur Facebook : {r.status_code} — {r.text}")
 
 
 # ---------------------------------------------------
@@ -282,8 +315,7 @@ def pick_from_category(cat, progress):
 def main():
     progress = load_json(PROGRESS_FILE)
 
-    # Choisit la catégorie selon le jour de la semaine
-    weekday = datetime.datetime.utcnow().weekday()  # 0=lundi … 6=dimanche
+    weekday  = datetime.datetime.utcnow().weekday()
     cat_name = DAY_SCHEDULE[weekday]
     cat      = CATEGORIES[cat_name]
 
@@ -296,7 +328,12 @@ def main():
     img     = make_image(text, ref)
     caption = f"{cat['emoji']} <b>{ref}</b>\n#LaBible #LSG1910 #versetdujour {cat['tag']}"
 
+    # Publier sur Telegram
     send_photo(img, caption)
+
+    # Publier sur Facebook
+    post_to_facebook(img, ref, text, cat)
+
     save_json(PROGRESS_FILE, progress)
 
 
