@@ -2,8 +2,9 @@ name: Post daily verse
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 7 * * *"   # Matin: 07:00 UTC (FR: 08:00 hiver / 09:00 été)
-    - cron: "0 18 * * *"  # Soir: 18:00 UTC (FR: 19:00 hiver / 20:00 été)
+    - cron: "0 7 * * *"   # Matin: 07:00 UTC (FR: 08:00 hiver / 09:00 Ã©tÃ©)
+    - cron: "0 12 * * *"  # Midi: 12:00 UTC (FR: 13:00 hiver / 14:00 Ã©tÃ©)
+    - cron: "0 18 * * *"  # Soir: 18:00 UTC (FR: 19:00 hiver / 20:00 Ã©tÃ©)
 permissions:
   contents: write
 jobs:
