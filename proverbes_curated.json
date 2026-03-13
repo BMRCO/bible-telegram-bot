@@ -1,39 +1,187 @@
 [
-  ["Proverbes", 1, 7],
-  ["Proverbes", 2, 6],
-  ["Proverbes", 3, 5],
-  ["Proverbes", 3, 6],
-  ["Proverbes", 3, 7],
-  ["Proverbes", 3, 9],
-  ["Proverbes", 3, 12],
-  ["Proverbes", 4, 7],
-  ["Proverbes", 4, 23],
-  ["Proverbes", 6, 23],
-  ["Proverbes", 10, 12],
-  ["Proverbes", 11, 2],
-  ["Proverbes", 11, 14],
-  ["Proverbes", 12, 15],
-  ["Proverbes", 13, 20],
-  ["Proverbes", 14, 12],
-  ["Proverbes", 15, 1],
-  ["Proverbes", 15, 13],
-  ["Proverbes", 16, 3],
-  ["Proverbes", 16, 9],
-  ["Proverbes", 16, 18],
-  ["Proverbes", 17, 17],
-  ["Proverbes", 18, 10],
-  ["Proverbes", 18, 24],
-  ["Proverbes", 19, 21],
-  ["Proverbes", 20, 7],
-  ["Proverbes", 21, 23],
-  ["Proverbes", 22, 1],
-  ["Proverbes", 22, 6],
-  ["Proverbes", 23, 7],
-  ["Proverbes", 24, 10],
-  ["Proverbes", 24, 16],
-  ["Proverbes", 25, 11],
-  ["Proverbes", 27, 1],
-  ["Proverbes", 27, 17],
-  ["Proverbes", 28, 13],
-  ["Proverbes", 29, 11]
+  [
+    "Proverbes",
+    1,
+    7
+  ],
+  [
+    "Proverbes",
+    2,
+    6
+  ],
+  [
+    "Proverbes",
+    3,
+    5
+  ],
+  [
+    "Proverbes",
+    3,
+    6
+  ],
+  [
+    "Proverbes",
+    3,
+    7
+  ],
+  [
+    "Proverbes",
+    3,
+    9
+  ],
+  [
+    "Proverbes",
+    3,
+    12
+  ],
+  [
+    "Proverbes",
+    4,
+    7
+  ],
+  [
+    "Proverbes",
+    4,
+    23
+  ],
+  [
+    "Proverbes",
+    6,
+    23
+  ],
+  [
+    "Proverbes",
+    10,
+    12
+  ],
+  [
+    "Proverbes",
+    11,
+    2
+  ],
+  [
+    "Proverbes",
+    11,
+    14
+  ],
+  [
+    "Proverbes",
+    12,
+    15
+  ],
+  [
+    "Proverbes",
+    13,
+    20
+  ],
+  [
+    "Proverbes",
+    14,
+    12
+  ],
+  [
+    "Proverbes",
+    15,
+    1
+  ],
+  [
+    "Proverbes",
+    15,
+    13
+  ],
+  [
+    "Proverbes",
+    16,
+    3
+  ],
+  [
+    "Proverbes",
+    16,
+    9
+  ],
+  [
+    "Proverbes",
+    16,
+    18
+  ],
+  [
+    "Proverbes",
+    17,
+    17
+  ],
+  [
+    "Proverbes",
+    18,
+    10
+  ],
+  [
+    "Proverbes",
+    18,
+    24
+  ],
+  [
+    "Proverbes",
+    19,
+    21
+  ],
+  [
+    "Proverbes",
+    20,
+    7
+  ],
+  [
+    "Proverbes",
+    21,
+    23
+  ],
+  [
+    "Proverbes",
+    22,
+    1
+  ],
+  [
+    "Proverbes",
+    22,
+    6
+  ],
+  [
+    "Proverbes",
+    23,
+    7
+  ],
+  [
+    "Proverbes",
+    24,
+    10
+  ],
+  [
+    "Proverbes",
+    24,
+    16
+  ],
+  [
+    "Proverbes",
+    25,
+    11
+  ],
+  [
+    "Proverbes",
+    27,
+    1
+  ],
+  [
+    "Proverbes",
+    27,
+    17
+  ],
+  [
+    "Proverbes",
+    28,
+    13
+  ],
+  [
+    "Proverbes",
+    29,
+    11
+  ]
 ]
