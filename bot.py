@@ -29,14 +29,9 @@ WATERMARK    = "LaBible.app"
 MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
 APP_URL      = "https://labible.app"
 
-# Hashtags de base communs (Instagram)
+# Hashtags de base communs (Instagram — 3 fixas)
 HASHTAGS_BASE_IG = [
-    "#LaBible", "#LSG1910", "#VersetDuJour", "#Bible", "#Chrétien",
-    "#Foi", "#Évangile", "#Jésus", "#Dieu", "#Prière",
-    "#BibleFrancais", "#ChretienFrancais", "#VersetBiblique", "#Parole",
-    "#ParoleDeDieu", "#LecturesBibliques", "#CommunautéChrétienne",
-    "#FrancaisChretien", "#Spiritualité", "#VieChretienne",
-    "#GraceDeJésus", "#JésusChrist", "#Amen", "#Benediction", "#Louange",
+    "#LaBible", "#VersetDuJour", "#Bible",
 ]
 
 # Hashtags de base communs (Facebook — 5 max)
@@ -44,13 +39,13 @@ HASHTAGS_BASE_FB = [
     "#LaBible", "#VersetDuJour", "#Bible", "#Foi", "#BibleFrancais",
 ]
 
-# Hashtags spécifiques par catégorie (Instagram — 5 supplémentaires)
+# Hashtags spécifiques par catégorie (Instagram — 2 supplémentaires = 5 total)
 HASHTAGS_CAT_IG = {
-    "promise":   ["#Promesse", "#PromesseDeDieu", "#Espérance", "#Confiance", "#Refuge"],
-    "jesus":     ["#ParoleDeJésus", "#JésusVivant", "#BonneNouvelle", "#Rédemption", "#GraceDeJésus"],
-    "psaume":    ["#Psaume", "#Adoration", "#Cantique", "#PsaumeDeDieu", "#CulteEtLouange"],
-    "proverbe":  ["#Sagesse", "#ProverbesBiblique", "#SagesseDeJésus", "#Conseil", "#Discernement"],
-    "prophetie": ["#Prophétie", "#Révélation", "#ProphetieBiblique", "#Accomplissement", "#EspoirEnDieu"],
+    "promise":   ["#Promesse", "#Espérance"],
+    "jesus":     ["#ParoleDeJésus", "#Foi"],
+    "psaume":    ["#Psaume", "#Louange"],
+    "proverbe":  ["#Sagesse", "#Confiance"],
+    "prophetie": ["#Prophétie", "#Espérance"],
 }
 
 # Hashtags spécifiques par catégorie (Facebook — 2 supplémentaires)
@@ -111,7 +106,7 @@ DAY_SCHEDULE = {
 def build_hashtags_ig(cat_name):
     specific = HASHTAGS_CAT_IG.get(cat_name, [])
     all_tags = HASHTAGS_BASE_IG + specific
-    return " ".join(all_tags[:30])
+    return " ".join(all_tags[:5])
 
 
 def build_hashtags_fb(cat_name):
