@@ -29,6 +29,39 @@ WATERMARK    = "LaBible.app"
 MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
 APP_URL      = "https://labible.app"
 
+# Hashtags de base communs (Instagram)
+HASHTAGS_BASE_IG = [
+    "#LaBible", "#LSG1910", "#VersetDuJour", "#Bible", "#Chrétien",
+    "#Foi", "#Évangile", "#Jésus", "#Dieu", "#Prière",
+    "#BibleFrancais", "#ChretienFrancais", "#VersetBiblique", "#Parole",
+    "#ParoleDeDieu", "#LecturesBibliques", "#CommunautéChrétienne",
+    "#FrancaisChretien", "#Spiritualité", "#VieChretienne",
+    "#GraceDeJésus", "#JésusChrist", "#Amen", "#Benediction", "#Louange",
+]
+
+# Hashtags de base communs (Facebook — 5 max)
+HASHTAGS_BASE_FB = [
+    "#LaBible", "#VersetDuJour", "#Bible", "#Foi", "#BibleFrancais",
+]
+
+# Hashtags spécifiques par catégorie (Instagram — 5 supplémentaires)
+HASHTAGS_CAT_IG = {
+    "promise":   ["#Promesse", "#PromesseDeDieu", "#Espérance", "#Confiance", "#Refuge"],
+    "jesus":     ["#ParoleDeJésus", "#JésusVivant", "#BonneNouvelle", "#Rédemption", "#GraceDeJésus"],
+    "psaume":    ["#Psaume", "#Adoration", "#Cantique", "#PsaumeDeDieu", "#CulteEtLouange"],
+    "proverbe":  ["#Sagesse", "#ProverbesBiblique", "#SagesseDeJésus", "#Conseil", "#Discernement"],
+    "prophetie": ["#Prophétie", "#Révélation", "#ProphetieBiblique", "#Accomplissement", "#EspoirEnDieu"],
+}
+
+# Hashtags spécifiques par catégorie (Facebook — 2 supplémentaires)
+HASHTAGS_CAT_FB = {
+    "promise":   ["#Promesse", "#Espérance"],
+    "jesus":     ["#ParoleDeJésus", "#Évangile"],
+    "psaume":    ["#Psaume", "#Louange"],
+    "proverbe":  ["#Sagesse", "#Proverbes"],
+    "prophetie": ["#Prophétie", "#Révélation"],
+}
+
 # Categorias disponíveis
 CATEGORIES = {
     "promise": {
@@ -73,6 +106,18 @@ DAY_SCHEDULE = {
     5: "proverbe",   # Samedi
     6: "psaume",     # Dimanche
 }
+
+
+def build_hashtags_ig(cat_name):
+    specific = HASHTAGS_CAT_IG.get(cat_name, [])
+    all_tags = HASHTAGS_BASE_IG + specific
+    return " ".join(all_tags[:30])
+
+
+def build_hashtags_fb(cat_name):
+    specific = HASHTAGS_CAT_FB.get(cat_name, [])
+    all_tags = HASHTAGS_BASE_FB + specific
+    return " ".join(all_tags[:7])
 
 
 # ---------------------------------------------------
@@ -155,16 +200,18 @@ def send_photo(path, caption):
 # ---------------------------------------------------
 # ENVOI FACEBOOK
 # ---------------------------------------------------
-def post_to_facebook(image_path, ref, text, cat):
+def post_to_facebook(image_path, ref, text, cat, cat_name):
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN non défini — publication Facebook ignorée.")
         return
+
+    hashtags = build_hashtags_fb(cat_name)
 
     fb_message = (
         f"{cat['emoji']} Verset du jour — {ref}\n\n"
         f"{text}\n\n"
         f"📖 Lisez la Bible complète gratuitement sur {APP_URL}\n\n"
-        f"#LaBible #LSG1910 #VersetDuJour #Bible {cat['tag']} #Foi #Chrétien"
+        f"{hashtags}"
     )
 
     upload_url = f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/photos"
@@ -214,7 +261,7 @@ def upload_to_imgbb(image_path):
 # ---------------------------------------------------
 # ENVOI INSTAGRAM
 # ---------------------------------------------------
-def post_to_instagram(image_path, ref, text, cat):
+def post_to_instagram(image_path, ref, text, cat, cat_name):
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN non défini — publication Instagram ignorée.")
         return
@@ -227,11 +274,13 @@ def post_to_instagram(image_path, ref, text, cat):
     if not image_url:
         return
 
+    hashtags = build_hashtags_ig(cat_name)
+
     ig_caption = (
         f"{cat['emoji']} Verset du jour — {ref}\n\n"
         f"{text}\n\n"
         f"📖 Bible complète gratuite sur {APP_URL}\n\n"
-        f"#LaBible #LSG1910 #VersetDuJour #Bible {cat['tag']} #Foi #Chrétien #Évangile"
+        f"{hashtags}"
     )
 
     # Étape 2 — Créer le container Instagram
@@ -417,10 +466,10 @@ def main():
     send_photo(img, caption)
 
     # Publier sur Facebook
-    post_to_facebook(img, ref, text, cat)
+    post_to_facebook(img, ref, text, cat, cat_name)
 
     # Publier sur Instagram
-    post_to_instagram(img, ref, text, cat)
+    post_to_instagram(img, ref, text, cat, cat_name)
 
     save_json(PROGRESS_FILE, progress)
     print("✅ Terminé.")
