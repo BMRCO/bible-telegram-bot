@@ -269,7 +269,6 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
         print("⚠️  IMGBB_API_KEY non défini — publication Instagram ignorée.")
         return
 
-    # Étape 1 — Upload image sur ImgBB
     image_url = upload_to_imgbb(image_path)
     if not image_url:
         return
@@ -283,7 +282,6 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
         f"{hashtags}"
     )
 
-    # Étape 2 — Créer le container Instagram
     container_url = f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media"
     r = requests.post(
         container_url,
@@ -302,7 +300,6 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
     container_id = r.json().get("id")
     print(f"✅ Container Instagram créé : {container_id}")
 
-    # Étape 3 — Publier le container
     publish_url = f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish"
     r2 = requests.post(
         publish_url,
@@ -321,25 +318,43 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
 
 
 # ---------------------------------------------------
-# IMAGE
+# IMAGE — palettes simples, design limpo
 # ---------------------------------------------------
-def make_background(W, H):
-    img = Image.new("RGB", (W, H))
+
+# Palettes : (fundo_topo, fundo_base, cor_borda, cor_ref, cor_watermark)
+PALETTES = [
+    # Azul escuro — ouro (original)
+    ((10, 14, 30),  (6,  10, 22),  (195, 165,  90), (195, 165,  90), (130, 120, 80)),
+    # Azul marinho frio — azul claro
+    ((8,  18, 38),  (5,  12, 28),  (160, 190, 220), (160, 190, 220), (100, 130, 160)),
+    # Verde floresta — verde claro
+    ((10, 22, 14),  (6,  15, 10),  (140, 195, 120), (140, 195, 120), (90,  140,  80)),
+    # Bordeaux — laranja quente
+    ((28, 10, 14),  (18,  6,  9),  (210, 160, 120), (210, 160, 120), (150, 110,  80)),
+    # Preto puro — ouro
+    ((10, 10, 10),  (4,   4,  4),  (200, 180, 120), (200, 180, 120), (120, 110,  70)),
+    # Azul royal — ouro
+    ((10, 20, 50),  (6,  14, 36),  (200, 165,  80), (200, 165,  80), (130, 110,  55)),
+]
+
+
+def _gradient(W, H, top, bot):
+    img  = Image.new("RGB", (W, H))
     draw = ImageDraw.Draw(img)
     for y in range(H):
         t = y / H
-        r = int(10 + t * 18)
-        g = int(10 + t * 18)
-        b = int(18 + t * 25)
+        r = int(top[0] + t * (bot[0] - top[0]))
+        g = int(top[1] + t * (bot[1] - top[1]))
+        b = int(top[2] + t * (bot[2] - top[2]))
         draw.line([(0, y), (W, y)], fill=(r, g, b))
-    return img.filter(ImageFilter.GaussianBlur(0.8))
+    return img
 
 
 def wrap_text(draw, text, font, max_w):
     words = text.split()
     if not words:
         return [""]
-    lines = []
+    lines   = []
     current = words[0]
     for w in words[1:]:
         test = current + " " + w
@@ -353,61 +368,73 @@ def wrap_text(draw, text, font, max_w):
 
 
 def make_image(text, ref):
+    palette                                          = random.choice(PALETTES)
+    bg_top, bg_bot, color_border, color_ref, color_wm = palette
+
     W, H = 1080, 1080
-    img  = make_background(W, H)
+    img  = _gradient(W, H, bg_top, bg_bot)
     draw = ImageDraw.Draw(img)
 
-    gold  = (195, 165, 90)
-    gold2 = (140, 120, 65)
+    # Borda exterior
+    m = 60
+    draw.rounded_rectangle(
+        [m, m, W - m, H - m],
+        radius=30, outline=color_border, width=6
+    )
+    # Borda interior
+    inner = m + 16
+    draw.rounded_rectangle(
+        [inner, inner, W - inner, H - inner],
+        radius=24, outline=color_border, width=1
+    )
 
-    margin = 60
-    draw.rounded_rectangle([margin, margin, W - margin, H - margin],
-                            radius=30, outline=gold, width=6)
-    inner = margin + 16
-    draw.rounded_rectangle([inner, inner, W - inner, H - inner],
-                            radius=26, outline=gold2, width=2)
-
+    # Margens do texto
     pad_x  = 140
-    top    = 190
-    bottom = 350
+    top    = 180
+    bottom = 330
     max_w  = W - 2 * pad_x
     max_h  = H - top - bottom
 
-    chosen_font = chosen_lines = chosen_line_h = None
-    for size in range(66, 36, -2):
-        font   = ImageFont.truetype(FONT_SERIF, size)
-        lines  = wrap_text(draw, text, font, max_w)
-        line_h = int(size * 1.35)
-        if line_h * len(lines) <= max_h:
-            chosen_font   = font
-            chosen_lines  = lines
-            chosen_line_h = line_h
+    # Escolher tamanho de fonte que caiba
+    chosen_font = chosen_lines = chosen_lh = None
+    for size in range(66, 34, -2):
+        font  = ImageFont.truetype(FONT_SERIF, size)
+        lines = wrap_text(draw, text, font, max_w)
+        lh    = int(size * 1.38)
+        if lh * len(lines) <= max_h:
+            chosen_font, chosen_lines, chosen_lh = font, lines, lh
             break
 
     if chosen_font is None:
-        chosen_font   = ImageFont.truetype(FONT_SERIF, 36)
-        chosen_lines  = wrap_text(draw, text, chosen_font, max_w)
-        chosen_line_h = int(36 * 1.35)
+        chosen_font  = ImageFont.truetype(FONT_SERIF, 34)
+        chosen_lines = wrap_text(draw, text, chosen_font, max_w)
+        chosen_lh    = int(34 * 1.38)
 
-    total_h = chosen_line_h * len(chosen_lines)
-    y = top + max(0, (max_h - total_h) // 2)
+    # Centrar verticalmente
+    total_h = chosen_lh * len(chosen_lines)
+    y       = top + max(0, (max_h - total_h) // 2)
 
     for line in chosen_lines:
-        line_w = draw.textlength(line, font=chosen_font)
-        x = (W - line_w) // 2
-        draw.text((x + 2, y + 2), line, font=chosen_font, fill=(0, 0, 0))
-        draw.text((x, y),         line, font=chosen_font, fill=(245, 245, 245))
-        y += chosen_line_h
+        lw = draw.textlength(line, font=chosen_font)
+        x  = (W - lw) // 2
+        draw.text((x + 2, y + 2), line, font=chosen_font, fill=(0, 0, 0))       # sombra
+        draw.text((x,     y    ), line, font=chosen_font, fill=(245, 245, 245))  # texto
+        y += chosen_lh
 
+    # Linha separadora
+    draw.line([(pad_x, H - 260), (W - pad_x, H - 260)],
+              fill=color_border, width=2)
+
+    # Referência e LSG 1910
     small = ImageFont.truetype(FONT_SANS, 36)
     tiny  = ImageFont.truetype(FONT_SANS, 28)
 
-    draw.line([(pad_x, H - 260), (W - pad_x, H - 260)], fill=(150, 130, 70), width=2)
-    draw.text((pad_x, H - 220), ref,        font=small, fill=(220, 220, 230))
-    draw.text((pad_x, H - 180), "LSG 1910", font=tiny,  fill=(170, 170, 180))
+    draw.text((pad_x, H - 230), ref,        font=small, fill=color_ref)
+    draw.text((pad_x, H - 185), "LSG 1910", font=tiny,  fill=color_wm)
 
-    wm_w = draw.textlength(WATERMARK, font=tiny)
-    draw.text((W - pad_x - wm_w, H - 180), WATERMARK, font=tiny, fill=(150, 150, 160))
+    # Watermark à direita
+    ww = draw.textlength(WATERMARK, font=tiny)
+    draw.text((W - pad_x - ww, H - 185), WATERMARK, font=tiny, fill=color_wm)
 
     out = "verse.png"
     img.save(out, "PNG")
