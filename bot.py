@@ -263,11 +263,11 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN non défini — publication Instagram ignorée.")
         return
-    if not CLOUDINARY_CLOUD_NAME:
-        print("⚠️  CLOUDINARY_* non définis — publication Instagram ignorée.")
+    if not IMGBB_API_KEY:
+        print("⚠️  IMGBB_API_KEY non défini — publication Instagram ignorée.")
         return
 
-    image_url = upload_to_cloudinary(image_path)
+    image_url = upload_to_imgbb(image_path)
     if not image_url:
         return
 
