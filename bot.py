@@ -27,7 +27,7 @@ FONT_SANS  = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 WATERMARK    = "LaBible.app"
 MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
-APP_URL      = "https://labible.app"
+APP_URL      = "https://www.labible.app"
 
 # Hashtags de base communs (Instagram — 3 fixas)
 HASHTAGS_BASE_IG = [
@@ -203,7 +203,7 @@ def post_to_facebook(image_path, ref, text, cat, cat_name):
     hashtags = build_hashtags_fb(cat_name)
 
     fb_message = (
-        f"{cat['emoji']} Verset du jour — {ref}\n\n"
+        f"{cat['emoji']} {ref}\n\n"
         f"{text}\n\n"
         f"📖 Lisez la Bible complète gratuitement sur {APP_URL}\n\n"
         f"{hashtags}"
@@ -247,6 +247,9 @@ def upload_to_imgbb(image_path):
     if r.status_code == 200:
         url = r.json()["data"]["url"]
         print(f"✅ Image uploadée sur ImgBB : {url}")
+        # Attendre que l'image soit accessible publiquement
+        import time
+        time.sleep(5)
         return url
     else:
         print(f"❌ Erreur ImgBB ({r.status_code}): {r.text}")
@@ -260,18 +263,18 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN non défini — publication Instagram ignorée.")
         return
-    if not IMGBB_API_KEY:
-        print("⚠️  IMGBB_API_KEY non défini — publication Instagram ignorée.")
+    if not CLOUDINARY_CLOUD_NAME:
+        print("⚠️  CLOUDINARY_* non définis — publication Instagram ignorée.")
         return
 
-    image_url = upload_to_imgbb(image_path)
+    image_url = upload_to_cloudinary(image_path)
     if not image_url:
         return
 
     hashtags = build_hashtags_ig(cat_name)
 
     ig_caption = (
-        f"{cat['emoji']} Verset du jour — {ref}\n\n"
+        f"{cat['emoji']} {ref}\n\n"
         f"{text}\n\n"
         f"📖 Bible complète gratuite sur {APP_URL}\n\n"
         f"{hashtags}"
