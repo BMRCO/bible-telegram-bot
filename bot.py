@@ -43,7 +43,7 @@ HASHTAGS_BASE_FB = [
 HASHTAGS_CAT_IG = {
     "promise":   ["#Promesse", "#Espérance"],
     "jesus":     ["#ParoleDeJésus", "#Foi"],
-    "psaume":    ["#Psaume", "#Louange"],
+    "psaume":    ["#Psaumes", "#Louange"],
     "proverbe":  ["#Sagesse", "#Confiance"],
     "prophetie": ["#Prophétie", "#Espérance"],
 }
@@ -52,7 +52,7 @@ HASHTAGS_CAT_IG = {
 HASHTAGS_CAT_FB = {
     "promise":   ["#Promesse", "#Espérance"],
     "jesus":     ["#ParoleDeJésus", "#Évangile"],
-    "psaume":    ["#Psaume", "#Louange"],
+    "psaume":    ["#Psaumes", "#Louange"],
     "proverbe":  ["#Sagesse", "#Proverbes"],
     "prophetie": ["#Prophétie", "#Révélation"],
 }
@@ -75,7 +75,7 @@ CATEGORIES = {
         "key":   "i_psaume",
         "file":  "psaumes_curated.json",
         "emoji": "🎵",
-        "tag":   "#Psaume"
+        "tag":   "#Psaumes"
     },
     "proverbe": {
         "key":   "i_proverbe",
@@ -113,6 +113,46 @@ def build_hashtags_fb(cat_name):
     specific = HASHTAGS_CAT_FB.get(cat_name, [])
     all_tags = HASHTAGS_BASE_FB + specific
     return " ".join(all_tags[:7])
+
+
+def strip_rubric(text: str) -> str:
+    """Retire la rubrique musicale du début du verset, garde le contenu."""
+    rubric_keywords = [
+        "chef des chantres", "maschil", "michtam", "cantique",
+        "psaume de david", "prière de", "fils de koré", "sur alamoth",
+        "sur les", "au chef", "à jouer", "pour les", "jeduthun",
+        "higgaion", "sheminith", "nehiloth", "neginoth", "gittith",
+    ]
+    t = text.lower()
+    for kw in rubric_keywords:
+        if kw in t:
+            # Chercher le point ou la virgule qui termine la rubrique
+            # La rubrique est généralement avant le vrai contenu
+            # On essaie de couper après le dernier "." de la rubrique
+            sentences = text.split(". ")
+            real_sentences = []
+            for s in sentences:
+                if not any(kw in s.lower() for kw in rubric_keywords):
+                    real_sentences.append(s)
+            if real_sentences:
+                return ". ".join(real_sentences).strip()
+    return text
+
+
+def is_rubric(text: str) -> bool:
+    """Vrai seulement si le texte est ENTIÈREMENT une rubrique (rien d'autre)."""
+    rubric_keywords = [
+        "chef des chantres", "maschil", "michtam",
+        "fils de koré", "sur alamoth", "au chef",
+        "jeduthun", "higgaion", "sheminith", "nehiloth", "neginoth", "gittith",
+    ]
+    t = text.lower()
+    words = t.split()
+    if len(words) < 18:
+        for kw in rubric_keywords:
+            if kw in t:
+                return True
+    return False
 
 
 # ---------------------------------------------------
@@ -501,11 +541,18 @@ def main():
     cat_name = DAY_SCHEDULE[weekday]
     cat      = CATEGORIES[cat_name]
 
-    book, ch, v = pick_from_category(cat, progress)
+    # Essayer jusqu'à 5 fois pour éviter les versets ENTIÈREMENT rubrique
+    for attempt in range(5):
+        book, ch, v = pick_from_category(cat, progress)
+        raw_text    = load_verse(book, ch, v)
+        if not is_rubric(raw_text):
+            break
+        print(f"⏭️  Rubrique ignorée : {book} {ch}:{v} — essai {attempt+1}")
 
-    raw_text = load_verse(book, ch, v)
-    text     = clean_text(raw_text)
-    ref      = f"{book} {ch}:{v}"
+    # Retirer la rubrique si elle précède le contenu
+    raw_text = strip_rubric(raw_text)
+    text = clean_text(raw_text)
+    ref  = f"{book} {ch}:{v}"
 
     print(f"📖 Verset du jour : {ref} [{cat_name}]")
 
