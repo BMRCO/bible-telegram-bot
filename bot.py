@@ -160,9 +160,29 @@ def get_bible_index():
     return _bible_index
 
 
+# Correspondance noms alternatifs → noms réels dans lsg1910.json
+BOOK_NAME_MAP = {
+    "Psaumes":      "Psaume",
+    "Cantique des Cantiques": "Cantique des cantiques",
+    "1 Rois":       "1 Rois",
+    "2 Rois":       "2 Rois",
+    "1 Samuel":     "1 Samuel",
+    "2 Samuel":     "2 Samuel",
+    "1 Chroniques": "1 Chroniques",
+    "2 Chroniques": "2 Chroniques",
+}
+
 def load_verse(book_name, chapter, verse):
     index = get_bible_index()
-    return index[book_name][str(chapter)][str(verse)]
+    # Essayer le nom tel quel, sinon chercher via le mapping
+    real_name = BOOK_NAME_MAP.get(book_name, book_name)
+    if real_name not in index:
+        # Recherche insensible à la casse en dernier recours
+        for key in index:
+            if key.lower() == real_name.lower():
+                real_name = key
+                break
+    return index[real_name][str(chapter)][str(verse)]
 
 
 # ---------------------------------------------------
