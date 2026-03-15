@@ -127,7 +127,7 @@ def clean_text(text: str) -> str:
     text = text.replace("'", "\u2019").replace("'", "\u2019")
     if not text.endswith(('.', '!', '?')):
         text += '.'
-    return f"« {text} »"
+    return text
 
 
 def load_json(path):
@@ -427,6 +427,11 @@ def make_image(text, ref):
         chosen_font  = ImageFont.truetype(FONT_SERIF, 34)
         chosen_lines = wrap_text(draw, text, chosen_font, max_w)
         chosen_lh    = int(34 * 1.38)
+
+    # Adicionar « na primeira linha e » na última (inline)
+    if chosen_lines:
+        chosen_lines[0]  = "« " + chosen_lines[0]
+        chosen_lines[-1] = chosen_lines[-1] + " »"
 
     # Centrar verticalmente
     total_h = chosen_lh * len(chosen_lines)
