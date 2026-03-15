@@ -27,7 +27,7 @@ FONT_SANS  = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 WATERMARK    = "LaBible.app"
 MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
-APP_URL      = "https://www.labible.app"
+APP_URL      = "https://labible.app"
 
 # Hashtags de base communs (Instagram — 3 fixas)
 HASHTAGS_BASE_IG = [
