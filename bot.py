@@ -616,14 +616,13 @@ def make_reel_video(text, ref):
     fp  = FONT_SERIF
     fpb = FONT_SERIF_BOLD
 
-    # Découper le texte en lignes (enlever les guillemets pour wrap, on les remet)
     text_clean = text.rstrip('.')
-    BORDER = 80; CARD_PAD = 90
+    BORDER = 100; CARD_PAD = 100
     MAX_TW = W - BORDER*2 - CARD_PAD*2
 
-    # Trouver la bonne taille de fonte
-    size = 72
-    while size > 28:
+    # Fonte grande (min 56) — versículos curtos ficam bem legíveis
+    size = 88
+    while size > 56:
         fv = ImageFont.truetype(fp, size)
         tmp = Image.new("RGB", (10, 10)); d = ImageDraw.Draw(tmp)
         test_lines = wrap_text(d, text_clean, fv, MAX_TW)
@@ -638,9 +637,10 @@ def make_reel_video(text, ref):
         verse_lines[0]  = "« " + verse_lines[0]
         verse_lines[-1] = verse_lines[-1] + " »"
 
-    fr = ImageFont.truetype(fpb, 42)
-    fl = ImageFont.truetype(fp, 34)
-    fw = ImageFont.truetype(fp, 34)
+    # Footer petit — comme les images du bot
+    fr = ImageFont.truetype(fpb, 36)
+    fl = ImageFont.truetype(fp, 28)
+    fw = ImageFont.truetype(fp, 28)
 
     BG    = (10, 14, 38)
     GOLD  = (180, 148, 72)
@@ -651,7 +651,7 @@ def make_reel_video(text, ref):
     CX1 = BORDER; CY1 = BORDER; CX2 = W - BORDER; CY2 = H - BORDER
 
     N_P = 30
-    px = rng.uniform(CX1, CX2, N_P); py = rng.uniform(CY1, CY2, N_P)
+    px = rng.uniform(CX1+20, CX2-20, N_P); py = rng.uniform(CY1+20, CY2-20, N_P)
     ps = rng.uniform(0.2, 0.8, N_P); pr = rng.uniform(2, 5, N_P)
     pa = rng.uniform(0, 2*math.pi, N_P)
 
@@ -660,9 +660,9 @@ def make_reel_video(text, ref):
         a = max(0, min(1, a))
         return tuple(int(bg[i] + (base[i]-bg[i])*a) for i in range(3))
 
-    LINE_H = size + 18
+    LINE_H = size + 20
     start_y = int(CY1 + (CY2-CY1)*0.42 - len(verse_lines)*LINE_H//2)
-    FL = CY2 - 220; FT = CY2 - 185
+    FL = CY2 - 200; FT = CY2 - 170
 
     os.makedirs("frames", exist_ok=True)
 
@@ -684,7 +684,9 @@ def make_reel_video(text, ref):
         cd.rounded_rectangle([CX1,CY1,CX2,CY2], radius=40, fill=(*BG, int(alpha*230)))
         img = Image.alpha_composite(img.convert("RGBA"), cl).convert("RGB")
         draw = ImageDraw.Draw(img)
-        draw.rounded_rectangle([CX1,CY1,CX2,CY2], radius=40, outline=blend(GOLD, alpha), width=4)
+        # Borda dupla — mais visível
+        draw.rounded_rectangle([CX1,CY1,CX2,CY2], radius=40, outline=blend(GOLD, alpha), width=5)
+        draw.rounded_rectangle([CX1+10,CY1+10,CX2-10,CY2-10], radius=34, outline=blend(GOLD, alpha*0.3), width=1)
 
         # Particles
         pl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
@@ -710,15 +712,15 @@ def make_reel_video(text, ref):
             draw.text((x+2, y+2), line, font=fv, fill=blend((0,0,0), la*0.6))
             draw.text((x, y),     line, font=fv, fill=blend(WHITE, la))
 
-        # Footer
+        # Footer petit
         fs = 0.6 + len(verse_lines)*0.20 + 0.3
         fa = (0 if s<fs else (ease((s-fs)/0.6) if s<fs+0.6 else 1.0)) * alpha
         lx1 = CX1 + CARD_PAD; lx2 = CX2 - CARD_PAD
         draw.line([(lx1, FL), (lx2, FL)], fill=blend(GOLD, fa*0.8), width=2)
         draw.text((lx1, FT),    ref,        font=fr, fill=blend(GR,  fa))
-        draw.text((lx1, FT+52), "LSG 1910", font=fl, fill=blend(SIL, fa*0.85))
+        draw.text((lx1, FT+44), "LSG 1910", font=fl, fill=blend(SIL, fa*0.85))
         wbbox = draw.textbbox((0,0), WATERMARK, font=fw); wtw = wbbox[2]-wbbox[0]
-        draw.text((lx2-wtw, FT+52), WATERMARK, font=fw, fill=blend(SIL, fa*0.85))
+        draw.text((lx2-wtw, FT+44), WATERMARK, font=fw, fill=blend(SIL, fa*0.85))
 
         img.save(f"frames/frame_{f:04d}.png")
 
