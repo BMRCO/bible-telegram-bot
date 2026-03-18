@@ -725,15 +725,31 @@ def make_reel_video(text, ref):
         img.save(f"frames/frame_{f:04d}.png")
 
     output_path = "reel.mp4"
-    subprocess.run([
-        'ffmpeg', '-framerate', '30',
-        '-i', 'frames/frame_%04d.png',
-        '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
-        output_path, '-y'
-    ], capture_output=True)
 
-    # Nettoyer les frames
-    import shutil
+    # Chercher une musique dans music/
+    import glob, shutil
+    music_files = glob.glob("music/*.mp3") + glob.glob("music/*.m4a") + glob.glob("music/*.ogg")
+    music_file  = random.choice(music_files) if music_files else None
+
+    if music_file:
+        print(f"🎵 Musique : {music_file}")
+        subprocess.run([
+            'ffmpeg', '-framerate', '30',
+            '-i', 'frames/frame_%04d.png',
+            '-i', music_file,
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
+            '-c:a', 'aac', '-b:a', '192k',
+            '-shortest',
+            output_path, '-y'
+        ], capture_output=True)
+    else:
+        subprocess.run([
+            'ffmpeg', '-framerate', '30',
+            '-i', 'frames/frame_%04d.png',
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
+            output_path, '-y'
+        ], capture_output=True)
+
     shutil.rmtree("frames", ignore_errors=True)
 
     print(f"✅ Reel généré : {output_path}")
