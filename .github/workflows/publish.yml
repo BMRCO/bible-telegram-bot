@@ -1,4 +1,3 @@
-```yaml
 name: Post daily verse
 on:
   workflow_dispatch:
@@ -56,4 +55,3 @@ jobs:
           git add progress.json promesses_curated.json jesus_curated.json psaumes_curated.json proverbes_curated.json propheties_curated.json || true
           git commit -m "Update progress" || exit 0
           git push
-```
