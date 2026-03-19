@@ -200,7 +200,7 @@ def get_bible_index():
 
 
 BOOK_NAME_MAP = {
-    "Psaumes":      "Psaumes",
+    "Psaumes":      "Psaume",
     "Cantique des Cantiques": "Cantique des cantiques",
     "1 Rois":       "1 Rois",
     "2 Rois":       "2 Rois",
@@ -800,7 +800,9 @@ def pick_verse(progress):
         print(f"⏭️  Rubrique ignorée : {book} {ch}:{v} — essai {attempt+1}")
     raw_text = strip_rubric(raw_text)
     text     = clean_text(raw_text)
-    ref      = f"{book} {ch}:{v}"
+    # Afficher "Psaumes" au lieu de "Psaume" dans la référence
+    display_book = "Psaumes" if book == "Psaume" else book
+    ref      = f"{display_book} {ch}:{v}"
     return text, ref, cat, cat_name
 
 
