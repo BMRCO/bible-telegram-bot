@@ -158,6 +158,10 @@ def clean_text(text: str) -> str:
     if not text:
         return ""
     text = text.replace("¶", "").strip()
+    # Supprimer -Pause (Sélah) et variantes
+    text = re.sub(r'\s*[-—]\s*Pause\.?', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\s*Sélah\.?', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\s*Selah\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s+', ' ', text).strip()
     text = re.sub(r'\s*([;:?!])', r' \1', text)
     text = text.replace("'", "\u2019").replace("'", "\u2019")
@@ -196,7 +200,7 @@ def get_bible_index():
 
 
 BOOK_NAME_MAP = {
-    "Psaumes":      "Psaume",
+    "Psaumes":      "Psaumes",
     "Cantique des Cantiques": "Cantique des cantiques",
     "1 Rois":       "1 Rois",
     "2 Rois":       "2 Rois",
