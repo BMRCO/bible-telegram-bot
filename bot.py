@@ -668,7 +668,7 @@ def make_reel_video(text, ref):
         lh = size + 20
         max_line_w = max(d.textbbox((0,0), l, font=fv)[2] for l in test_lines)
         total_h = lh * len(test_lines)
-        max_text_h = int((CY2 - CY1) * 0.65)
+        max_text_h = int((H - BORDER*2) * 0.65)
         if max_line_w <= MAX_TW and total_h <= max_text_h:
             break
         size -= 2
