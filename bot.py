@@ -283,7 +283,7 @@ def post_to_facebook(image_path, ref, text, cat, cat_name):
     hashtags = build_hashtags_fb(cat_name)
     fb_message = (
         f"{cat['emoji']} {ref}\n\n"
-        f"{text}\n\n"
+        f"« {text} »\n\n"
         f"📖 Lisez la Bible complète gratuitement sur {APP_URL}\n\n"
         f"{hashtags}"
     )
@@ -312,7 +312,7 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name):
     hashtags = build_hashtags_fb(cat_name)
     description = (
         f"{cat['emoji']} {ref}\n\n"
-        f"{text}\n\n"
+        f"« {text} »\n\n"
         f"📖 Bible complète gratuite sur {APP_URL}\n\n"
         f"{hashtags}"
     )
@@ -401,7 +401,7 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
     hashtags = build_hashtags_ig(cat_name)
     ig_caption = (
         f"{cat['emoji']} {ref}\n\n"
-        f"{text}\n\n"
+        f"« {text} »\n\n"
         f"📖 Bible complète gratuite sur {APP_URL}\n\n"
         f"{hashtags}"
     )
@@ -445,7 +445,7 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
     hashtags = build_hashtags_ig(cat_name)
     ig_caption = (
         f"{cat['emoji']} {ref}\n\n"
-        f"{text}\n\n"
+        f"« {text} »\n\n"
         f"📖 Bible complète gratuite sur {APP_URL}\n\n"
         f"{hashtags}"
     )
@@ -621,11 +621,20 @@ def make_cover_image(ref):
     W, H = 1080, 1920
     fp  = FONT_SERIF
     fpb = FONT_SERIF_BOLD
-    BG     = (10, 14, 38)
-    GOLD   = (212, 178, 70)
-    GOLD_L = (240, 210, 110)
-    SILVER = (190, 190, 210)
     BORDER = 80
+
+    # Même palette que le reel — basée sur le hash de la référence
+    REEL_PALETTES = [
+        ((10, 14, 38),  (180, 148, 72),   (192, 158, 80),   (230, 228, 220),  (160, 160, 175)),
+        ((30,  8, 12),  (210, 155, 75),   (220, 168, 85),   (255, 245, 225),  (170, 145, 115)),
+        (( 8, 24, 16),  (130, 190, 110),  (145, 205, 125),  (235, 255, 235),  (110, 155, 100)),
+        ((22,  8, 40),  (195, 160, 75),   (210, 175, 88),   (250, 245, 255),  (155, 135, 180)),
+        ((10, 10, 10),  (195, 172,  95),  (210, 187, 108),  (250, 248, 235),  (145, 135,  95)),
+    ]
+    seed = abs(hash(ref)) % (2**31)
+    BG, GOLD, GOLD_L, _, SILVER = REEL_PALETTES[seed % len(REEL_PALETTES)]
+    # Fundo ligeiramente mais escuro em baixo
+    BG_BOT = tuple(max(0, int(c * 0.7)) for c in BG)
 
     def gradient(img, top, bot):
         draw = ImageDraw.Draw(img)
@@ -639,7 +648,7 @@ def make_cover_image(ref):
         return tuple(int(bg[i] + (base[i]-bg[i])*a) for i in range(3))
 
     img = Image.new("RGB", (W, H))
-    gradient(img, (8, 10, 40), (20, 6, 50))
+    gradient(img, BG, BG_BOT)
     draw = ImageDraw.Draw(img)
 
     # Borda dourada dupla
