@@ -725,7 +725,7 @@ def wrap_text_with_quotes(draw, text, font, max_w):
 def make_reel_video(text, ref):
     W, H = 1080, 1920
     FPS = 30
-    TOTAL = FPS * 8
+    TOTAL = FPS * 15
     seed = abs(hash(ref)) % (2**31)
     rng = np.random.default_rng(seed)
 
@@ -759,11 +759,17 @@ def make_reel_video(text, ref):
     fl = ImageFont.truetype(fp, 28)
     fw = ImageFont.truetype(fp, 28)
 
-    BG    = (10, 14, 38)
-    GOLD  = (180, 148, 72)
-    GR    = (192, 158, 80)
-    WHITE = (230, 228, 220)
-    SIL   = (160, 160, 175)
+    # Palettes variées — choisie selon le hash de la référence
+    REEL_PALETTES = [
+        # BG,            GOLD,             GR,               WHITE,            SIL
+        ((10, 14, 38),  (180, 148, 72),   (192, 158, 80),   (230, 228, 220),  (160, 160, 175)),  # Bleu nuit — or
+        ((30,  8, 12),  (210, 155, 75),   (220, 168, 85),   (255, 245, 225),  (170, 145, 115)),  # Bordeaux — or chaud
+        (( 8, 24, 16),  (130, 190, 110),  (145, 205, 125),  (235, 255, 235),  (110, 155, 100)),  # Vert forêt — or vert
+        ((22,  8, 40),  (195, 160, 75),   (210, 175, 88),   (250, 245, 255),  (155, 135, 180)),  # Violet royal — or
+        ((10, 10, 10),  (195, 172,  95),  (210, 187, 108),  (250, 248, 235),  (145, 135,  95)),  # Noir pur — or
+    ]
+    palette_idx = seed % len(REEL_PALETTES)
+    BG, GOLD, GR, WHITE, SIL = REEL_PALETTES[palette_idx]
 
     CX1 = BORDER; CY1 = BORDER; CX2 = W - BORDER; CY2 = H - BORDER
 
@@ -785,15 +791,16 @@ def make_reel_video(text, ref):
 
     for f in range(TOTAL):
         s = f / FPS
-        alpha = ease(s/0.8) if s < 0.8 else (ease((8-s)/1.0) if s > 7.0 else 1.0)
+        alpha = ease(s/0.8) if s < 0.8 else (ease((15-s)/1.5) if s > 13.5 else 1.0)
 
         img = Image.new("RGB", (W, H), BG)
         draw = ImageDraw.Draw(img)
 
-        # Gradient BG
+        # Gradient BG — légèrement plus sombre en bas
         for y in range(0, H, 4):
-            t2 = y/H; v = int(max(0, 15 - abs(t2-0.5)*40))
-            draw.rectangle([(0, y), (W, min(y+4, H))], fill=(BG[0], BG[1], BG[2]+v))
+            t2 = y/H
+            bg_y = tuple(max(0, int(BG[i] * (1 - t2*0.3))) for i in range(3))
+            draw.rectangle([(0, y), (W, min(y+4, H))], fill=bg_y)
 
         # Card
         cl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
