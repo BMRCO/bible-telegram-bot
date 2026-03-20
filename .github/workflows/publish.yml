@@ -27,7 +27,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          sudo apt-get install -y --no-install-recommends ffmpeg --fix-missing
+          sudo apt-get update -y
+          sudo apt-get install -y ffmpeg || sudo apt-get install -y --fix-broken && sudo apt-get install -y ffmpeg || true
+          ffmpeg -version
       - name: Determine mode
         id: mode
         run: |
