@@ -610,6 +610,41 @@ def make_image(text, ref):
 # ---------------------------------------------------
 # REEL — format vertical 9:16, style bot
 # ---------------------------------------------------
+def wrap_text_with_quotes(draw, text, font, max_w):
+    """Wrap text reserving space for « » quotes on first and last lines."""
+    words = text.split()
+    if not words: return [""]
+    q_open = draw.textlength("« ", font=font)
+    lines = []; current = words[0]
+    for w in words[1:]:
+        test = current + " " + w
+        is_first = (len(lines) == 0)
+        margin = q_open if is_first else 0
+        if draw.textlength(test, font=font) + margin <= max_w:
+            current = test
+        else:
+            lines.append(current)
+            current = w
+    lines.append(current)
+    # Ensure last line fits with »
+    last = lines[-1]
+    if draw.textlength(last + " »", font=font) > max_w:
+        words_last = last.split()
+        new_last = words_last[0]
+        for w in words_last[1:]:
+            if draw.textlength(new_last + " " + w + " »", font=font) <= max_w:
+                new_last = new_last + " " + w
+            else:
+                lines[-1] = new_last
+                lines.append(w)
+                new_last = w
+        lines[-1] = new_last
+    if lines:
+        lines[0]  = "« " + lines[0]
+        lines[-1] = lines[-1] + " »"
+    return lines
+
+
 def make_reel_video(text, ref):
     W, H = 1080, 1920
     FPS = 30
@@ -624,22 +659,23 @@ def make_reel_video(text, ref):
     BORDER = 100; CARD_PAD = 100
     MAX_TW = W - BORDER*2 - CARD_PAD*2
 
-    # Fonte grande (min 56) — versículos curtos ficam bem legíveis
+    # Fonte grande (min 32) — ajusta para caber, contando as aspas « »
     size = 88
-    while size > 56:
+    while size > 32:
         fv = ImageFont.truetype(fp, size)
         tmp = Image.new("RGB", (10, 10)); d = ImageDraw.Draw(tmp)
-        test_lines = wrap_text(d, text_clean, fv, MAX_TW)
-        if max(d.textbbox((0,0), l, font=fv)[2] for l in test_lines) <= MAX_TW:
+        test_lines = wrap_text_with_quotes(d, text_clean, fv, MAX_TW)
+        lh = size + 20
+        max_line_w = max(d.textbbox((0,0), l, font=fv)[2] for l in test_lines)
+        total_h = lh * len(test_lines)
+        max_text_h = int((CY2 - CY1) * 0.65)
+        if max_line_w <= MAX_TW and total_h <= max_text_h:
             break
         size -= 2
 
     fv = ImageFont.truetype(fp, size)
     tmp = Image.new("RGB", (10, 10)); d = ImageDraw.Draw(tmp)
-    verse_lines = wrap_text(d, text_clean, fv, MAX_TW)
-    if verse_lines:
-        verse_lines[0]  = "« " + verse_lines[0]
-        verse_lines[-1] = verse_lines[-1] + " »"
+    verse_lines = wrap_text_with_quotes(d, text_clean, fv, MAX_TW)
 
     # Footer petit — comme les images du bot
     fr = ImageFont.truetype(fpb, 36)
