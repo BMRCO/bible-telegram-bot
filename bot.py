@@ -450,18 +450,25 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
         f"{hashtags}"
     )
 
+    # Générer et uploader la cover
+    cover_path = make_cover_image(ref)
+    cover_url = upload_to_imgbb(cover_path)
+
     # Créer container reel
     container_url = f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media"
-    r = requests.post(
-        container_url,
-        data={
-            "media_type": "REELS",
-            "video_url": video_url,
-            "caption": ig_caption,
-            "access_token": FB_PAGE_TOKEN,
-        },
-        timeout=60
-    )
+    container_data = {
+        "media_type": "REELS",
+        "video_url": video_url,
+        "caption": ig_caption,
+        "access_token": FB_PAGE_TOKEN,
+    }
+    if cover_url:
+        container_data["cover_url"] = cover_url
+        print(f"✅ Cover URL: {cover_url}")
+    else:
+        container_data["thumb_offset"] = "4000"
+
+    r = requests.post(container_url, data=container_data, timeout=60)
 
     if r.status_code != 200:
         print(f"❌ Erreur container reel Instagram ({r.status_code}): {r.text}")
@@ -603,6 +610,76 @@ def make_image(text, ref):
     draw.text((W - pad_x - ww, H - 185), WATERMARK, font=tiny, fill=color_wm)
 
     out = "verse.png"
+    img.save(out, "PNG")
+    return out
+
+
+# ---------------------------------------------------
+# COVER — imagem estática para capa do reel Instagram
+# ---------------------------------------------------
+def make_cover_image(ref):
+    W, H = 1080, 1920
+    fp  = FONT_SERIF
+    fpb = FONT_SERIF_BOLD
+    BG     = (10, 14, 38)
+    GOLD   = (212, 178, 70)
+    GOLD_L = (240, 210, 110)
+    SILVER = (190, 190, 210)
+    BORDER = 80
+
+    def gradient(img, top, bot):
+        draw = ImageDraw.Draw(img)
+        for y in range(H):
+            t = y / H
+            c = tuple(int(top[i] + (bot[i]-top[i])*t) for i in range(3))
+            draw.line([(0, y), (W, y)], fill=c)
+
+    def blend(base, a, bg=BG):
+        a = max(0, min(1, a))
+        return tuple(int(bg[i] + (base[i]-bg[i])*a) for i in range(3))
+
+    img = Image.new("RGB", (W, H))
+    gradient(img, (8, 10, 40), (20, 6, 50))
+    draw = ImageDraw.Draw(img)
+
+    # Borda dourada dupla
+    draw.rounded_rectangle([BORDER, BORDER, W-BORDER, H-BORDER],
+                            radius=50, outline=blend(GOLD, 1.0), width=5)
+    draw.rounded_rectangle([BORDER+12, BORDER+12, W-BORDER-12, H-BORDER-12],
+                            radius=42, outline=blend(GOLD, 0.3), width=1)
+
+    # Logo grande centrado
+    try:
+        logo_raw = Image.open("logo.png").convert("RGBA")
+    except Exception:
+        logo_raw = None
+
+    LOGO_SIZE = 380
+    ly = H // 2 - LOGO_SIZE // 2 - 80
+
+    if logo_raw:
+        logo_r = logo_raw.resize((LOGO_SIZE, LOGO_SIZE), Image.LANCZOS)
+        lx = (W - LOGO_SIZE) // 2
+        base = img.convert("RGBA")
+        base.paste(logo_r, (lx, ly), logo_r)
+        img = base.convert("RGB")
+        draw = ImageDraw.Draw(img)
+
+    # Referência dourada
+    f_ref = ImageFont.truetype(fpb, 96)
+    bbox = draw.textbbox((0, 0), ref, font=f_ref)
+    tw = bbox[2] - bbox[0]
+    ry = ly + LOGO_SIZE + 60
+    draw.text(((W-tw)//2+3, ry+3), ref, font=f_ref, fill=(0, 0, 0))
+    draw.text(((W-tw)//2,   ry),   ref, font=f_ref, fill=GOLD_L)
+
+    # Watermark
+    f_wm = ImageFont.truetype(FONT_SANS, 36)
+    bbox3 = draw.textbbox((0, 0), WATERMARK, font=f_wm)
+    tw3 = bbox3[2] - bbox3[0]
+    draw.text(((W-tw3)//2, H-180), WATERMARK, font=f_wm, fill=blend(SILVER, 0.5))
+
+    out = "cover.png"
     img.save(out, "PNG")
     return out
 
@@ -868,6 +945,17 @@ def main_reel():
     progress = load_json(PROGRESS_FILE)
     text, ref, cat, cat_name = pick_verse(progress)
     print(f"🎬 Reel — {ref} [{cat_name}]")
+
+    # Garantir que o logo existe localmente
+    if not os.path.exists("logo.png"):
+        try:
+            r = requests.get("https://labible.app/icons/icon-512x512.png", timeout=10)
+            if r.status_code == 200:
+                with open("logo.png", "wb") as f:
+                    f.write(r.content)
+                print("✅ Logo descarregado")
+        except Exception as e:
+            print(f"⚠️ Logo não disponível: {e}")
 
     video   = make_reel_video(text, ref)
     caption = f"{cat['emoji']} <b>{ref}</b>\n#LaBible #LSG1910 #versetdujour {cat['tag']}"
