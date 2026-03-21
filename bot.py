@@ -731,7 +731,7 @@ def wrap_text_with_quotes(draw, text, font, max_w):
     return lines
 
 
-def make_reel_video(text, ref):
+def make_reel_video(text, ref, progress=None):
     W, H = 1080, 1920
     FPS = 30
     TOTAL = FPS * 15
@@ -865,12 +865,13 @@ def make_reel_video(text, ref):
     music_file  = None
     if music_files:
         # Éviter de répéter la même musique deux fois de suite
-        last_music = progress.get("last_music", "")
+        last_music = progress.get("last_music", "") if progress else ""
         available  = [m for m in music_files if m != last_music]
         if not available:
             available = music_files
         music_file = random.choice(available)
-        progress["last_music"] = music_file
+        if progress is not None:
+            progress["last_music"] = music_file
 
     if music_file:
         print(f"🎵 Musique : {music_file}")
@@ -981,7 +982,7 @@ def main_reel():
         except Exception as e:
             print(f"⚠️ Logo não disponível: {e}")
 
-    video   = make_reel_video(text, ref)
+    video   = make_reel_video(text, ref, progress)
     caption = f"{cat['emoji']} <b>{ref}</b>\n#LaBible #LSG1910 #versetdujour {cat['tag']}"
 
     send_video(video, caption)
