@@ -982,7 +982,7 @@ def post_to_youtube(video_path, ref, text, cat):
             f"{cat['emoji']} {ref}\n\n"
             f"« {text} »\n\n"
             f"📖 Bible complète gratuite sur {APP_URL}\n\n"
-            f"#Shorts #Bible #VersetDuJour #LaBible #LSG1910 #Foi #Jésus #Chrétien #BibleFrancaise #Évangile #Prière #Espérance #ParoleDeDieu #Louange #Église"
+            f"#Shorts #Bible #Jésus #Dieu #Foi #Évangile #Prière #Chrétien #VersetDuJour #ParoleDeDieu #Espérance #LSG1910 #Louange #JésusChrist #BibleFrancaise"
         )
 
         body = {
