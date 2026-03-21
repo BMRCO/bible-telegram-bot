@@ -7,10 +7,10 @@ on:
         required: false
         default: 'image'
   schedule:
-    - cron: "0 7 * * *"   # 07h00 UTC → image  (FR: 08h hiver / 09h été)
-    - cron: "0 11 * * *"  # 11h00 UTC → reel   (FR: 12h hiver / 13h été)
-    - cron: "0 12 * * *"  # 12h00 UTC → image  (FR: 13h hiver / 14h été)
-    - cron: "0 18 * * *"  # 18h00 UTC → reel   (FR: 19h hiver / 20h été)
+    - cron: "0 7 * * *"
+    - cron: "0 11 * * *"
+    - cron: "0 12 * * *"
+    - cron: "0 18 * * *"
 permissions:
   contents: write
 jobs:
@@ -52,6 +52,8 @@ jobs:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
         run: python bot.py ${{ steps.mode.outputs.mode }}
       - name: Commit updates (progress + lists if changed)
         run: |
