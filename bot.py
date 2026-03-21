@@ -22,6 +22,11 @@ IG_ACCOUNT_ID = os.environ.get("IG_ACCOUNT_ID", "17841447648424267")
 # ImgBB (hébergement image public pour Instagram)
 IMGBB_API_KEY = os.environ.get("IMGBB_API_KEY", "")
 
+# YouTube
+YT_CLIENT_ID      = os.environ.get("YOUTUBE_CLIENT_ID", "")
+YT_CLIENT_SECRET  = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
+YT_REFRESH_TOKEN  = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
+
 PROGRESS_FILE = "progress.json"
 BIBLE_FILE    = "bible/lsg1910.json"
 
@@ -946,6 +951,74 @@ def pick_verse(progress):
 
 
 # ---------------------------------------------------
+# ENVOI YOUTUBE SHORTS
+# ---------------------------------------------------
+def post_to_youtube(video_path, ref, text, cat):
+    if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
+        print("⚠️  Credentials YouTube manquants — publication ignorée.")
+        return
+
+    try:
+        from google.oauth2.credentials import Credentials
+        from googleapiclient.discovery import build
+        from googleapiclient.http import MediaFileUpload
+        from google.auth.transport.requests import Request
+
+        creds = Credentials(
+            token=None,
+            refresh_token=YT_REFRESH_TOKEN,
+            client_id=YT_CLIENT_ID,
+            client_secret=YT_CLIENT_SECRET,
+            token_uri="https://oauth2.googleapis.com/token",
+            scopes=["https://www.googleapis.com/auth/youtube.upload"]
+        )
+        creds.refresh(Request())
+
+        youtube = build("youtube", "v3", credentials=creds)
+
+        # Titre et description
+        title       = f"{ref} — Bible Louis Segond 1910"
+        description = (
+            f"{cat['emoji']} {ref}\n\n"
+            f"« {text} »\n\n"
+            f"📖 Bible complète gratuite sur {APP_URL}\n\n"
+            f"#Shorts #LaBible #VersetDuJour #Bible #LSG1910"
+        )
+
+        body = {
+            "snippet": {
+                "title":       title,
+                "description": description,
+                "tags":        ["Bible", "LaBible", "VersetDuJour", "LSG1910", "Shorts", "BibleFrancaise"],
+                "categoryId":  "22"  # People & Blogs
+            },
+            "status": {
+                "privacyStatus": "public",
+                "selfDeclaredMadeForKids": False
+            }
+        }
+
+        media = MediaFileUpload(video_path, mimetype="video/mp4", resumable=True)
+        request = youtube.videos().insert(
+            part="snippet,status",
+            body=body,
+            media_body=media
+        )
+
+        response = None
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                print(f"  ⏳ Upload YouTube : {int(status.progress() * 100)}%")
+
+        video_id = response.get("id", "inconnu")
+        print(f"✅ YouTube Short publié — https://youtube.com/shorts/{video_id}")
+
+    except Exception as e:
+        print(f"❌ Erreur YouTube : {e}")
+
+
+# ---------------------------------------------------
 # MAIN IMAGE
 # ---------------------------------------------------
 def main():
@@ -989,6 +1062,7 @@ def main_reel():
     send_video(video, caption)
     post_reel_to_facebook(video, ref, text, cat, cat_name)
     post_reel_to_instagram(video, ref, text, cat, cat_name)
+    post_to_youtube(video, ref, text, cat)
 
     save_json(PROGRESS_FILE, progress)
     print("✅ Terminé (reel).")
