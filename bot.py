@@ -363,7 +363,7 @@ def upload_to_imgbb(image_path):
     if r.status_code == 200:
         url = r.json()["data"]["url"]
         print(f"✅ Image uploadée sur ImgBB : {url}")
-        import time; time.sleep(5)
+        import time; time.sleep(15)
         return url
     else:
         print(f"❌ Erreur ImgBB ({r.status_code}): {r.text}")
@@ -385,7 +385,7 @@ def upload_video_public(video_path):
         data = r.json()
         url = data["data"]["url"].replace("tmpfiles.org/", "tmpfiles.org/dl/")
         print(f"✅ Vidéo uploadée : {url}")
-        import time; time.sleep(5)
+        import time; time.sleep(15)
         return url
     else:
         print(f"❌ Erreur upload vidéo ({r.status_code}): {r.text}")
