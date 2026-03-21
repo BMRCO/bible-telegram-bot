@@ -862,7 +862,15 @@ def make_reel_video(text, ref):
     # Chercher une musique dans music/
     import glob, shutil
     music_files = glob.glob("music/*.mp3") + glob.glob("music/*.m4a") + glob.glob("music/*.ogg")
-    music_file  = random.choice(music_files) if music_files else None
+    music_file  = None
+    if music_files:
+        # Éviter de répéter la même musique deux fois de suite
+        last_music = progress.get("last_music", "")
+        available  = [m for m in music_files if m != last_music]
+        if not available:
+            available = music_files
+        music_file = random.choice(available)
+        progress["last_music"] = music_file
 
     if music_file:
         print(f"🎵 Musique : {music_file}")
