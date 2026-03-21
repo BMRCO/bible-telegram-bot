@@ -878,6 +878,7 @@ def make_reel_video(text, ref, progress=None):
         subprocess.run([
             'ffmpeg', '-framerate', '30',
             '-i', 'frames/frame_%04d.png',
+            '-ss', '2',          # pular 2s de silêncio no início da música
             '-i', music_file,
             '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
             '-c:a', 'aac', '-b:a', '192k',
