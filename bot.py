@@ -19,8 +19,13 @@ FB_PAGE_TOKEN = os.environ.get("FB_PAGE_TOKEN", "")
 # Instagram
 IG_ACCOUNT_ID = os.environ.get("IG_ACCOUNT_ID", "17841447648424267")
 
-# ImgBB (hébergement image public pour Instagram + Pinterest)
+# ImgBB (hébergement image public — gardé pour compatibilité)
 IMGBB_API_KEY = os.environ.get("IMGBB_API_KEY", "")
+
+# Cloudinary (hébergement image fiable pour Instagram)
+CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
+CLOUDINARY_API_KEY    = os.environ.get("CLOUDINARY_API_KEY", "")
+CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET", "")
 
 # YouTube
 YT_CLIENT_ID      = os.environ.get("YOUTUBE_CLIENT_ID", "")
@@ -345,7 +350,7 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name):
 
 
 # ---------------------------------------------------
-# UPLOAD IMAGE → ImgBB
+# UPLOAD IMAGE → ImgBB (fallback)
 # ---------------------------------------------------
 def upload_to_imgbb(image_path):
     if not IMGBB_API_KEY:
@@ -368,6 +373,42 @@ def upload_to_imgbb(image_path):
     else:
         print(f"❌ Erreur ImgBB ({r.status_code}): {r.text}")
         return None
+
+
+# ---------------------------------------------------
+# UPLOAD IMAGE → Cloudinary (fiable pour Instagram)
+# ---------------------------------------------------
+def upload_to_cloudinary(image_path):
+    if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
+        print("⚠️  Cloudinary non configuré — fallback ImgBB.")
+        return upload_to_imgbb(image_path)
+
+    import hashlib, time as _time
+    timestamp = str(int(_time.time()))
+    signature_str = f"timestamp={timestamp}{CLOUDINARY_API_SECRET}"
+    signature = hashlib.sha1(signature_str.encode()).hexdigest()
+
+    with open(image_path, "rb") as f:
+        r = requests.post(
+            f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
+            data={
+                "api_key":   CLOUDINARY_API_KEY,
+                "timestamp": timestamp,
+                "signature": signature,
+            },
+            files={"file": f},
+            timeout=60
+        )
+
+    if r.status_code == 200:
+        url = r.json()["secure_url"]
+        print(f"✅ Image uploadée sur Cloudinary : {url}")
+        _time.sleep(5)
+        return url
+    else:
+        print(f"❌ Erreur Cloudinary ({r.status_code}): {r.text}")
+        print("⚠️  Fallback vers ImgBB...")
+        return upload_to_imgbb(image_path)
 
 
 # ---------------------------------------------------
@@ -396,11 +437,11 @@ def upload_video_public(video_path):
 # ENVOI INSTAGRAM
 # ---------------------------------------------------
 def post_to_instagram(image_path, ref, text, cat, cat_name):
-    if not FB_PAGE_TOKEN or not IMGBB_API_KEY:
-        print("⚠️  Token ou IMGBB_API_KEY manquant — Instagram ignoré.")
+    if not FB_PAGE_TOKEN:
+        print("⚠️  FB_PAGE_TOKEN manquant — Instagram ignoré.")
         return
 
-    image_url = upload_to_imgbb(image_path)
+    image_url = upload_to_cloudinary(image_path)
     if not image_url:
         return
 
@@ -519,8 +560,8 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
         print("⚠️  PINTEREST_ACCESS_TOKEN non défini — Pinterest ignoré.")
         return
 
-    # Réutiliser ImgBB pour obtenir une URL publique
-    image_url = upload_to_imgbb(image_path)
+    # Utiliser Cloudinary pour obtenir une URL publique
+    image_url = upload_to_cloudinary(image_path)
     if not image_url:
         print("❌ Pinterest ignoré — impossible d'uploader l'image.")
         return
