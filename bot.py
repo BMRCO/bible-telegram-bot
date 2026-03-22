@@ -467,6 +467,24 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
     container_id = r.json().get("id")
     print(f"✅ Container Instagram créé : {container_id}")
 
+    # Attendre que le média soit prêt
+    import time
+    for attempt in range(10):
+        time.sleep(10)
+        status_url = f"https://graph.facebook.com/v25.0/{container_id}"
+        rs = requests.get(
+            status_url,
+            params={"fields": "status_code", "access_token": FB_PAGE_TOKEN},
+            timeout=30
+        )
+        status = rs.json().get("status_code", "")
+        print(f"  Statut image : {status} (tentative {attempt+1})")
+        if status == "FINISHED":
+            break
+        if status == "ERROR":
+            print("Erreur traitement image Instagram.")
+            return
+
     publish_url = f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish"
     r2 = requests.post(
         publish_url,
