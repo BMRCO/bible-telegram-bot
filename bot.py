@@ -378,7 +378,7 @@ def upload_to_imgbb(image_path):
 
 
 # ---------------------------------------------------
-# UPLOAD VIDÉO → tmpfiles.org (URL public temporaire)
+# UPLOAD VIDÉO → Cloudinary
 # ---------------------------------------------------
 def upload_video_public(video_path):
     if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
@@ -410,7 +410,7 @@ def upload_video_public(video_path):
         _time.sleep(5)
         return url
     else:
-        print(f"❌ Erreur Cloudinary vidéo ({r.status_code}): {r.text}")
+        print(f"❌ Erreur Cloudinary vídeo ({r.status_code}): {r.text}")
         return None
 
 
@@ -440,6 +440,7 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
         data={"image_url": image_url, "caption": ig_caption, "access_token": FB_PAGE_TOKEN},
         timeout=60
     )
+    print("DEBUG IG image container:", r.status_code, r.text)
 
     if r.status_code != 200:
         print(f"❌ Erreur container Instagram ({r.status_code}): {r.text}")
@@ -454,6 +455,7 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
         data={"creation_id": container_id, "access_token": FB_PAGE_TOKEN},
         timeout=60
     )
+    print("DEBUG IG image publish:", r2.status_code, r2.text)
 
     if r2.status_code == 200:
         print(f"✅ Instagram publié — post_id: {r2.json().get('id', 'inconnu')}")
@@ -495,6 +497,7 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
         container_data["thumb_offset"] = "4000"
 
     r = requests.post(container_url, data=container_data, timeout=60)
+    print("DEBUG IG reel container:", r.status_code, r.text)
 
     if r.status_code != 200:
         print(f"❌ Erreur container reel Instagram ({r.status_code}): {r.text}")
@@ -509,9 +512,10 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
         status_url = f"https://graph.facebook.com/v25.0/{container_id}"
         rs = requests.get(
             status_url,
-            params={"fields": "status_code", "access_token": FB_PAGE_TOKEN},
+            params={"fields": "status_code,status,video_status,error_message", "access_token": FB_PAGE_TOKEN},
             timeout=30
         )
+        print("DEBUG IG reel status:", rs.status_code, rs.text)
         status = rs.json().get("status_code", "")
         print(f"  ⏳ Statut reel : {status} (tentative {attempt+1})")
         if status == "FINISHED":
@@ -526,6 +530,7 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
         data={"creation_id": container_id, "access_token": FB_PAGE_TOKEN},
         timeout=60
     )
+    print("DEBUG IG reel publish:", r2.status_code, r2.text)
 
     if r2.status_code == 200:
         print(f"✅ Instagram reel publié — id: {r2.json().get('id', 'inconnu')}")
@@ -541,17 +546,14 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
         print("⚠️  PINTEREST_ACCESS_TOKEN non défini — Pinterest ignoré.")
         return
 
-    # Réutiliser ImgBB pour obtenir une URL publique
     image_url = upload_to_imgbb(image_path)
     if not image_url:
         print("❌ Pinterest ignoré — impossible d'uploader l'image.")
         return
 
-    # Lien vers la page correspondante dans l'app
     book_chapter = ref.replace(" ", "-")
     app_link = f"{APP_URL}/#{book_chapter}"
 
-    # Titre et description du Pin
     pin_title = f"{ref} — Bible Louis Segond 1910"
     pin_description = (
         f"{cat['emoji']} « {text} »\n\n"
@@ -694,7 +696,7 @@ def make_image(text, ref):
 
 
 # ---------------------------------------------------
-# COVER — imagem estática para capa do reel Instagram
+# COVER — capa do reel Instagram
 # ---------------------------------------------------
 def make_cover_image(ref):
     W, H = 1080, 1920
@@ -767,13 +769,15 @@ def make_cover_image(ref):
 
 
 # ---------------------------------------------------
-# REEL — format vertical 9:16, style bot
+# REEL — vídeo 9:16
 # ---------------------------------------------------
 def wrap_text_with_quotes(draw, text, font, max_w):
     words = text.split()
-    if not words: return [""]
+    if not words:
+        return [""]
     q_open = draw.textlength("« ", font=font)
-    lines = []; current = words[0]
+    lines = []
+    current = words[0]
     for w in words[1:]:
         test = current + " " + w
         is_first = (len(lines) == 0)
@@ -813,16 +817,18 @@ def make_reel_video(text, ref, progress=None):
     fpb = FONT_SERIF_BOLD
 
     text_clean = text.rstrip('.')
-    BORDER = 100; CARD_PAD = 100
+    BORDER = 100
+    CARD_PAD = 100
     MAX_TW = W - BORDER*2 - CARD_PAD*2
 
     size = 88
     while size > 32:
         fv = ImageFont.truetype(fp, size)
-        tmp = Image.new("RGB", (10, 10)); d = ImageDraw.Draw(tmp)
+        tmp = Image.new("RGB", (10, 10))
+        d = ImageDraw.Draw(tmp)
         test_lines = wrap_text_with_quotes(d, text_clean, fv, MAX_TW)
         lh = size + 20
-        max_line_w = max(d.textbbox((0,0), l, font=fv)[2] for l in test_lines)
+        max_line_w = max(d.textbbox((0, 0), l, font=fv)[2] for l in test_lines)
         total_h = lh * len(test_lines)
         max_text_h = int((H - BORDER*2) * 0.65)
         if max_line_w <= MAX_TW and total_h <= max_text_h:
@@ -830,7 +836,8 @@ def make_reel_video(text, ref, progress=None):
         size -= 2
 
     fv = ImageFont.truetype(fp, size)
-    tmp = Image.new("RGB", (10, 10)); d = ImageDraw.Draw(tmp)
+    tmp = Image.new("RGB", (10, 10))
+    d = ImageDraw.Draw(tmp)
     verse_lines = wrap_text_with_quotes(d, text_clean, fv, MAX_TW)
 
     fr = ImageFont.truetype(fpb, 36)
@@ -847,21 +854,30 @@ def make_reel_video(text, ref, progress=None):
     palette_idx = seed % len(REEL_PALETTES)
     BG, GOLD, GR, WHITE, SIL = REEL_PALETTES[palette_idx]
 
-    CX1 = BORDER; CY1 = BORDER; CX2 = W - BORDER; CY2 = H - BORDER
+    CX1 = BORDER
+    CY1 = BORDER
+    CX2 = W - BORDER
+    CY2 = H - BORDER
 
     N_P = 30
-    px = rng.uniform(CX1+20, CX2-20, N_P); py = rng.uniform(CY1+20, CY2-20, N_P)
-    ps = rng.uniform(0.2, 0.8, N_P); pr = rng.uniform(2, 5, N_P)
+    px = rng.uniform(CX1+20, CX2-20, N_P)
+    py = rng.uniform(CY1+20, CY2-20, N_P)
+    ps = rng.uniform(0.2, 0.8, N_P)
+    pr = rng.uniform(2, 5, N_P)
     pa = rng.uniform(0, 2*math.pi, N_P)
 
-    def ease(t): t = max(0, min(1, t)); return t*t*(3-2*t)
+    def ease(t):
+        t = max(0, min(1, t))
+        return t*t*(3-2*t)
+
     def blend(base, a, bg=BG):
         a = max(0, min(1, a))
         return tuple(int(bg[i] + (base[i]-bg[i])*a) for i in range(3))
 
     LINE_H = size + 20
     start_y = int(CY1 + (CY2-CY1)*0.42 - len(verse_lines)*LINE_H//2)
-    FL = CY2 - 200; FT = CY2 - 170
+    FL = CY2 - 200
+    FT = CY2 - 170
 
     os.makedirs("frames", exist_ok=True)
 
@@ -879,11 +895,11 @@ def make_reel_video(text, ref, progress=None):
 
         cl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         cd = ImageDraw.Draw(cl)
-        cd.rounded_rectangle([CX1,CY1,CX2,CY2], radius=40, fill=(*BG, int(alpha*230)))
+        cd.rounded_rectangle([CX1, CY1, CX2, CY2], radius=40, fill=(*BG, int(alpha*230)))
         img = Image.alpha_composite(img.convert("RGBA"), cl).convert("RGB")
         draw = ImageDraw.Draw(img)
-        draw.rounded_rectangle([CX1,CY1,CX2,CY2], radius=40, outline=blend(GOLD, alpha), width=5)
-        draw.rounded_rectangle([CX1+10,CY1+10,CX2-10,CY2-10], radius=34, outline=blend(GOLD, alpha*0.3), width=1)
+        draw.rounded_rectangle([CX1, CY1, CX2, CY2], radius=40, outline=blend(GOLD, alpha), width=5)
+        draw.rounded_rectangle([CX1+10, CY1+10, CX2-10, CY2-10], radius=34, outline=blend(GOLD, alpha*0.3), width=1)
 
         pl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         pd = ImageDraw.Draw(pl)
@@ -900,20 +916,25 @@ def make_reel_video(text, ref, progress=None):
         draw = ImageDraw.Draw(img)
 
         for i, line in enumerate(verse_lines):
-            ls = 0.6 + i*0.20; le = ls + 0.5
-            la = (0 if s<ls else (ease((s-ls)/(le-ls)) if s<le else 1.0)) * alpha
-            bbox = draw.textbbox((0,0), line, font=fv); tw = bbox[2]-bbox[0]
-            x = (W-tw)//2; y = start_y + i*LINE_H
-            draw.text((x+2, y+2), line, font=fv, fill=blend((0,0,0), la*0.6))
+            ls = 0.6 + i*0.20
+            le = ls + 0.5
+            la = (0 if s < ls else (ease((s-ls)/(le-ls)) if s < le else 1.0)) * alpha
+            bbox = draw.textbbox((0, 0), line, font=fv)
+            tw = bbox[2] - bbox[0]
+            x = (W - tw)//2
+            y = start_y + i*LINE_H
+            draw.text((x+2, y+2), line, font=fv, fill=blend((0, 0, 0), la*0.6))
             draw.text((x, y),     line, font=fv, fill=blend(WHITE, la))
 
         fs = 0.6 + len(verse_lines)*0.20 + 0.3
-        fa = (0 if s<fs else (ease((s-fs)/0.6) if s<fs+0.6 else 1.0)) * alpha
-        lx1 = CX1 + CARD_PAD; lx2 = CX2 - CARD_PAD
+        fa = (0 if s < fs else (ease((s-fs)/0.6) if s < fs+0.6 else 1.0)) * alpha
+        lx1 = CX1 + CARD_PAD
+        lx2 = CX2 - CARD_PAD
         draw.line([(lx1, FL), (lx2, FL)], fill=blend(GOLD, fa*0.8), width=2)
-        draw.text((lx1, FT),    ref,        font=fr, fill=blend(GR,  fa))
-        draw.text((lx1, FT+44), "LSG 1910", font=fl, fill=blend(SIL, fa*0.85))
-        wbbox = draw.textbbox((0,0), WATERMARK, font=fw); wtw = wbbox[2]-wbbox[0]
+        draw.text((lx1, FT),        ref,        font=fr, fill=blend(GR,  fa))
+        draw.text((lx1, FT+44),     "LSG 1910", font=fl, fill=blend(SIL, fa*0.85))
+        wbbox = draw.textbbox((0, 0), WATERMARK, font=fw)
+        wtw = wbbox[2] - wbbox[0]
         draw.text((lx2-wtw, FT+44), WATERMARK, font=fw, fill=blend(SIL, fa*0.85))
 
         img.save(f"frames/frame_{f:04d}.png")
@@ -935,27 +956,41 @@ def make_reel_video(text, ref, progress=None):
     if music_file:
         print(f"🎵 Musique : {music_file}")
         subprocess.run([
-            'ffmpeg', '-framerate', '30',
+            'ffmpeg', '-y',
+            '-framerate', '30',
             '-i', 'frames/frame_%04d.png',
-            '-ss', '2',
+            '-ss', '0',
             '-i', music_file,
-            '-c:v', 'libx264', '-profile:v', 'baseline', '-level', '3.1',
-            '-pix_fmt', 'yuv420p', '-crf', '23',
-            '-r', '30', '-g', '60',
-            '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+            '-map', '0:v:0', '-map', '1:a:0',
+            '-c:v', 'libx264',
+            '-profile:v', 'high', '-level', '4.1',
+            '-pix_fmt', 'yuv420p',
+            '-preset', 'medium',
+            '-crf', '21',
+            '-r', '30',
+            '-g', '60',
+            '-c:a', 'aac',
+            '-b:a', '128k',
+            '-ar', '48000',
+            '-ac', '2',
             '-movflags', '+faststart',
             '-shortest',
-            output_path, '-y'
+            output_path
         ], capture_output=True)
     else:
         result = subprocess.run([
-            'ffmpeg', '-framerate', '30',
+            'ffmpeg', '-y',
+            '-framerate', '30',
             '-i', 'frames/frame_%04d.png',
-            '-c:v', 'libx264', '-profile:v', 'baseline', '-level', '3.1',
-            '-pix_fmt', 'yuv420p', '-crf', '23',
-            '-r', '30', '-g', '60',
+            '-c:v', 'libx264',
+            '-profile:v', 'high', '-level', '4.1',
+            '-pix_fmt', 'yuv420p',
+            '-preset', 'medium',
+            '-crf', '21',
+            '-r', '30',
+            '-g', '60',
             '-movflags', '+faststart',
-            output_path, '-y'
+            output_path
         ], capture_output=True)
         if result.returncode != 0:
             print(f'❌ ffmpeg error: {result.stderr.decode()[:500]}')
