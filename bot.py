@@ -19,13 +19,8 @@ FB_PAGE_TOKEN = os.environ.get("FB_PAGE_TOKEN", "")
 # Instagram
 IG_ACCOUNT_ID = os.environ.get("IG_ACCOUNT_ID", "17841447648424267")
 
-# ImgBB (hébergement image public — gardé pour compatibilité)
+# ImgBB (hébergement image public pour Instagram + Pinterest)
 IMGBB_API_KEY = os.environ.get("IMGBB_API_KEY", "")
-
-# Cloudinary (hébergement image fiable pour Instagram)
-CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
-CLOUDINARY_API_KEY    = os.environ.get("CLOUDINARY_API_KEY", "")
-CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET", "")
 
 # YouTube
 YT_CLIENT_ID      = os.environ.get("YOUTUBE_CLIENT_ID", "")
@@ -47,32 +42,34 @@ WATERMARK    = "LaBible.app"
 MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
 APP_URL      = "https://labible.app"
 
-# Hashtags de base communs (Instagram — 3 fixas)
+# Hashtags de base communs (Instagram — base SEO forte)
 HASHTAGS_BASE_IG = [
-    "#LaBible", "#VersetDuJour", "#Bible",
+    "#Bible", "#VersetDuJour", "#BibleFrancaise",
+    "#Chrétien", "#Foi", "#Évangile", "#Jésus",
+    "#ParoleDeDieu", "#LSG1910", "#LaBible",
 ]
 
 # Hashtags de base communs (Facebook — 5 max)
 HASHTAGS_BASE_FB = [
-    "#LaBible", "#VersetDuJour", "#Bible", "#Foi", "#BibleFrancais",
+    "#Bible", "#VersetDuJour", "#Foi", "#BibleFrancaise", "#Chrétien",
 ]
 
-# Hashtags spécifiques par catégorie (Instagram — 2 supplémentaires = 5 total)
+# Hashtags spécifiques par catégorie (Instagram — 5 supplémentaires = 15 total)
 HASHTAGS_CAT_IG = {
-    "promise":   ["#Promesse", "#Espérance"],
-    "jesus":     ["#ParoleDeJésus", "#Foi"],
-    "psaume":    ["#Psaumes", "#Louange"],
-    "proverbe":  ["#Sagesse", "#Confiance"],
-    "prophetie": ["#Prophétie", "#Espérance"],
+    "promise":   ["#Promesse", "#Espérance", "#PromesseDeDieu", "#Bénédiction", "#Confiance"],
+    "jesus":     ["#JésusChrist", "#ParoleDeJésus", "#GrâceDeDieu", "#Rédemption", "#Amour"],
+    "psaume":    ["#Psaumes", "#Louange", "#Adoration", "#Prière", "#Cantique"],
+    "proverbe":  ["#Sagesse", "#Proverbes", "#SagesseDeJésus", "#Discernement", "#Conseil"],
+    "prophetie": ["#Prophétie", "#EspoirEnDieu", "#Révélation", "#Accomplissement", "#GloireDeDieu"],
 }
 
 # Hashtags spécifiques par catégorie (Facebook — 2 supplémentaires)
 HASHTAGS_CAT_FB = {
-    "promise":   ["#Promesse", "#Espérance"],
-    "jesus":     ["#ParoleDeJésus", "#Évangile"],
-    "psaume":    ["#Psaumes", "#Louange"],
-    "proverbe":  ["#Sagesse", "#Proverbes"],
-    "prophetie": ["#Prophétie", "#Révélation"],
+    "promise":   ["#Promesse", "#Bénédiction"],
+    "jesus":     ["#JésusChrist", "#GrâceDeDieu"],
+    "psaume":    ["#Louange", "#Adoration"],
+    "proverbe":  ["#Sagesse", "#Discernement"],
+    "prophetie": ["#Prophétie", "#EspoirEnDieu"],
 }
 
 # Categorias disponíveis
@@ -124,7 +121,7 @@ DAY_SCHEDULE = {
 def build_hashtags_ig(cat_name):
     specific = HASHTAGS_CAT_IG.get(cat_name, [])
     all_tags = HASHTAGS_BASE_IG + specific
-    return " ".join(all_tags[:5])
+    return " ".join(all_tags[:15])
 
 
 def build_hashtags_fb(cat_name):
@@ -350,7 +347,7 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name):
 
 
 # ---------------------------------------------------
-# UPLOAD IMAGE → ImgBB (fallback)
+# UPLOAD IMAGE → ImgBB
 # ---------------------------------------------------
 def upload_to_imgbb(image_path):
     if not IMGBB_API_KEY:
@@ -368,7 +365,7 @@ def upload_to_imgbb(image_path):
     if r.status_code == 200:
         url = r.json()["data"]["url"]
         print(f"✅ Image uploadée sur ImgBB : {url}")
-        import time; time.sleep(15)
+        import time; time.sleep(5)
         return url
     else:
         print(f"❌ Erreur ImgBB ({r.status_code}): {r.text}")
@@ -376,60 +373,39 @@ def upload_to_imgbb(image_path):
 
 
 # ---------------------------------------------------
-# UPLOAD IMAGE → Cloudinary (fiable pour Instagram)
+# UPLOAD VIDÉO → tmpfiles.org (URL public temporaire)
 # ---------------------------------------------------
-def upload_to_cloudinary(image_path):
+def upload_video_public(video_path):
     if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
-        print("⚠️  Cloudinary non configuré — fallback ImgBB.")
-        return upload_to_imgbb(image_path)
+        print("⚠️  Cloudinary non configuré — upload vidéo ignoré.")
+        return None
 
     import hashlib, time as _time
+    print("⏳ Upload vidéo vers Cloudinary...")
     timestamp = str(int(_time.time()))
-    signature_str = f"timestamp={timestamp}{CLOUDINARY_API_SECRET}"
+    signature_str = f"resource_type=video&timestamp={timestamp}{CLOUDINARY_API_SECRET}"
     signature = hashlib.sha1(signature_str.encode()).hexdigest()
 
-    with open(image_path, "rb") as f:
+    with open(video_path, "rb") as f:
         r = requests.post(
-            f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
+            f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/video/upload",
             data={
-                "api_key":   CLOUDINARY_API_KEY,
-                "timestamp": timestamp,
-                "signature": signature,
+                "api_key":       CLOUDINARY_API_KEY,
+                "timestamp":     timestamp,
+                "signature":     signature,
+                "resource_type": "video",
             },
             files={"file": f},
-            timeout=60
+            timeout=180
         )
 
     if r.status_code == 200:
         url = r.json()["secure_url"]
-        print(f"✅ Image uploadée sur Cloudinary : {url}")
+        print(f"✅ Vidéo uploadée sur Cloudinary : {url}")
         _time.sleep(5)
         return url
     else:
-        print(f"❌ Erreur Cloudinary ({r.status_code}): {r.text}")
-        print("⚠️  Fallback vers ImgBB...")
-        return upload_to_imgbb(image_path)
-
-
-# ---------------------------------------------------
-# UPLOAD VIDÉO → tmpfiles.org (URL public temporaire)
-# ---------------------------------------------------
-def upload_video_public(video_path):
-    print("⏳ Upload vidéo vers tmpfiles.org...")
-    with open(video_path, "rb") as f:
-        r = requests.post(
-            "https://tmpfiles.org/api/v1/upload",
-            files={"file": f},
-            timeout=120
-        )
-    if r.status_code == 200:
-        data = r.json()
-        url = data["data"]["url"].replace("tmpfiles.org/", "tmpfiles.org/dl/")
-        print(f"✅ Vidéo uploadée : {url}")
-        import time; time.sleep(15)
-        return url
-    else:
-        print(f"❌ Erreur upload vidéo ({r.status_code}): {r.text}")
+        print(f"❌ Erreur Cloudinary vidéo ({r.status_code}): {r.text}")
         return None
 
 
@@ -437,11 +413,11 @@ def upload_video_public(video_path):
 # ENVOI INSTAGRAM
 # ---------------------------------------------------
 def post_to_instagram(image_path, ref, text, cat, cat_name):
-    if not FB_PAGE_TOKEN:
-        print("⚠️  FB_PAGE_TOKEN manquant — Instagram ignoré.")
+    if not FB_PAGE_TOKEN or not IMGBB_API_KEY:
+        print("⚠️  Token ou IMGBB_API_KEY manquant — Instagram ignoré.")
         return
 
-    image_url = upload_to_cloudinary(image_path)
+    image_url = upload_to_imgbb(image_path)
     if not image_url:
         return
 
@@ -466,24 +442,6 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
 
     container_id = r.json().get("id")
     print(f"✅ Container Instagram créé : {container_id}")
-
-    # Attendre que le média soit prêt
-    import time
-    for attempt in range(10):
-        time.sleep(10)
-        status_url = f"https://graph.facebook.com/v25.0/{container_id}"
-        rs = requests.get(
-            status_url,
-            params={"fields": "status_code", "access_token": FB_PAGE_TOKEN},
-            timeout=30
-        )
-        status = rs.json().get("status_code", "")
-        print(f"  Statut image : {status} (tentative {attempt+1})")
-        if status == "FINISHED":
-            break
-        if status == "ERROR":
-            print("Erreur traitement image Instagram.")
-            return
 
     publish_url = f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish"
     r2 = requests.post(
@@ -578,8 +536,8 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
         print("⚠️  PINTEREST_ACCESS_TOKEN non défini — Pinterest ignoré.")
         return
 
-    # Utiliser Cloudinary pour obtenir une URL publique
-    image_url = upload_to_cloudinary(image_path)
+    # Réutiliser ImgBB pour obtenir une URL publique
+    image_url = upload_to_imgbb(image_path)
     if not image_url:
         print("❌ Pinterest ignoré — impossible d'uploader l'image.")
         return
@@ -1065,12 +1023,12 @@ def post_to_youtube(video_path, ref, text, cat):
 
         youtube = build("youtube", "v3", credentials=creds)
 
-        title       = f"{ref}"
+        title       = f"{ref} — LSG1910"
         description = (
             f"{cat['emoji']} {ref}\n\n"
             f"« {text} »\n\n"
             f"📖 Bible complète gratuite sur {APP_URL}\n\n"
-            f"#Shorts #Bible #Jésus #Dieu #Foi #Évangile #Prière #Chrétien #VersetDuJour #ParoleDeDieu #Espérance #LSG1910 #Louange #JésusChrist #BibleFrancaise"
+            f"#Shorts #Bible #BibleFrancaise #VersetDuJour #Jésus #JésusChrist #Dieu #Foi #Évangile #Chrétien #ParoleDeDieu #Espérance #LSG1910 #Louange #GrâceDeDieu #Prière #Bénédiction #Adoration #{cat['tag'].lstrip('#')}"
         )
 
         body = {
