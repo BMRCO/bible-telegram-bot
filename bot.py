@@ -388,7 +388,7 @@ def upload_video_public(video_path):
     import hashlib, time as _time
     print("⏳ Upload vidéo vers Cloudinary...")
     timestamp = str(int(_time.time()))
-    signature_str = f"resource_type=video&timestamp={timestamp}{CLOUDINARY_API_SECRET}"
+    signature_str = f"timestamp={timestamp}{CLOUDINARY_API_SECRET.strip()}"
     signature = hashlib.sha1(signature_str.encode()).hexdigest()
 
     with open(video_path, "rb") as f:
