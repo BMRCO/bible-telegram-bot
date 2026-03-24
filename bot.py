@@ -939,18 +939,26 @@ def make_reel_video(text, ref, progress=None):
             '-i', 'frames/frame_%04d.png',
             '-ss', '2',
             '-i', music_file,
-            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
-            '-c:a', 'aac', '-b:a', '192k',
+            '-c:v', 'libx264', '-profile:v', 'baseline', '-level', '3.1',
+            '-pix_fmt', 'yuv420p', '-crf', '23',
+            '-r', '30', '-g', '60',
+            '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
+            '-movflags', '+faststart',
             '-shortest',
             output_path, '-y'
         ], capture_output=True)
     else:
-        subprocess.run([
+        result = subprocess.run([
             'ffmpeg', '-framerate', '30',
             '-i', 'frames/frame_%04d.png',
-            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
+            '-c:v', 'libx264', '-profile:v', 'baseline', '-level', '3.1',
+            '-pix_fmt', 'yuv420p', '-crf', '23',
+            '-r', '30', '-g', '60',
+            '-movflags', '+faststart',
             output_path, '-y'
         ], capture_output=True)
+        if result.returncode != 0:
+            print(f'❌ ffmpeg error: {result.stderr.decode()[:500]}')
 
     shutil.rmtree("frames", ignore_errors=True)
 
