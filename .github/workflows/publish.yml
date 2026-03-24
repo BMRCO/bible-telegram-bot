@@ -7,12 +7,12 @@ on:
         required: false
         default: 'image'
   schedule:
-    - cron: "0 6 * * *"   # 06h00 UTC → image  (FR: 07h hiver / 08h été)
-    - cron: "0 8 * * *"   # 08h00 UTC → reel   (FR: 09h hiver / 10h été)
-    - cron: "0 12 * * *"  # 12h00 UTC → image  (FR: 13h hiver / 14h été)
-    - cron: "0 15 * * *"  # 15h00 UTC → reel   (FR: 16h hiver / 17h été)
-    - cron: "0 18 * * *"  # 18h00 UTC → image  (FR: 19h hiver / 20h été)
-    - cron: "0 20 * * *"  # 20h00 UTC → reel   (FR: 21h hiver / 22h été)
+    - cron: "0 6 * * *"   # 06h00 UTC → image
+    - cron: "0 8 * * *"   # 08h00 UTC → reel
+    - cron: "0 12 * * *"  # 12h00 UTC → image
+    - cron: "0 15 * * *"  # 15h00 UTC → reel
+    - cron: "0 18 * * *"  # 18h00 UTC → image
+    - cron: "0 20 * * *"  # 20h00 UTC → reel
 permissions:
   contents: write
 jobs:
@@ -25,11 +25,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install ffmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          which ffmpeg || sudo apt-get install -y ffmpeg
       - name: Determine mode
         id: mode
         run: |
