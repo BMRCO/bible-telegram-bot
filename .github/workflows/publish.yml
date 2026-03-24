@@ -7,10 +7,12 @@ on:
         required: false
         default: 'image'
   schedule:
-    - cron: "0 7 * * *"   # 07h00 UTC → image  (FR: 08h hiver / 09h été)
-    - cron: "0 11 * * *"  # 11h00 UTC → reel   (FR: 12h hiver / 13h été)
+    - cron: "0 6 * * *"   # 06h00 UTC → image  (FR: 07h hiver / 08h été)
+    - cron: "0 8 * * *"   # 08h00 UTC → reel   (FR: 09h hiver / 10h été)
     - cron: "0 12 * * *"  # 12h00 UTC → image  (FR: 13h hiver / 14h été)
-    - cron: "0 18 * * *"  # 18h00 UTC → reel   (FR: 19h hiver / 20h été)
+    - cron: "0 15 * * *"  # 15h00 UTC → reel   (FR: 16h hiver / 17h été)
+    - cron: "0 18 * * *"  # 18h00 UTC → image  (FR: 19h hiver / 20h été)
+    - cron: "0 20 * * *"  # 20h00 UTC → reel   (FR: 21h hiver / 22h été)
 permissions:
   contents: write
 jobs:
@@ -36,7 +38,7 @@ jobs:
           HOUR=$(date -u +%H)
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "mode=${{ github.event.inputs.mode }}" >> $GITHUB_OUTPUT
-          elif [ "$HOUR" = "11" ] || [ "$HOUR" = "18" ]; then
+          elif [ "$HOUR" = "08" ] || [ "$HOUR" = "15" ] || [ "$HOUR" = "20" ]; then
             echo "mode=reel" >> $GITHUB_OUTPUT
           else
             echo "mode=image" >> $GITHUB_OUTPUT
