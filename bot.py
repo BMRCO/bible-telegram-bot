@@ -27,6 +27,11 @@ YT_CLIENT_ID      = os.environ.get("YOUTUBE_CLIENT_ID", "")
 YT_CLIENT_SECRET  = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
 YT_REFRESH_TOKEN  = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
 
+# Cloudinary (hébergement image/vidéo fiable pour Instagram)
+CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
+CLOUDINARY_API_KEY    = os.environ.get("CLOUDINARY_API_KEY", "")
+CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET", "")
+
 # Pinterest
 PINTEREST_ACCESS_TOKEN = os.environ.get("PINTEREST_ACCESS_TOKEN", "")
 PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "1092404522055080754")
@@ -383,16 +388,17 @@ def upload_video_public(video_path):
     import hashlib, time as _time
     print("⏳ Upload vidéo vers Cloudinary...")
     timestamp = str(int(_time.time()))
-    signature_str = f"timestamp={timestamp}{CLOUDINARY_API_SECRET}"
+    signature_str = f"resource_type=video&timestamp={timestamp}{CLOUDINARY_API_SECRET}"
     signature = hashlib.sha1(signature_str.encode()).hexdigest()
 
     with open(video_path, "rb") as f:
         r = requests.post(
             f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/video/upload",
             data={
-                "api_key":   CLOUDINARY_API_KEY,
-                "timestamp": timestamp,
-                "signature": signature,
+                "api_key":       CLOUDINARY_API_KEY,
+                "timestamp":     timestamp,
+                "signature":     signature,
+                "resource_type": "video",
             },
             files={"file": f},
             timeout=180
@@ -1022,7 +1028,7 @@ def post_to_youtube(video_path, ref, text, cat):
 
         youtube = build("youtube", "v3", credentials=creds)
 
-        title       = f"{ref}"
+        title       = f"{ref} — LSG1910"
         description = (
             f"{cat['emoji']} {ref}\n\n"
             f"« {text} »\n\n"
