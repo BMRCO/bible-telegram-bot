@@ -1036,7 +1036,7 @@ def post_to_youtube(video_path, ref, text, cat):
 
         youtube = build("youtube", "v3", credentials=creds)
 
-        title       = f"{ref} | LaBible.app"
+        title       = f"{ref} (LSG1910)"
         description = (
             f"{cat['emoji']} {ref}\n\n"
             f"« {text} »\n\n"
