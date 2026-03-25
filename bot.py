@@ -447,96 +447,46 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
         return
 
     container_id = r.json().get("id")
-    print(f"✅ Container Instagram créé : {container_id}")
-
-    publish_url = f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish"
-    r2 = requests.post(
-        publish_url,
-        data={"creation_id": container_id, "access_token": FB_PAGE_TOKEN},
-        timeout=60
-    )
-    print("DEBUG IG image publish:", r2.status_code, r2.text)
-
-    if r2.status_code == 200:
-        print(f"✅ Instagram publié — post_id: {r2.json().get('id', 'inconnu')}")
-    else:
-        print(f"❌ Erreur publication Instagram ({r2.status_code}): {r2.text}")
-
-
-def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
-    if not FB_PAGE_TOKEN:
-        print("⚠️  FB_PAGE_TOKEN manquant — reel Instagram ignoré.")
-        return
-
-    video_url = upload_video_public(video_path)
-    if not video_url:
-        return
-
-    hashtags = build_hashtags_ig(cat_name)
-    ig_caption = (
-        f"{cat['emoji']} {ref}\n\n"
-        f"« {text} »\n\n"
-        f"📖 Bible complète gratuite sur {APP_URL}\n\n"
-        f"{hashtags}"
-    )
-
-    cover_path = make_cover_image(ref)
-    cover_url = upload_to_imgbb(cover_path)
-
-    container_url = f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media"
-    container_data = {
-        "media_type": "REELS",
-        "video_url": video_url,
-        "caption": ig_caption,
-        "access_token": FB_PAGE_TOKEN,
-    }
-    if cover_url:
-        container_data["cover_url"] = cover_url
-        print(f"✅ Cover URL: {cover_url}")
-    else:
-        container_data["thumb_offset"] = "4000"
-
-    r = requests.post(container_url, data=container_data, timeout=60)
-    print("DEBUG IG reel container:", r.status_code, r.text)
-
-    if r.status_code != 200:
-        print(f"❌ Erreur container reel Instagram ({r.status_code}): {r.text}")
-        return
-
-    container_id = r.json().get("id")
-    print(f"✅ Container reel créé : {container_id}")
+       print(f"✅ Container reel créé : {container_id}")
 
     import time
+    status = ""
     for attempt in range(10):
         time.sleep(15)
         status_url = f"https://graph.facebook.com/v25.0/{container_id}"
         rs = requests.get(
             status_url,
-            params={"fields": "status_code,status,video_status,error_message", "access_token": FB_PAGE_TOKEN},
-            timeout=30
+            params={
+                "fields": "status_code,status,video_status",
+                "access_token": FB_PAGE_TOKEN,
+            },
+            timeout=30,
         )
         print("DEBUG IG reel status:", rs.status_code, rs.text)
-        status = rs.json().get("status_code", "")
-        print(f"  ⏳ Statut reel : {status} (tentative {attempt+1})")
+        data = rs.json()
+        status = data.get("status_code", "")
+        print(f" ⏳ Statut reel : {status} (tentative {attempt+1})")
         if status == "FINISHED":
             break
         if status == "ERROR":
-            print("❌ Erreur traitement vidéo Instagram.")
+            print("❌ Erreur traitement vidéo Instagram:", data)
             return
+
+    if status != "FINISHED":
+        print("❌ Reel IG non prêt après polling, abandon de la publication.")
+        return
 
     publish_url = f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish"
     r2 = requests.post(
         publish_url,
         data={"creation_id": container_id, "access_token": FB_PAGE_TOKEN},
-        timeout=60
+        timeout=60,
     )
     print("DEBUG IG reel publish:", r2.status_code, r2.text)
-
     if r2.status_code == 200:
         print(f"✅ Instagram reel publié — id: {r2.json().get('id', 'inconnu')}")
     else:
         print(f"❌ Erreur publication reel Instagram ({r2.status_code}): {r2.text}")
-
 
 # ---------------------------------------------------
 # ENVOI PINTEREST
