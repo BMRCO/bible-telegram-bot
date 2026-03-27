@@ -36,6 +36,9 @@ CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET", "")
 PINTEREST_ACCESS_TOKEN = os.environ.get("PINTEREST_ACCESS_TOKEN", "")
 PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "1092404522055080754")
 
+# Threads
+THREADS_ACCESS_TOKEN = os.environ.get("THREADS_ACCESS_TOKEN", "")
+
 PROGRESS_FILE = "progress.json"
 BIBLE_FILE    = "bible/lsg1910.json"
 
@@ -388,7 +391,7 @@ def upload_video_public(video_path):
     import hashlib, time as _time
     print("⏳ Upload vidéo vers Cloudinary...")
     timestamp = str(int(_time.time()))
-    signature_str = f"timestamp={timestamp}{CLOUDINARY_API_SECRET.strip()}"
+    signature_str = f"resource_type=video&timestamp={timestamp}{CLOUDINARY_API_SECRET}"
     signature = hashlib.sha1(signature_str.encode()).hexdigest()
 
     with open(video_path, "rb") as f:
@@ -552,7 +555,7 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
     app_link = f"{APP_URL}/#{book_chapter}"
 
     # Titre et description du Pin
-    pin_title = f"{ref} | Bible LSG1910"
+    pin_title = f"{ref} — Bible Louis Segond 1910"
     pin_description = (
         f"{cat['emoji']} « {text} »\n\n"
         f"— {ref} (LSG 1910)\n\n"
@@ -586,6 +589,66 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
         print(f"✅ Pinterest publié — pin_id: {pin_id}")
     else:
         print(f"❌ Erreur Pinterest ({r.status_code}): {r.text}")
+
+
+# ---------------------------------------------------
+# ENVOI THREADS
+# ---------------------------------------------------
+def post_to_threads(image_path, ref, text, cat, cat_name):
+    if not THREADS_ACCESS_TOKEN:
+        print("⚠️  THREADS_ACCESS_TOKEN non défini — Threads ignoré.")
+        return
+
+    # Upload image via ImgBB pour avoir une URL publique
+    image_url = upload_to_imgbb(image_path)
+    if not image_url:
+        print("❌ Threads ignoré — impossible d'uploader l'image.")
+        return
+
+    hashtags = build_hashtags_ig(cat_name)
+    caption = (
+        f"{cat['emoji']} {ref}\n\n"
+        f"« {text} »\n\n"
+        f"📖 Bible complète gratuite sur {APP_URL}\n\n"
+        f"{hashtags}"
+    )
+
+    # Étape 1 — Créer le container
+    r = requests.post(
+        "https://graph.threads.net/v1.0/me/threads",
+        data={
+            "media_type":  "IMAGE",
+            "image_url":   image_url,
+            "text":        caption,
+            "access_token": THREADS_ACCESS_TOKEN,
+        },
+        timeout=60
+    )
+
+    if r.status_code != 200:
+        print(f"❌ Erreur container Threads ({r.status_code}): {r.text}")
+        return
+
+    container_id = r.json().get("id")
+    print(f"✅ Container Threads créé : {container_id}")
+
+    import time; time.sleep(5)
+
+    # Étape 2 — Publier
+    r2 = requests.post(
+        "https://graph.threads.net/v1.0/me/threads_publish",
+        data={
+            "creation_id":  container_id,
+            "access_token": THREADS_ACCESS_TOKEN,
+        },
+        timeout=60
+    )
+
+    if r2.status_code == 200:
+        post_id = r2.json().get("id", "inconnu")
+        print(f"✅ Threads publié — id: {post_id}")
+    else:
+        print(f"❌ Erreur publication Threads ({r2.status_code}): {r2.text}")
 
 
 # ---------------------------------------------------
@@ -939,26 +1002,18 @@ def make_reel_video(text, ref, progress=None):
             '-i', 'frames/frame_%04d.png',
             '-ss', '2',
             '-i', music_file,
-            '-c:v', 'libx264', '-profile:v', 'baseline', '-level', '3.1',
-            '-pix_fmt', 'yuv420p', '-crf', '23',
-            '-r', '30', '-g', '60',
-            '-c:a', 'aac', '-b:a', '128k', '-ar', '44100', '-ac', '2',
-            '-movflags', '+faststart',
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
+            '-c:a', 'aac', '-b:a', '192k',
             '-shortest',
             output_path, '-y'
         ], capture_output=True)
     else:
-        result = subprocess.run([
+        subprocess.run([
             'ffmpeg', '-framerate', '30',
             '-i', 'frames/frame_%04d.png',
-            '-c:v', 'libx264', '-profile:v', 'baseline', '-level', '3.1',
-            '-pix_fmt', 'yuv420p', '-crf', '23',
-            '-r', '30', '-g', '60',
-            '-movflags', '+faststart',
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
             output_path, '-y'
         ], capture_output=True)
-        if result.returncode != 0:
-            print(f'❌ ffmpeg error: {result.stderr.decode()[:500]}')
 
     shutil.rmtree("frames", ignore_errors=True)
 
@@ -1092,6 +1147,7 @@ def main():
     post_to_facebook(img, ref, text, cat, cat_name)
     post_to_instagram(img, ref, text, cat, cat_name)
     post_to_pinterest(img, ref, text, cat, cat_name)
+    post_to_threads(img, ref, text, cat, cat_name)
 
     save_json(PROGRESS_FILE, progress)
     print("✅ Terminé (image).")
