@@ -552,7 +552,7 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
     app_link = f"{APP_URL}/#{book_chapter}"
 
     # Titre et description du Pin
-    pin_title = f"{ref} — Bible Louis Segond 1910"
+    pin_title = f"{ref} | Bible LSG1910"
     pin_description = (
         f"{cat['emoji']} « {text} »\n\n"
         f"— {ref} (LSG 1910)\n\n"
@@ -1036,7 +1036,7 @@ def post_to_youtube(video_path, ref, text, cat):
 
         youtube = build("youtube", "v3", credentials=creds)
 
-        title       = f"{ref} (LSG1910)"
+        title       = f"{ref} — LSG1910"
         description = (
             f"{cat['emoji']} {ref}\n\n"
             f"« {text} »\n\n"
