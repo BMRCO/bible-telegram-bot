@@ -381,7 +381,42 @@ def upload_to_imgbb(image_path):
 
 
 # ---------------------------------------------------
-# UPLOAD VIDÉO → tmpfiles.org (URL public temporaire)
+# UPLOAD IMAGE → Cloudinary (fiable pour Instagram/Threads)
+# ---------------------------------------------------
+def upload_to_cloudinary(image_path):
+    if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
+        print("⚠️  Cloudinary non configuré — fallback ImgBB.")
+        return upload_to_imgbb(image_path)
+
+    import hashlib, time as _time
+    timestamp = str(int(_time.time()))
+    signature_str = f"timestamp={timestamp}{CLOUDINARY_API_SECRET.strip()}"
+    signature = hashlib.sha1(signature_str.encode()).hexdigest()
+
+    with open(image_path, "rb") as f:
+        r = requests.post(
+            f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
+            data={
+                "api_key":   CLOUDINARY_API_KEY,
+                "timestamp": timestamp,
+                "signature": signature,
+            },
+            files={"file": f},
+            timeout=60
+        )
+
+    if r.status_code == 200:
+        url = r.json()["secure_url"]
+        print(f"✅ Image uploadée sur Cloudinary : {url}")
+        _time.sleep(3)
+        return url
+    else:
+        print(f"❌ Erreur Cloudinary ({r.status_code}): {r.text}")
+        return upload_to_imgbb(image_path)
+
+
+# ---------------------------------------------------
+# UPLOAD VIDÉO → Cloudinary
 # ---------------------------------------------------
 def upload_video_public(video_path):
     if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
@@ -599,8 +634,8 @@ def post_to_threads(image_path, ref, text, cat, cat_name):
         print("⚠️  THREADS_ACCESS_TOKEN non défini — Threads ignoré.")
         return
 
-    # Upload image via ImgBB pour avoir une URL publique
-    image_url = upload_to_imgbb(image_path)
+    # Upload image via Cloudinary pour avoir une URL publique
+    image_url = upload_to_cloudinary(image_path)
     if not image_url:
         print("❌ Threads ignoré — impossible d'uploader l'image.")
         return
@@ -612,6 +647,11 @@ def post_to_threads(image_path, ref, text, cat, cat_name):
         f"📖 Bible complète gratuite sur {APP_URL}\n\n"
         f"{hashtags}"
     )
+
+    # Threads nécessite une URL directe sans redirections
+    # Forcer format jpg dans l'URL Cloudinary
+    if "cloudinary.com" in image_url:
+        image_url = image_url.replace("/upload/", "/upload/f_jpg/")
 
     # Étape 1 — Créer le container
     r = requests.post(
