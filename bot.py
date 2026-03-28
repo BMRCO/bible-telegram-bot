@@ -27,14 +27,6 @@ YT_CLIENT_ID      = os.environ.get("YOUTUBE_CLIENT_ID", "")
 YT_CLIENT_SECRET  = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
 YT_REFRESH_TOKEN  = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
 
-# Cloudinary (hébergement image/vidéo fiable pour Instagram)
-CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
-CLOUDINARY_API_KEY    = os.environ.get("CLOUDINARY_API_KEY", "")
-CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET", "")
-
-# Threads
-THREADS_ACCESS_TOKEN = os.environ.get("THREADS_ACCESS_TOKEN", "")
-
 # Pinterest
 PINTEREST_ACCESS_TOKEN = os.environ.get("PINTEREST_ACCESS_TOKEN", "")
 PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "1092404522055080754")
@@ -181,9 +173,7 @@ def clean_text(text: str) -> str:
     text = re.sub(r'\s*Sélah\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s*Selah\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s+', ' ', text).strip()
-    text = re.sub(r'\s*([;:?!])', r'\1', text)
-    # Supprimer le point-virgule final s'il est le dernier caractère
-    text = re.sub(r'[;:]\s*$', '', text).strip()
+    text = re.sub(r'\s*([;:?!])', r' \1', text)
     text = text.replace("'", "\u2019").replace("'", "\u2019")
     if not text.endswith(('.', '!', '?')):
         text += '.'
@@ -383,41 +373,6 @@ def upload_to_imgbb(image_path):
 
 
 # ---------------------------------------------------
-# UPLOAD IMAGE → Cloudinary (fiable pour Instagram/Threads)
-# ---------------------------------------------------
-def upload_to_cloudinary(image_path):
-    if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
-        print("⚠️  Cloudinary non configuré — fallback ImgBB.")
-        return upload_to_imgbb(image_path)
-
-    import hashlib, time as _time
-    timestamp = str(int(_time.time()))
-    signature_str = f"timestamp={timestamp}{CLOUDINARY_API_SECRET.strip()}"
-    signature = hashlib.sha1(signature_str.encode()).hexdigest()
-
-    with open(image_path, "rb") as f:
-        r = requests.post(
-            f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
-            data={{
-                "api_key":   CLOUDINARY_API_KEY,
-                "timestamp": timestamp,
-                "signature": signature,
-            }},
-            files={{"file": f}},
-            timeout=60
-        )
-
-    if r.status_code == 200:
-        url = r.json()["secure_url"]
-        print(f"✅ Image uploadée sur Cloudinary : {{url}}")
-        _time.sleep(3)
-        return url
-    else:
-        print(f"❌ Erreur Cloudinary ({{r.status_code}}): {{r.text}}")
-        return upload_to_imgbb(image_path)
-
-
-# ---------------------------------------------------
 # UPLOAD VIDÉO → tmpfiles.org (URL public temporaire)
 # ---------------------------------------------------
 def upload_video_public(video_path):
@@ -428,16 +383,17 @@ def upload_video_public(video_path):
     import hashlib, time as _time
     print("⏳ Upload vidéo vers Cloudinary...")
     timestamp = str(int(_time.time()))
-    signature_str = f"timestamp={timestamp}{CLOUDINARY_API_SECRET.strip()}"
+    signature_str = f"resource_type=video&timestamp={timestamp}{CLOUDINARY_API_SECRET}"
     signature = hashlib.sha1(signature_str.encode()).hexdigest()
 
     with open(video_path, "rb") as f:
         r = requests.post(
             f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/video/upload",
             data={
-                "api_key":   CLOUDINARY_API_KEY,
-                "timestamp": timestamp,
-                "signature": signature,
+                "api_key":       CLOUDINARY_API_KEY,
+                "timestamp":     timestamp,
+                "signature":     signature,
+                "resource_type": "video",
             },
             files={"file": f},
             timeout=180
@@ -457,16 +413,13 @@ def upload_video_public(video_path):
 # ENVOI INSTAGRAM
 # ---------------------------------------------------
 def post_to_instagram(image_path, ref, text, cat, cat_name):
-    if not FB_PAGE_TOKEN:
-        print("⚠️  FB_PAGE_TOKEN manquant — Instagram ignoré.")
+    if not FB_PAGE_TOKEN or not IMGBB_API_KEY:
+        print("⚠️  Token ou IMGBB_API_KEY manquant — Instagram ignoré.")
         return
 
-    image_url = upload_to_cloudinary(image_path)
+    image_url = upload_to_imgbb(image_path)
     if not image_url:
         return
-    # Forcer format jpg pour Instagram
-    if "cloudinary.com" in image_url:
-        image_url = image_url.replace("/upload/", "/upload/f_jpg/")
 
     hashtags = build_hashtags_ig(cat_name)
     ig_caption = (
@@ -594,7 +547,7 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
     app_link = f"{APP_URL}/#{book_chapter}"
 
     # Titre et description du Pin
-    pin_title = f"{ref} | Bible LSG1910"
+    pin_title = f"{ref} — Bible Louis Segond 1910"
     pin_description = (
         f"{cat['emoji']} « {text} »\n\n"
         f"— {ref} (LSG 1910)\n\n"
@@ -628,6 +581,65 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
         print(f"✅ Pinterest publié — pin_id: {pin_id}")
     else:
         print(f"❌ Erreur Pinterest ({r.status_code}): {r.text}")
+
+
+# ---------------------------------------------------
+# ENVOI THREADS
+# ---------------------------------------------------
+def post_to_threads(image_path, ref, text, cat, cat_name):
+    if not THREADS_ACCESS_TOKEN:
+        print("⚠️  THREADS_ACCESS_TOKEN non défini — Threads ignoré.")
+        return
+
+    image_url = upload_to_cloudinary(image_path)
+    if not image_url:
+        print("❌ Threads ignoré — impossible d'uploader l'image.")
+        return
+
+    if "cloudinary.com" in image_url:
+        image_url = image_url.replace("/upload/", "/upload/f_jpg/")
+
+    hashtags = build_hashtags_ig(cat_name)
+    caption = (
+        f"{cat['emoji']} {ref}\n\n"
+        f"« {text} »\n\n"
+        f"📖 Bible complète gratuite sur {APP_URL}\n\n"
+        f"{hashtags}"
+    )
+
+    r = requests.post(
+        "https://graph.threads.net/v1.0/me/threads",
+        data={
+            "media_type":  "IMAGE",
+            "image_url":   image_url,
+            "text":        caption,
+            "access_token": THREADS_ACCESS_TOKEN,
+        },
+        timeout=60
+    )
+
+    if r.status_code != 200:
+        print(f"❌ Erreur container Threads ({r.status_code}): {r.text}")
+        return
+
+    container_id = r.json().get("id")
+    print(f"✅ Container Threads créé : {container_id}")
+
+    import time; time.sleep(5)
+
+    r2 = requests.post(
+        "https://graph.threads.net/v1.0/me/threads_publish",
+        data={
+            "creation_id":  container_id,
+            "access_token": THREADS_ACCESS_TOKEN,
+        },
+        timeout=60
+    )
+
+    if r2.status_code == 200:
+        print(f"✅ Threads publié — id: {r2.json().get('id', 'inconnu')}")
+    else:
+        print(f"❌ Erreur publication Threads ({r2.status_code}): {r2.text}")
 
 
 # ---------------------------------------------------
@@ -669,12 +681,6 @@ def wrap_text(draw, text, font, max_w):
             lines.append(current)
             current = w
     lines.append(current)
-    # Eviter qu'un mot court ou ponctuation se retrouve seul sur la dernière ligne
-    if len(lines) >= 2 and len(lines[-1].strip()) <= 2:
-        prev = lines[-2]
-        last = lines[-1]
-        lines[-2] = prev + " " + last
-        lines.pop()
     return lines
 
 
@@ -1076,7 +1082,7 @@ def post_to_youtube(video_path, ref, text, cat):
 
         youtube = build("youtube", "v3", credentials=creds)
 
-        title       = f"{ref}"
+        title       = f"{ref} — LSG1910"
         description = (
             f"{cat['emoji']} {ref}\n\n"
             f"« {text} »\n\n"
@@ -1132,6 +1138,7 @@ def main():
     post_to_facebook(img, ref, text, cat, cat_name)
     post_to_instagram(img, ref, text, cat, cat_name)
     post_to_pinterest(img, ref, text, cat, cat_name)
+    post_to_threads(img, ref, text, cat, cat_name)
 
     save_json(PROGRESS_FILE, progress)
     print("✅ Terminé (image).")
@@ -1156,7 +1163,6 @@ def main_reel():
             print(f"⚠️ Logo não disponível: {e}")
 
     video   = make_reel_video(text, ref, progress)
-    img_cover = make_image(text, ref)
     caption = f"{cat['emoji']} <b>{ref}</b>\n#LaBible #LSG1910 #versetdujour {cat['tag']}"
 
     send_video(video, caption)
