@@ -391,7 +391,7 @@ def upload_video_public(video_path):
     import hashlib, time as _time
     print("⏳ Upload vidéo vers Cloudinary...")
     timestamp = str(int(_time.time()))
-    signature_str = f"resource_type=video&timestamp={timestamp}{CLOUDINARY_API_SECRET}"
+    signature_str = f"timestamp={timestamp}{CLOUDINARY_API_SECRET.strip()}"
     signature = hashlib.sha1(signature_str.encode()).hexdigest()
 
     with open(video_path, "rb") as f:
@@ -1177,7 +1177,7 @@ def main_reel():
     post_reel_to_facebook(video, ref, text, cat, cat_name)
     post_reel_to_instagram(video, ref, text, cat, cat_name)
     post_to_youtube(video, ref, text, cat)
-    post_to_threads(img_cover, ref, text, cat, cat_name)
+    post_to_threads(make_image(text, ref), ref, text, cat, cat_name)
 
     save_json(PROGRESS_FILE, progress)
     print("✅ Terminé (reel).")
