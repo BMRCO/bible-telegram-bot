@@ -393,22 +393,22 @@ def upload_to_cloudinary(image_path):
     with open(image_path, "rb") as f:
         r = requests.post(
             f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
-            data={{
+            data={
                 "api_key":   CLOUDINARY_API_KEY,
                 "timestamp": timestamp,
                 "signature": signature,
-            }},
-            files={{"file": f}},
+            },
+            files={"file": f},
             timeout=60
         )
 
     if r.status_code == 200:
         url = r.json()["secure_url"]
-        print(f"✅ Image uploadée sur Cloudinary : {{url}}")
+        print(f"✅ Image uploadée sur Cloudinary : {url}")
         _time.sleep(3)
         return url
     else:
-        print(f"❌ Erreur Cloudinary ({{r.status_code}}): {{r.text}}")
+        print(f"❌ Erreur Cloudinary ({r.status_code}): {r.text}")
         return upload_to_imgbb(image_path)
 
 
