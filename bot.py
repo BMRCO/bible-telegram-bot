@@ -381,7 +381,42 @@ def upload_to_imgbb(image_path):
 
 
 # ---------------------------------------------------
-# UPLOAD VIDÉO → tmpfiles.org (URL public temporaire)
+# UPLOAD IMAGE → Cloudinary (fiable pour Instagram/Threads)
+# ---------------------------------------------------
+def upload_to_cloudinary(image_path):
+    if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
+        print("⚠️  Cloudinary non configuré — fallback ImgBB.")
+        return upload_to_imgbb(image_path)
+
+    import hashlib, time as _time
+    timestamp = str(int(_time.time()))
+    signature_str = f"timestamp={timestamp}{CLOUDINARY_API_SECRET.strip()}"
+    signature = hashlib.sha1(signature_str.encode()).hexdigest()
+
+    with open(image_path, "rb") as f:
+        r = requests.post(
+            f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
+            data={
+                "api_key":   CLOUDINARY_API_KEY,
+                "timestamp": timestamp,
+                "signature": signature,
+            },
+            files={"file": f},
+            timeout=60
+        )
+
+    if r.status_code == 200:
+        url = r.json()["secure_url"]
+        print(f"✅ Image uploadée sur Cloudinary : {url}")
+        _time.sleep(3)
+        return url
+    else:
+        print(f"❌ Erreur Cloudinary ({r.status_code}): {r.text}")
+        return upload_to_imgbb(image_path)
+
+
+# ---------------------------------------------------
+# UPLOAD VIDÉO → Cloudinary
 # ---------------------------------------------------
 def upload_video_public(video_path):
     if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
