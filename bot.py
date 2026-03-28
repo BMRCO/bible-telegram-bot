@@ -1156,12 +1156,14 @@ def main_reel():
             print(f"⚠️ Logo não disponível: {e}")
 
     video   = make_reel_video(text, ref, progress)
+    img_cover = make_image(text, ref)
     caption = f"{cat['emoji']} <b>{ref}</b>\n#LaBible #LSG1910 #versetdujour {cat['tag']}"
 
     send_video(video, caption)
     post_reel_to_facebook(video, ref, text, cat, cat_name)
     post_reel_to_instagram(video, ref, text, cat, cat_name)
     post_to_youtube(video, ref, text, cat)
+    post_to_threads(img_cover, ref, text, cat, cat_name)
 
     save_json(PROGRESS_FILE, progress)
     print("✅ Terminé (reel).")
