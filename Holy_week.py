@@ -84,8 +84,19 @@ HOLY_WEEK = {
         "palette": "sombre",
         "deco":    "cross",
     },
+    "2026-04-04": {
+        "theme": "Samedi Saint — Descente aux Enfers",
+        "emoji": "🙏",
+        "tag":   "#SamediSaint",
+        "hashtags": "#SamediSaint #SemaineSainte #DescenteAuxEnfers #Résurrection #Jésus #JésusChrist #Bible #BibleFrancaise #LSG1910 #Foi #LaBible #Paques2026",
+        "verse": ("Tu ne laisseras pas mon âme au séjour des morts, "
+                  "tu ne permettras pas que ton bien-aimé voie la corruption."),
+        "ref":   "Psaume 16:10",
+        "palette": "violet",
+        "deco":  "cross",
+    },
     "2026-04-05": {
-        "theme":   "Dimanche de Pâques — La Résurrection",
+        "theme":   "Pâques — Il est Ressuscité !",
         "emoji":   "🌅",
         "tag":     "#Paques #Resurrection",
         "verse":   "Il n'est point ici, mais il est ressuscité. Souvenez-vous de quelle manière il vous a parlé, lorsqu'il était encore en Galilée.",
@@ -100,6 +111,7 @@ PALETTES_HW = {
     "sombre":   {"bg": (8,8,14),    "bg2": (4,4,8),    "border": (120,100,60), "text": (220,210,190), "accent": (150,120,60)},
     "or":       {"bg": (20,14,4),   "bg2": (12,8,2),   "border": (210,175,80), "text": (255,245,220), "accent": (220,185,90)},
     "lumiere":  {"bg": (10,20,40),  "bg2": (6,12,25),  "border": (200,175,100),"text": (255,250,230), "accent": (210,185,110)},
+    "violet":   {"bg": (18,8,30),   "bg2": (10,4,18),  "border": (160,120,200),"text": (235,225,255), "accent": (180,140,220)},
 }
 
 # ── Éléments décoratifs ──
