@@ -27,6 +27,11 @@ YT_CLIENT_ID      = os.environ.get("YOUTUBE_CLIENT_ID", "")
 YT_CLIENT_SECRET  = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
 YT_REFRESH_TOKEN  = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
 
+# Cloudinary (hébergement image/vidéo fiable pour Instagram)
+CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
+CLOUDINARY_API_KEY    = os.environ.get("CLOUDINARY_API_KEY", "")
+CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET", "")
+
 # Pinterest
 PINTEREST_ACCESS_TOKEN = os.environ.get("PINTEREST_ACCESS_TOKEN", "")
 PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "1092404522055080754")
@@ -370,6 +375,41 @@ def upload_to_imgbb(image_path):
     else:
         print(f"❌ Erreur ImgBB ({r.status_code}): {r.text}")
         return None
+
+
+# ---------------------------------------------------
+# UPLOAD IMAGE → Cloudinary (fiable pour Instagram/Threads)
+# ---------------------------------------------------
+def upload_to_cloudinary(image_path):
+    if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
+        print("⚠️  Cloudinary non configuré — fallback ImgBB.")
+        return upload_to_imgbb(image_path)
+
+    import hashlib, time as _time
+    timestamp = str(int(_time.time()))
+    signature_str = f"timestamp={timestamp}{CLOUDINARY_API_SECRET.strip()}"
+    signature = hashlib.sha1(signature_str.encode()).hexdigest()
+
+    with open(image_path, "rb") as f:
+        r = requests.post(
+            f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
+            data={{
+                "api_key":   CLOUDINARY_API_KEY,
+                "timestamp": timestamp,
+                "signature": signature,
+            }},
+            files={{"file": f}},
+            timeout=60
+        )
+
+    if r.status_code == 200:
+        url = r.json()["secure_url"]
+        print(f"✅ Image uploadée sur Cloudinary : {{url}}")
+        _time.sleep(3)
+        return url
+    else:
+        print(f"❌ Erreur Cloudinary ({{r.status_code}}): {{r.text}}")
+        return upload_to_imgbb(image_path)
 
 
 # ---------------------------------------------------
