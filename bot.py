@@ -32,6 +32,9 @@ CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
 CLOUDINARY_API_KEY    = os.environ.get("CLOUDINARY_API_KEY", "")
 CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET", "")
 
+# Threads
+THREADS_ACCESS_TOKEN = os.environ.get("THREADS_ACCESS_TOKEN", "")
+
 # Pinterest
 PINTEREST_ACCESS_TOKEN = os.environ.get("PINTEREST_ACCESS_TOKEN", "")
 PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "1092404522055080754")
@@ -178,7 +181,9 @@ def clean_text(text: str) -> str:
     text = re.sub(r'\s*Sélah\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s*Selah\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s+', ' ', text).strip()
-    text = re.sub(r'\s*([;:?!])', r' \1', text)
+    text = re.sub(r'\s*([;:?!])', r'\1', text)
+    # Supprimer le point-virgule final s'il est le dernier caractère
+    text = re.sub(r'[;:]\s*$', '', text).strip()
     text = text.replace("'", "\u2019").replace("'", "\u2019")
     if not text.endswith(('.', '!', '?')):
         text += '.'
@@ -393,22 +398,22 @@ def upload_to_cloudinary(image_path):
     with open(image_path, "rb") as f:
         r = requests.post(
             f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
-            data={
+            data={{
                 "api_key":   CLOUDINARY_API_KEY,
                 "timestamp": timestamp,
                 "signature": signature,
-            },
-            files={"file": f},
+            }},
+            files={{"file": f}},
             timeout=60
         )
 
     if r.status_code == 200:
         url = r.json()["secure_url"]
-        print(f"✅ Image uploadée sur Cloudinary : {url}")
+        print(f"✅ Image uploadée sur Cloudinary : {{url}}")
         _time.sleep(3)
         return url
     else:
-        print(f"❌ Erreur Cloudinary ({r.status_code}): {r.text}")
+        print(f"❌ Erreur Cloudinary ({{r.status_code}}): {{r.text}}")
         return upload_to_imgbb(image_path)
 
 
@@ -484,24 +489,6 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
 
     container_id = r.json().get("id")
     print(f"✅ Container Instagram créé : {container_id}")
-
-    # Attendre que le média soit prêt
-    import time
-    for attempt in range(8):
-        time.sleep(10)
-        status_url = f"https://graph.facebook.com/v25.0/{container_id}"
-        rs = requests.get(
-            status_url,
-            params={"fields": "status_code", "access_token": FB_PAGE_TOKEN},
-            timeout=30
-        )
-        status = rs.json().get("status_code", "")
-        print(f"  ⏳ Statut image : {status} (tentative {attempt+1})")
-        if status == "FINISHED":
-            break
-        if status == "ERROR":
-            print("❌ Erreur traitement image Instagram.")
-            return
 
     publish_url = f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish"
     r2 = requests.post(
@@ -682,6 +669,12 @@ def wrap_text(draw, text, font, max_w):
             lines.append(current)
             current = w
     lines.append(current)
+    # Eviter qu'un mot court ou ponctuation se retrouve seul sur la dernière ligne
+    if len(lines) >= 2 and len(lines[-1].strip()) <= 2:
+        prev = lines[-2]
+        last = lines[-1]
+        lines[-2] = prev + " " + last
+        lines.pop()
     return lines
 
 
