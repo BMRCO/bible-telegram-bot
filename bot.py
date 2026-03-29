@@ -19,7 +19,7 @@ FB_PAGE_TOKEN = os.environ.get("FB_PAGE_TOKEN", "")
 # Instagram
 IG_ACCOUNT_ID = os.environ.get("IG_ACCOUNT_ID", "17841447648424267")
 
-# ImgBB (hébergement image public pour Instagram + Pinterest)
+# ImgBB (hébergement image public pour Pinterest)
 IMGBB_API_KEY = os.environ.get("IMGBB_API_KEY", "")
 
 # YouTube
@@ -355,7 +355,7 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name):
 
 
 # ---------------------------------------------------
-# UPLOAD IMAGE → ImgBB
+# UPLOAD IMAGE → ImgBB (Pinterest apenas)
 # ---------------------------------------------------
 def upload_to_imgbb(image_path):
     if not IMGBB_API_KEY:
@@ -381,7 +381,7 @@ def upload_to_imgbb(image_path):
 
 
 # ---------------------------------------------------
-# UPLOAD IMAGE → Cloudinary (fiable pour Instagram/Threads)
+# UPLOAD IMAGE → Cloudinary (Instagram / Threads)
 # ---------------------------------------------------
 def upload_to_cloudinary(image_path):
     if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
@@ -456,13 +456,15 @@ def upload_video_public(video_path):
 # ENVOI INSTAGRAM
 # ---------------------------------------------------
 def post_to_instagram(image_path, ref, text, cat, cat_name):
-    if not FB_PAGE_TOKEN or not IMGBB_API_KEY:
-        print("⚠️  Token ou IMGBB_API_KEY manquant — Instagram ignoré.")
+    if not FB_PAGE_TOKEN:
+        print("⚠️  FB_PAGE_TOKEN manquant — Instagram ignoré.")
         return
 
-    image_url = upload_to_imgbb(image_path)
+    image_url = upload_to_cloudinary(image_path)
     if not image_url:
         return
+    if "cloudinary.com" in image_url:
+        image_url = image_url.replace("/upload/", "/upload/f_jpg/")
 
     hashtags = build_hashtags_ig(cat_name)
     ig_caption = (
@@ -517,7 +519,9 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
     )
 
     cover_path = make_cover_image(ref)
-    cover_url = upload_to_imgbb(cover_path)
+    cover_url = upload_to_cloudinary(cover_path)
+    if cover_url and "cloudinary.com" in cover_url:
+        cover_url = cover_url.replace("/upload/", "/upload/f_jpg/")
 
     container_url = f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media"
     container_data = {
@@ -579,17 +583,14 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
         print("⚠️  PINTEREST_ACCESS_TOKEN non défini — Pinterest ignoré.")
         return
 
-    # Réutiliser ImgBB pour obtenir une URL publique
     image_url = upload_to_imgbb(image_path)
     if not image_url:
         print("❌ Pinterest ignoré — impossible d'uploader l'image.")
         return
 
-    # Lien vers la page correspondante dans l'app
     book_chapter = ref.replace(" ", "-")
     app_link = f"{APP_URL}/#{book_chapter}"
 
-    # Titre et description du Pin
     pin_title = f"{cat['emoji']} {ref} | LaBible.app"
     pin_description = (
         f"{cat['emoji']} « {text} »\n\n"
