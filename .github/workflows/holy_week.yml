@@ -28,7 +28,7 @@ jobs:
         uses: FedericoCarboni/setup-ffmpeg@v3
       - name: Install dependencies
         run: |
-          pip install requests pillow numpy
+          pip install requests pillow numpy google-api-python-client google-auth-httplib2 google-auth-oauthlib
       - name: Publier Semaine Sainte
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
