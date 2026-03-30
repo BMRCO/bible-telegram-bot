@@ -303,6 +303,7 @@ def post_to_facebook(image_path, ref, text, cat, cat_name):
         f"{cat['emoji']} {ref}\n\n"
         f"« {text} »\n\n"
         f"📖 Lisez la Bible complète gratuitement sur {APP_URL}\n\n"
+        f"👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n"
         f"{hashtags}"
     )
 
@@ -332,6 +333,7 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name):
         f"{cat['emoji']} {ref}\n\n"
         f"« {text} »\n\n"
         f"📖 Bible complète gratuite sur {APP_URL}\n\n"
+        f"👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n"
         f"{hashtags}"
     )
 
@@ -471,6 +473,7 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
         f"{cat['emoji']} {ref}\n\n"
         f"« {text} »\n\n"
         f"📖 Bible complète gratuite sur {APP_URL}\n\n"
+        f"👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n"
         f"{hashtags}"
     )
 
@@ -532,6 +535,7 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
         f"{cat['emoji']} {ref}\n\n"
         f"« {text} »\n\n"
         f"📖 Bible complète gratuite sur {APP_URL}\n\n"
+        f"👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n"
         f"{hashtags}"
     )
 
@@ -681,6 +685,7 @@ def post_to_threads(image_path, ref, text, cat, cat_name):
         f"{cat['emoji']} {ref}\n\n"
         f"« {text} »\n\n"
         f"📖 Bible complète gratuite sur {APP_URL}\n\n"
+        f"👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n"
         f"{hashtags}"
     )
 
