@@ -1035,7 +1035,23 @@ def make_reel_video(text, ref, progress=None):
 
     output_path = "reel.mp4"
 
-    import glob, shutil
+    import glob, shutil, asyncio
+
+    # --- TTS narration ---
+    tts_path = None
+    try:
+        import edge_tts
+        tts_text = f"« {text_clean} » — {ref}"
+        async def gen_tts():
+            tts = edge_tts.Communicate(tts_text, "fr-FR-DeniseNeural")
+            await tts.save("narration.mp3")
+        asyncio.run(gen_tts())
+        tts_path = "narration.mp3"
+        print("✅ Narration TTS générée")
+    except Exception as e:
+        print(f"⚠️ TTS échoué : {e}")
+
+    # --- Musique ---
     music_files = glob.glob("music/*.mp3") + glob.glob("music/*.m4a") + glob.glob("music/*.ogg")
     music_file  = None
     if music_files:
@@ -1049,11 +1065,40 @@ def make_reel_video(text, ref, progress=None):
 
     if music_file:
         print(f"🎵 Musique : {music_file}")
+
+    # --- Montage ffmpeg ---
+    if tts_path and music_file:
+        # Narration + musique à 10% volume
         subprocess.run([
             'ffmpeg', '-framerate', '30',
             '-i', 'frames/frame_%04d.png',
-            '-ss', '2',
-            '-i', music_file,
+            '-ss', '2', '-i', music_file,
+            '-i', tts_path,
+            '-filter_complex',
+            '[1:a]volume=0.10[music];[2:a]volume=1.0[voice];[music][voice]amix=inputs=2:duration=first[aout]',
+            '-map', '0:v', '-map', '[aout]',
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
+            '-c:a', 'aac', '-b:a', '192k',
+            '-shortest',
+            output_path, '-y'
+        ], capture_output=True)
+    elif tts_path:
+        # Narration seule
+        subprocess.run([
+            'ffmpeg', '-framerate', '30',
+            '-i', 'frames/frame_%04d.png',
+            '-i', tts_path,
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
+            '-c:a', 'aac', '-b:a', '192k',
+            '-shortest',
+            output_path, '-y'
+        ], capture_output=True)
+    elif music_file:
+        # Musique seule (fallback)
+        subprocess.run([
+            'ffmpeg', '-framerate', '30',
+            '-i', 'frames/frame_%04d.png',
+            '-ss', '2', '-i', music_file,
             '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
             '-c:a', 'aac', '-b:a', '192k',
             '-shortest',
@@ -1068,6 +1113,9 @@ def make_reel_video(text, ref, progress=None):
         ], capture_output=True)
 
     shutil.rmtree("frames", ignore_errors=True)
+    if tts_path:
+        import os as _os
+        _os.remove(tts_path)
 
     print(f"✅ Reel généré : {output_path}")
     return output_path
