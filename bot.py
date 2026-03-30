@@ -608,14 +608,23 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
     book_chapter = ref.replace(" ", "-")
     app_link = f"{APP_URL}/#{book_chapter}"
 
+    pin_keywords = {
+        "promise":   "Promesse de Dieu",
+        "jesus":     "Parole de Jésus",
+        "psaume":    "Psaume Biblique",
+        "proverbe":  "Sagesse de la Bible",
+        "prophetie": "Prophétie Accomplie",
+    }
+    pin_kw = pin_keywords.get(cat_name, "Verset Biblique")
+    pin_base = f"{cat['emoji']} {pin_kw} — {ref} | LaBible.app"
     words_pin = text.split()
     snippet_pin = ""
     for w in words_pin:
         test = snippet_pin + (" " if snippet_pin else "") + w
-        if len(f"{cat['emoji']} {ref} — {test} | LaBible.app") > 100:
+        if len(pin_base + " — " + test) > 100:
             break
         snippet_pin = test
-    pin_title = f"{cat['emoji']} {ref} — {snippet_pin} | LaBible.app" if snippet_pin else f"{cat['emoji']} {ref} | LaBible.app"
+    pin_title = pin_base
     pin_description = (
         f"{cat['emoji']} « {text} »\n\n"
         f"— {ref} (LSG 1910)\n\n"
@@ -1150,15 +1159,24 @@ def post_to_youtube(video_path, ref, text, cat):
 
         youtube = build("youtube", "v3", credentials=creds)
 
-        # Extrait les premiers mots du verset pour le titre SEO
+        # Titre SEO YouTube — keyword + ref + snippet
+        yt_keywords = {
+            "promise":   "Promesse de Dieu",
+            "jesus":     "Parole de Jésus",
+            "psaume":    "Psaume du Jour",
+            "proverbe":  "Sagesse Biblique",
+            "prophetie": "Prophétie Biblique",
+        }
+        kw = yt_keywords.get(cat_name, "Verset du Jour")
+        base = f"{cat['emoji']} {kw} — {ref} | Bible LSG 1910"
         words = text.split()
         snippet = ""
         for w in words:
             test = snippet + (" " if snippet else "") + w
-            if len(f"{cat['emoji']} {ref} — {test}") > 97:
+            if len(base + " — " + test) > 97:
                 break
             snippet = test
-        title = f"{cat['emoji']} {ref} — {snippet}" if snippet else f"{cat['emoji']} {ref}"
+        title = f"{base} — {snippet}" if snippet else base
         description = (
             f"{cat['emoji']} {ref}\n\n"
             f"« {text} »\n\n"
