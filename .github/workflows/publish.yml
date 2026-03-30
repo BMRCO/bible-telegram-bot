@@ -34,10 +34,9 @@ jobs:
       - name: Determine mode
         id: mode
         run: |
-          HOUR=$(date -u +%H)
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "mode=${{ github.event.inputs.mode }}" >> $GITHUB_OUTPUT
-          elif [ "$HOUR" = "07" ] || [ "$HOUR" = "14" ] || [ "$HOUR" = "19" ]; then
+          elif [ "${{ github.event.schedule }}" = "0 7 * * *" ] || [ "${{ github.event.schedule }}" = "0 14 * * *" ] || [ "${{ github.event.schedule }}" = "0 19 * * *" ]; then
             echo "mode=reel" >> $GITHUB_OUTPUT
           else
             echo "mode=image" >> $GITHUB_OUTPUT
