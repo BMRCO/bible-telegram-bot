@@ -1136,7 +1136,7 @@ def pick_verse(progress):
 # ---------------------------------------------------
 # ENVOI YOUTUBE SHORTS
 # ---------------------------------------------------
-def post_to_youtube(video_path, ref, text, cat):
+def post_to_youtube(video_path, ref, text, cat, cat_name):
     if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
         print("⚠️  Credentials YouTube manquants — publication ignorée.")
         return
@@ -1262,7 +1262,7 @@ def main_reel():
     send_video(video, caption)
     post_reel_to_facebook(video, ref, text, cat, cat_name)
     post_reel_to_instagram(video, ref, text, cat, cat_name)
-    post_to_youtube(video, ref, text, cat)
+    post_to_youtube(video, ref, text, cat, cat_name)
     post_to_threads(make_image(text, ref), ref, text, cat, cat_name)
 
     save_json(PROGRESS_FILE, progress)
