@@ -539,23 +539,15 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
         f"{hashtags}"
     )
 
-    cover_path = make_cover_image(ref)
-    cover_url = upload_to_cloudinary(cover_path)
-    if cover_url and "cloudinary.com" in cover_url:
-        cover_url = cover_url.replace("/upload/", "/upload/f_jpg/")
-
+    # Utilise le frame du milieu de la vidéo (7500ms = ~50% d'une vidéo de 15s)
     container_url = f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media"
     container_data = {
         "media_type": "REELS",
         "video_url": video_url,
         "caption": ig_caption,
         "access_token": FB_PAGE_TOKEN,
+        "thumb_offset": "7500",
     }
-    if cover_url:
-        container_data["cover_url"] = cover_url
-        print(f"✅ Cover URL: {cover_url}")
-    else:
-        container_data["thumb_offset"] = "4000"
 
     r = requests.post(container_url, data=container_data, timeout=60)
 
