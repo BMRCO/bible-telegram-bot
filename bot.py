@@ -109,7 +109,7 @@ CATEGORIES = {
     "prophetie": {
         "key":   "i_prophetie",
         "file":  "propheties_curated.json",
-        "emoji": "🔯",
+        "emoji": "📯",
         "tag":   "#Prophétie"
     },
 }
