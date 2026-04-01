@@ -1,187 +1,118 @@
 [
-  [
-    "Proverbes",
-    11,
-    14
-  ],
-  [
-    "Proverbes",
-    17,
-    17
-  ],
-  [
-    "Proverbes",
-    27,
-    1
-  ],
-  [
-    "Proverbes",
-    3,
-    9
-  ],
-  [
-    "Proverbes",
-    6,
-    23
-  ],
-  [
-    "Proverbes",
-    3,
-    6
-  ],
-  [
-    "Proverbes",
-    2,
-    6
-  ],
-  [
-    "Proverbes",
-    16,
-    3
-  ],
-  [
-    "Proverbes",
-    12,
-    15
-  ],
-  [
-    "Proverbes",
-    20,
-    7
-  ],
-  [
-    "Proverbes",
-    15,
-    13
-  ],
-  [
-    "Proverbes",
-    3,
-    12
-  ],
-  [
-    "Proverbes",
-    14,
-    12
-  ],
-  [
-    "Proverbes",
-    4,
-    7
-  ],
-  [
-    "Proverbes",
-    24,
-    16
-  ],
-  [
-    "Proverbes",
-    4,
-    23
-  ],
-  [
-    "Proverbes",
-    11,
-    2
-  ],
-  [
-    "Proverbes",
-    24,
-    10
-  ],
-  [
-    "Proverbes",
-    19,
-    21
-  ],
-  [
-    "Proverbes",
-    27,
-    17
-  ],
-  [
-    "Proverbes",
-    22,
-    6
-  ],
-  [
-    "Proverbes",
-    29,
-    11
-  ],
-  [
-    "Proverbes",
-    15,
-    1
-  ],
-  [
-    "Proverbes",
-    23,
-    7
-  ],
-  [
-    "Proverbes",
-    22,
-    1
-  ],
-  [
-    "Proverbes",
-    10,
-    12
-  ],
-  [
-    "Proverbes",
-    18,
-    24
-  ],
-  [
-    "Proverbes",
-    3,
-    7
-  ],
-  [
-    "Proverbes",
-    21,
-    23
-  ],
-  [
-    "Proverbes",
-    1,
-    7
-  ],
-  [
-    "Proverbes",
-    13,
-    20
-  ],
-  [
-    "Proverbes",
-    3,
-    5
-  ],
-  [
-    "Proverbes",
-    16,
-    18
-  ],
-  [
-    "Proverbes",
-    18,
-    10
-  ],
-  [
-    "Proverbes",
-    28,
-    13
-  ],
-  [
-    "Proverbes",
-    25,
-    11
-  ],
-  [
-    "Proverbes",
-    16,
-    9
-  ]
+  ["Proverbes", 1, 7],
+  ["Proverbes", 2, 6],
+  ["Proverbes", 3, 1],
+  ["Proverbes", 3, 3],
+  ["Proverbes", 3, 5],
+  ["Proverbes", 3, 6],
+  ["Proverbes", 3, 7],
+  ["Proverbes", 3, 9],
+  ["Proverbes", 3, 10],
+  ["Proverbes", 3, 12],
+  ["Proverbes", 4, 7],
+  ["Proverbes", 4, 18],
+  ["Proverbes", 4, 23],
+  ["Proverbes", 4, 25],
+  ["Proverbes", 6, 23],
+  ["Proverbes", 8, 11],
+  ["Proverbes", 8, 17],
+  ["Proverbes", 9, 10],
+  ["Proverbes", 10, 12],
+  ["Proverbes", 10, 22],
+  ["Proverbes", 11, 2],
+  ["Proverbes", 11, 14],
+  ["Proverbes", 11, 24],
+  ["Proverbes", 11, 25],
+  ["Proverbes", 12, 15],
+  ["Proverbes", 12, 17],
+  ["Proverbes", 12, 25],
+  ["Proverbes", 13, 11],
+  ["Proverbes", 13, 20],
+  ["Proverbes", 14, 12],
+  ["Proverbes", 14, 23],
+  ["Proverbes", 14, 29],
+  ["Proverbes", 15, 1],
+  ["Proverbes", 15, 13],
+  ["Proverbes", 15, 15],
+  ["Proverbes", 15, 22],
+  ["Proverbes", 15, 23],
+  ["Proverbes", 16, 3],
+  ["Proverbes", 16, 9],
+  ["Proverbes", 16, 16],
+  ["Proverbes", 16, 18],
+  ["Proverbes", 16, 24],
+  ["Proverbes", 17, 1],
+  ["Proverbes", 17, 17],
+  ["Proverbes", 17, 22],
+  ["Proverbes", 17, 27],
+  ["Proverbes", 18, 10],
+  ["Proverbes", 18, 21],
+  ["Proverbes", 18, 24],
+  ["Proverbes", 19, 11],
+  ["Proverbes", 19, 17],
+  ["Proverbes", 19, 20],
+  ["Proverbes", 19, 21],
+  ["Proverbes", 20, 7],
+  ["Proverbes", 20, 22],
+  ["Proverbes", 21, 2],
+  ["Proverbes", 21, 23],
+  ["Proverbes", 22, 1],
+  ["Proverbes", 22, 6],
+  ["Proverbes", 22, 9],
+  ["Proverbes", 23, 7],
+  ["Proverbes", 23, 17],
+  ["Proverbes", 24, 10],
+  ["Proverbes", 24, 16],
+  ["Proverbes", 24, 17],
+  ["Proverbes", 25, 11],
+  ["Proverbes", 25, 15],
+  ["Proverbes", 25, 21],
+  ["Proverbes", 26, 20],
+  ["Proverbes", 27, 1],
+  ["Proverbes", 27, 2],
+  ["Proverbes", 27, 17],
+  ["Proverbes", 28, 13],
+  ["Proverbes", 28, 20],
+  ["Proverbes", 28, 26],
+  ["Proverbes", 29, 11],
+  ["Proverbes", 29, 18],
+  ["Proverbes", 29, 25],
+  ["Ecclésiaste", 3, 1],
+  ["Ecclésiaste", 3, 11],
+  ["Ecclésiaste", 4, 9],
+  ["Ecclésiaste", 4, 10],
+  ["Ecclésiaste", 4, 12],
+  ["Ecclésiaste", 5, 10],
+  ["Ecclésiaste", 7, 8],
+  ["Ecclésiaste", 9, 11],
+  ["Ecclésiaste", 12, 13],
+  ["Job", 28, 28],
+  ["Romains", 12, 2],
+  ["Romains", 12, 9],
+  ["Romains", 12, 12],
+  ["Romains", 12, 16],
+  ["Romains", 12, 17],
+  ["Romains", 12, 21],
+  ["1 Corinthiens", 13, 4],
+  ["1 Corinthiens", 13, 5],
+  ["1 Corinthiens", 13, 13],
+  ["Galates", 5, 22],
+  ["Galates", 5, 23],
+  ["Galates", 6, 7],
+  ["Éphésiens", 4, 26],
+  ["Éphésiens", 4, 29],
+  ["Éphésiens", 4, 32],
+  ["Éphésiens", 5, 15],
+  ["Éphésiens", 5, 16],
+  ["Colossiens", 3, 12],
+  ["Colossiens", 3, 13],
+  ["Colossiens", 4, 6],
+  ["Jacques", 1, 19],
+  ["Jacques", 1, 20],
+  ["Jacques", 3, 17],
+  ["Jacques", 3, 18],
+  ["1 Pierre", 4, 8],
+  ["1 Pierre", 5, 5],
+  ["1 Jean", 4, 7],
+  ["1 Jean", 4, 8]
 ]
