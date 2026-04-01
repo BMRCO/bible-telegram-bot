@@ -1,377 +1,147 @@
 [
-  [
-    "Ésaïe",
-    7,
-    14
-  ],
-  [
-    "Ésaïe",
-    9,
-    6
-  ],
-  [
-    "Ésaïe",
-    11,
-    1
-  ],
-  [
-    "Ésaïe",
-    11,
-    2
-  ],
-  [
-    "Ésaïe",
-    25,
-    8
-  ],
-  [
-    "Ésaïe",
-    35,
-    5
-  ],
-  [
-    "Ésaïe",
-    40,
-    3
-  ],
-  [
-    "Ésaïe",
-    42,
-    1
-  ],
-  [
-    "Ésaïe",
-    49,
-    6
-  ],
-  [
-    "Ésaïe",
-    52,
-    13
-  ],
-  [
-    "Ésaïe",
-    53,
-    3
-  ],
-  [
-    "Ésaïe",
-    53,
-    4
-  ],
-  [
-    "Ésaïe",
-    53,
-    5
-  ],
-  [
-    "Ésaïe",
-    53,
-    6
-  ],
-  [
-    "Ésaïe",
-    53,
-    7
-  ],
-  [
-    "Ésaïe",
-    53,
-    11
-  ],
-  [
-    "Ésaïe",
-    55,
-    3
-  ],
-  [
-    "Ésaïe",
-    60,
-    1
-  ],
-  [
-    "Ésaïe",
-    61,
-    1
-  ],
-  [
-    "Ésaïe",
-    65,
-    17
-  ],
-  [
-    "Ésaïe",
-    66,
-    22
-  ],
-  [
-    "Jérémie",
-    23,
-    5
-  ],
-  [
-    "Jérémie",
-    31,
-    31
-  ],
-  [
-    "Jérémie",
-    31,
-    33
-  ],
-  [
-    "Jérémie",
-    31,
-    34
-  ],
-  [
-    "Jérémie",
-    33,
-    15
-  ],
-  [
-    "Ézéchiel",
-    36,
-    26
-  ],
-  [
-    "Ézéchiel",
-    36,
-    27
-  ],
-  [
-    "Ézéchiel",
-    37,
-    14
-  ],
-  [
-    "Daniel",
-    7,
-    13
-  ],
-  [
-    "Daniel",
-    7,
-    14
-  ],
-  [
-    "Daniel",
-    9,
-    25
-  ],
-  [
-    "Osée",
-    6,
-    2
-  ],
-  [
-    "Joël",
-    2,
-    28
-  ],
-  [
-    "Joël",
-    2,
-    29
-  ],
-  [
-    "Joël",
-    2,
-    32
-  ],
-  [
-    "Michée",
-    5,
-    2
-  ],
-  [
-    "Zacharie",
-    9,
-    9
-  ],
-  [
-    "Zacharie",
-    11,
-    13
-  ],
-  [
-    "Zacharie",
-    12,
-    10
-  ],
-  [
-    "Zacharie",
-    13,
-    7
-  ],
-  [
-    "Malachie",
-    3,
-    1
-  ],
-  [
-    "Malachie",
-    4,
-    2
-  ],
-  [
-    "Psaumes",
-    2,
-    7
-  ],
-  [
-    "Psaumes",
-    16,
-    10
-  ],
-  [
-    "Psaumes",
-    22,
-    1
-  ],
-  [
-    "Psaumes",
-    22,
-    16
-  ],
-  [
-    "Psaumes",
-    22,
-    18
-  ],
-  [
-    "Psaumes",
-    69,
-    21
-  ],
-  [
-    "Psaumes",
-    110,
-    1
-  ],
-  [
-    "Psaumes",
-    118,
-    22
-  ],
-  [
-    "Matthieu",
-    24,
-    14
-  ],
-  [
-    "Matthieu",
-    24,
-    30
-  ],
-  [
-    "Luc",
-    21,
-    25
-  ],
-  [
-    "Luc",
-    21,
-    27
-  ],
-  [
-    "Jean",
-    14,
-    3
-  ],
-  [
-    "Actes",
-    1,
-    11
-  ],
-  [
-    "Romains",
-    11,
-    26
-  ],
-  [
-    "1 Corinthiens",
-    15,
-    52
-  ],
-  [
-    "1 Thessaloniciens",
-    4,
-    16
-  ],
-  [
-    "1 Thessaloniciens",
-    4,
-    17
-  ],
-  [
-    "2 Thessaloniciens",
-    2,
-    3
-  ],
-  [
-    "2 Timothée",
-    3,
-    1
-  ],
-  [
-    "2 Timothée",
-    3,
-    2
-  ],
-  [
-    "Hébreux",
-    9,
-    28
-  ],
-  [
-    "2 Pierre",
-    3,
-    10
-  ],
-  [
-    "2 Pierre",
-    3,
-    13
-  ],
-  [
-    "Apocalypse",
-    1,
-    7
-  ],
-  [
-    "Apocalypse",
-    19,
-    11
-  ],
-  [
-    "Apocalypse",
-    20,
-    4
-  ],
-  [
-    "Apocalypse",
-    21,
-    1
-  ],
-  [
-    "Apocalypse",
-    21,
-    3
-  ],
-  [
-    "Apocalypse",
-    21,
-    4
-  ],
-  [
-    "Apocalypse",
-    22,
-    12
-  ],
-  [
-    "Apocalypse",
-    22,
-    20
-  ]
+  ["Genèse", 3, 15],
+  ["Genèse", 12, 3],
+  ["Genèse", 22, 18],
+  ["Nombres", 24, 17],
+  ["Deutéronome", 18, 15],
+  ["Deutéronome", 18, 18],
+  ["2 Samuel", 7, 12],
+  ["2 Samuel", 7, 16],
+  ["Ésaïe", 7, 14],
+  ["Ésaïe", 9, 6],
+  ["Ésaïe", 9, 7],
+  ["Ésaïe", 11, 1],
+  ["Ésaïe", 11, 2],
+  ["Ésaïe", 11, 10],
+  ["Ésaïe", 25, 8],
+  ["Ésaïe", 26, 19],
+  ["Ésaïe", 35, 5],
+  ["Ésaïe", 35, 6],
+  ["Ésaïe", 40, 3],
+  ["Ésaïe", 40, 31],
+  ["Ésaïe", 41, 10],
+  ["Ésaïe", 42, 1],
+  ["Ésaïe", 43, 2],
+  ["Ésaïe", 43, 19],
+  ["Ésaïe", 44, 6],
+  ["Ésaïe", 45, 22],
+  ["Ésaïe", 46, 10],
+  ["Ésaïe", 49, 6],
+  ["Ésaïe", 52, 13],
+  ["Ésaïe", 53, 3],
+  ["Ésaïe", 53, 4],
+  ["Ésaïe", 53, 5],
+  ["Ésaïe", 53, 6],
+  ["Ésaïe", 53, 7],
+  ["Ésaïe", 53, 11],
+  ["Ésaïe", 55, 3],
+  ["Ésaïe", 55, 11],
+  ["Ésaïe", 60, 1],
+  ["Ésaïe", 61, 1],
+  ["Ésaïe", 65, 17],
+  ["Ésaïe", 65, 24],
+  ["Ésaïe", 66, 22],
+  ["Jérémie", 23, 5],
+  ["Jérémie", 29, 11],
+  ["Jérémie", 31, 31],
+  ["Jérémie", 31, 33],
+  ["Jérémie", 31, 34],
+  ["Jérémie", 33, 15],
+  ["Ézéchiel", 34, 23],
+  ["Ézéchiel", 36, 26],
+  ["Ézéchiel", 36, 27],
+  ["Ézéchiel", 37, 14],
+  ["Ézéchiel", 47, 12],
+  ["Daniel", 2, 44],
+  ["Daniel", 7, 13],
+  ["Daniel", 7, 14],
+  ["Daniel", 9, 25],
+  ["Daniel", 12, 1],
+  ["Daniel", 12, 2],
+  ["Osée", 6, 2],
+  ["Osée", 13, 14],
+  ["Joël", 2, 28],
+  ["Joël", 2, 29],
+  ["Joël", 2, 32],
+  ["Amos", 9, 11],
+  ["Michée", 5, 2],
+  ["Habacuc", 2, 14],
+  ["Sophonie", 3, 17],
+  ["Aggée", 2, 7],
+  ["Zacharie", 9, 9],
+  ["Zacharie", 11, 13],
+  ["Zacharie", 12, 10],
+  ["Zacharie", 13, 7],
+  ["Zacharie", 14, 9],
+  ["Malachie", 3, 1],
+  ["Malachie", 4, 2],
+  ["Psaumes", 2, 7],
+  ["Psaumes", 16, 10],
+  ["Psaumes", 22, 1],
+  ["Psaumes", 22, 16],
+  ["Psaumes", 22, 18],
+  ["Psaumes", 69, 21],
+  ["Psaumes", 72, 11],
+  ["Psaumes", 110, 1],
+  ["Psaumes", 118, 22],
+  ["Matthieu", 24, 6],
+  ["Matthieu", 24, 7],
+  ["Matthieu", 24, 14],
+  ["Matthieu", 24, 21],
+  ["Matthieu", 24, 27],
+  ["Matthieu", 24, 29],
+  ["Matthieu", 24, 30],
+  ["Matthieu", 24, 31],
+  ["Matthieu", 24, 36],
+  ["Matthieu", 24, 44],
+  ["Marc", 13, 10],
+  ["Marc", 13, 26],
+  ["Marc", 13, 27],
+  ["Marc", 13, 32],
+  ["Luc", 17, 24],
+  ["Luc", 21, 11],
+  ["Luc", 21, 25],
+  ["Luc", 21, 27],
+  ["Luc", 21, 28],
+  ["Luc", 21, 33],
+  ["Jean", 5, 28],
+  ["Jean", 5, 29],
+  ["Jean", 14, 3],
+  ["Jean", 16, 13],
+  ["Actes", 1, 11],
+  ["Actes", 2, 17],
+  ["Romains", 8, 19],
+  ["Romains", 8, 21],
+  ["Romains", 11, 26],
+  ["1 Corinthiens", 15, 51],
+  ["1 Corinthiens", 15, 52],
+  ["1 Thessaloniciens", 4, 16],
+  ["1 Thessaloniciens", 4, 17],
+  ["2 Thessaloniciens", 2, 3],
+  ["2 Thessaloniciens", 2, 8],
+  ["2 Timothée", 3, 1],
+  ["2 Timothée", 3, 2],
+  ["2 Timothée", 4, 1],
+  ["Hébreux", 9, 28],
+  ["Hébreux", 10, 37],
+  ["Jacques", 5, 8],
+  ["2 Pierre", 3, 10],
+  ["2 Pierre", 3, 13],
+  ["1 Jean", 2, 28],
+  ["Apocalypse", 1, 7],
+  ["Apocalypse", 3, 11],
+  ["Apocalypse", 6, 12],
+  ["Apocalypse", 11, 15],
+  ["Apocalypse", 16, 15],
+  ["Apocalypse", 19, 11],
+  ["Apocalypse", 19, 16],
+  ["Apocalypse", 20, 4],
+  ["Apocalypse", 20, 6],
+  ["Apocalypse", 21, 1],
+  ["Apocalypse", 21, 3],
+  ["Apocalypse", 21, 4],
+  ["Apocalypse", 21, 5],
+  ["Apocalypse", 22, 7],
+  ["Apocalypse", 22, 12],
+  ["Apocalypse", 22, 20]
 ]
