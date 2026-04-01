@@ -995,7 +995,7 @@ def make_reel_video(text, ref, progress=None):
 
     for f in range(TOTAL):
         s = f / FPS
-        alpha = ease(s/0.8) if s < 0.8 else (ease((15-s)/1.5) if s > 13.5 else 1.0)
+        alpha = max(0.5, ease(s/0.8)) if s < 0.8 else (ease((15-s)/1.5) if s > 13.5 else 1.0)
 
         img = Image.new("RGB", (W, H), BG)
         draw = ImageDraw.Draw(img)
@@ -1028,8 +1028,8 @@ def make_reel_video(text, ref, progress=None):
         draw = ImageDraw.Draw(img)
 
         for i, line in enumerate(verse_lines):
-            ls = 0.6 + i*0.20; le = ls + 0.5
-            la = (0 if s<ls else (ease((s-ls)/(le-ls)) if s<le else 1.0)) * alpha
+            ls = i*0.15; le = ls + 0.4
+            la = max(0.5, ease((s-ls)/(le-ls)) if s >= ls else 0.5) * alpha
             bbox = draw.textbbox((0,0), line, font=fv); tw = bbox[2]-bbox[0]
             x = (W-tw)//2; y = start_y + i*LINE_H
             draw.text((x+2, y+2), line, font=fv, fill=blend((0,0,0), la*0.6))
