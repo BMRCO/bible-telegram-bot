@@ -1,192 +1,114 @@
 [
-  [
-    "Psaumes",
-    139,
-    14
-  ],
-  [
-    "Psaumes",
-    30,
-    5
-  ],
-  [
-    "Psaumes",
-    145,
-    18
-  ],
-  [
-    "Psaumes",
-    46,
-    1
-  ],
-  [
-    "Psaumes",
-    150,
-    6
-  ],
-  [
-    "Psaumes",
-    42,
-    5
-  ],
-  [
-    "Psaumes",
-    23,
-    4
-  ],
-  [
-    "Psaumes",
-    23,
-    1
-  ],
-  [
-    "Psaumes",
-    118,
-    24
-  ],
-  [
-    "Psaumes",
-    18,
-    2
-  ],
-  [
-    "Psaumes",
-    28,
-    7
-  ],
-  [
-    "Psaumes",
-    37,
-    5
-  ],
-  [
-    "Psaumes",
-    91,
-    11
-  ],
-  [
-    "Psaumes",
-    34,
-    8
-  ],
-  [
-    "Psaumes",
-    103,
-    13
-  ],
-  [
-    "Psaumes",
-    23,
-    6
-  ],
-  [
-    "Psaumes",
-    119,
-    105
-  ],
-  [
-    "Psaumes",
-    55,
-    22
-  ],
-  [
-    "Psaumes",
-    91,
-    2
-  ],
-  [
-    "Psaumes",
-    107,
-    1
-  ],
-  [
-    "Psaumes",
-    34,
-    18
-  ],
-  [
-    "Psaumes",
-    100,
-    3
-  ],
-  [
-    "Psaumes",
-    16,
-    8
-  ],
-  [
-    "Psaumes",
-    27,
-    14
-  ],
-  [
-    "Psaumes",
-    27,
-    1
-  ],
-  [
-    "Psaumes",
-    19,
-    1
-  ],
-  [
-    "Psaumes",
-    4,
-    8
-  ],
-  [
-    "Psaumes",
-    103,
-    2
-  ],
-  [
-    "Psaumes",
-    31,
-    24
-  ],
-  [
-    "Psaumes",
-    37,
-    4
-  ],
-  [
-    "Psaumes",
-    62,
-    8
-  ],
-  [
-    "Psaumes",
-    91,
-    1
-  ],
-  [
-    "Psaumes",
-    121,
-    2
-  ],
-  [
-    "Psaumes",
-    121,
-    1
-  ],
-  [
-    "Psaumes",
-    9,
-    10
-  ],
-  [
-    "Psaumes",
-    1,
-    1
-  ],
-  [
-    "Psaumes",
-    32,
-    8
-  ],
-  [
-    "Psaumes",
-    34,
-    4
-  ]
+  ["Psaumes", 1, 1],
+  ["Psaumes", 1, 2],
+  ["Psaumes", 1, 3],
+  ["Psaumes", 3, 5],
+  ["Psaumes", 4, 8],
+  ["Psaumes", 5, 3],
+  ["Psaumes", 8, 1],
+  ["Psaumes", 9, 10],
+  ["Psaumes", 16, 8],
+  ["Psaumes", 16, 11],
+  ["Psaumes", 18, 2],
+  ["Psaumes", 18, 28],
+  ["Psaumes", 18, 32],
+  ["Psaumes", 19, 1],
+  ["Psaumes", 19, 14],
+  ["Psaumes", 23, 1],
+  ["Psaumes", 23, 2],
+  ["Psaumes", 23, 3],
+  ["Psaumes", 23, 4],
+  ["Psaumes", 23, 6],
+  ["Psaumes", 24, 1],
+  ["Psaumes", 25, 4],
+  ["Psaumes", 25, 5],
+  ["Psaumes", 27, 1],
+  ["Psaumes", 27, 4],
+  ["Psaumes", 27, 14],
+  ["Psaumes", 28, 7],
+  ["Psaumes", 29, 11],
+  ["Psaumes", 30, 5],
+  ["Psaumes", 31, 24],
+  ["Psaumes", 32, 8],
+  ["Psaumes", 33, 18],
+  ["Psaumes", 34, 4],
+  ["Psaumes", 34, 7],
+  ["Psaumes", 34, 8],
+  ["Psaumes", 34, 18],
+  ["Psaumes", 34, 19],
+  ["Psaumes", 37, 4],
+  ["Psaumes", 37, 5],
+  ["Psaumes", 37, 7],
+  ["Psaumes", 37, 23],
+  ["Psaumes", 40, 1],
+  ["Psaumes", 40, 2],
+  ["Psaumes", 40, 3],
+  ["Psaumes", 42, 5],
+  ["Psaumes", 42, 8],
+  ["Psaumes", 43, 5],
+  ["Psaumes", 46, 1],
+  ["Psaumes", 46, 10],
+  ["Psaumes", 51, 10],
+  ["Psaumes", 51, 12],
+  ["Psaumes", 55, 22],
+  ["Psaumes", 56, 3],
+  ["Psaumes", 57, 7],
+  ["Psaumes", 62, 1],
+  ["Psaumes", 62, 8],
+  ["Psaumes", 63, 1],
+  ["Psaumes", 63, 3],
+  ["Psaumes", 71, 5],
+  ["Psaumes", 71, 14],
+  ["Psaumes", 84, 2],
+  ["Psaumes", 84, 11],
+  ["Psaumes", 91, 1],
+  ["Psaumes", 91, 2],
+  ["Psaumes", 91, 4],
+  ["Psaumes", 91, 11],
+  ["Psaumes", 91, 15],
+  ["Psaumes", 95, 1],
+  ["Psaumes", 95, 2],
+  ["Psaumes", 96, 1],
+  ["Psaumes", 96, 3],
+  ["Psaumes", 100, 1],
+  ["Psaumes", 100, 2],
+  ["Psaumes", 100, 3],
+  ["Psaumes", 100, 5],
+  ["Psaumes", 103, 1],
+  ["Psaumes", 103, 2],
+  ["Psaumes", 103, 3],
+  ["Psaumes", 103, 4],
+  ["Psaumes", 103, 8],
+  ["Psaumes", 103, 12],
+  ["Psaumes", 103, 13],
+  ["Psaumes", 107, 1],
+  ["Psaumes", 107, 9],
+  ["Psaumes", 112, 1],
+  ["Psaumes", 112, 7],
+  ["Psaumes", 116, 1],
+  ["Psaumes", 116, 2],
+  ["Psaumes", 118, 1],
+  ["Psaumes", 118, 14],
+  ["Psaumes", 118, 24],
+  ["Psaumes", 119, 11],
+  ["Psaumes", 119, 105],
+  ["Psaumes", 119, 165],
+  ["Psaumes", 121, 1],
+  ["Psaumes", 121, 2],
+  ["Psaumes", 121, 7],
+  ["Psaumes", 121, 8],
+  ["Psaumes", 131, 2],
+  ["Psaumes", 138, 3],
+  ["Psaumes", 138, 7],
+  ["Psaumes", 139, 1],
+  ["Psaumes", 139, 2],
+  ["Psaumes", 139, 14],
+  ["Psaumes", 139, 23],
+  ["Psaumes", 143, 8],
+  ["Psaumes", 145, 3],
+  ["Psaumes", 145, 8],
+  ["Psaumes", 145, 18],
+  ["Psaumes", 147, 3],
+  ["Psaumes", 148, 13],
+  ["Psaumes", 150, 6]
 ]
