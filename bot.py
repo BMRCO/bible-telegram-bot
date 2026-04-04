@@ -117,80 +117,41 @@ CATEGORIES = {
 # ---------------------------------------------------
 # ROTATION PAR HEURE UTC
 # Horaires GitHub Actions (UTC) → France (UTC+2)
-#   05h UTC → 07h France — image   → psaume
+#   05h UTC → 07h France — image   → psaume (matin)
 #   07h UTC → 09h France — reel    → promise
 #   11h UTC → 13h France — image   → proverbe
 #   14h UTC → 16h France — reel    → jesus
 #   17h UTC → 19h France — image   → prophetie
-#   19h UTC → 21h France — reel    → psaume
+#   19h UTC → 21h France — reel    → psaume (soir)
 # ---------------------------------------------------
 HOUR_SCHEDULE = {
-    5:  "psaume",     # 07h France — commencer la journée avec les Psaumes
-    7:  "promise",    # 09h France — espérance du matin
-    11: "proverbe",   # 13h France — sagesse du midi
-    14: "jesus",      # 16h France — parole de vie
-    17: "prophetie",  # 19h France — réflexion du soir
-    19: "psaume",     # 21h France — prière du soir
+    5:  "psaume",
+    7:  "promise",
+    11: "proverbe",
+    14: "jesus",
+    17: "prophetie",
+    19: "psaume",
 }
 
 # ---------------------------------------------------
-# TITRES YOUTUBE — Phrases d'impact contextuelles
-# Toujours vraies pour n'importe quel verset de la catégorie
+# TITRES YOUTUBE — Thème général par catégorie
+# Psaume du Matin (05h UTC) / Psaume du Soir (19h UTC)
 # ---------------------------------------------------
-YT_IMPACT_PHRASES = {
-    "promise": [
-        "La Parole de Dieu ne change pas.",
-        "Il a promis. Il tiendra.",
-        "Ses promesses sont éternelles.",
-        "Dieu est fidèle à Sa Parole.",
-        "Sa promesse est pour toi.",
-        "Ce que Dieu dit, Il le fait.",
-        "Ses promesses ne défaillent pas.",
-    ],
-    "jesus": [
-        "Jésus a parlé. Écoute.",
-        "La Parole de Jésus est vivante.",
-        "Il a dit. Cela suffit.",
-        "Ses paroles traversent le temps.",
-        "Ce que Jésus dit est vrai.",
-        "La Parole de vie.",
-        "Jésus parle encore aujourd'hui.",
-    ],
-    "psaume": [
-        "Une prière vieille de 3000 ans.",
-        "David a prié. Nous prions encore.",
-        "La louange de l'Éternel est éternelle.",
-        "Le Psaume parle pour toi.",
-        "Une prière pour aujourd'hui.",
-        "L'Éternel entend chaque prière.",
-        "Sa gloire dure à jamais.",
-    ],
-    "proverbe": [
-        "La sagesse de Dieu ne vieillit pas.",
-        "Un conseil vieux de 3000 ans.",
-        "La sagesse biblique pour aujourd'hui.",
-        "Ce que Dieu appelle sagesse.",
-        "La Parole éclaire le chemin.",
-        "Sagesse d'hier. Vérité d'aujourd'hui.",
-        "La crainte de Dieu, c'est la sagesse.",
-    ],
-    "prophetie": [
-        "La Parole de Dieu s'accomplit.",
-        "Dieu avait tout annoncé.",
-        "Écrit des siècles avant l'événement.",
-        "La prophétie biblique ne ment pas.",
-        "Dieu voit la fin depuis le début.",
-        "Ce que Dieu annonce arrive.",
-        "La Parole prophétique est sûre.",
-    ],
-}
+def build_yt_title(cat_name, cat, ref, hour_utc):
+    if cat_name == "psaume":
+        label = "Psaume du Matin" if hour_utc == 5 else "Psaume du Soir"
+    elif cat_name == "promise":
+        label = "Promesse de Dieu"
+    elif cat_name == "jesus":
+        label = "Parole de Jésus"
+    elif cat_name == "proverbe":
+        label = "Sagesse Biblique"
+    elif cat_name == "prophetie":
+        label = "Prophétie Biblique"
+    else:
+        label = "Verset Biblique"
 
-
-def build_yt_title(cat_name, cat, ref):
-    phrases = YT_IMPACT_PHRASES.get(cat_name, ["La Parole de Dieu est vivante."])
-    seed = abs(hash(ref)) % len(phrases)
-    phrase = phrases[seed]
-    title = f"{cat['emoji']} {phrase} — {ref} | Bible LSG 1910"
+    title = f"{cat['emoji']} {label} — {ref} | Bible LSG1910"
     if len(title) > 100:
         title = title[:97] + "..."
     return title
@@ -1143,7 +1104,6 @@ def make_reel_video(text, ref, progress=None):
         ], capture_output=True)
 
     shutil.rmtree("frames", ignore_errors=True)
-
     print(f"✅ Reel généré : {output_path}")
     return output_path
 
@@ -1176,22 +1136,10 @@ def pick_from_category(cat, progress):
 
 
 def pick_verse(progress):
-    """
-    Sélectionne la catégorie selon l'heure UTC de publication.
-    Correspond aux horaires GitHub Actions :
-      05h UTC → psaume    (07h France — début de journée)
-      07h UTC → promise   (09h France — espérance du matin)
-      11h UTC → proverbe  (13h France — sagesse du midi)
-      14h UTC → jesus     (16h France — parole de vie)
-      17h UTC → prophetie (19h France — réflexion du soir)
-      19h UTC → psaume    (21h France — prière du soir)
-    Si l'heure ne correspond à aucun créneau, fallback sur le jour de la semaine.
-    """
     hour_utc = datetime.datetime.utcnow().hour
     cat_name = HOUR_SCHEDULE.get(hour_utc)
 
     if cat_name is None:
-        # Fallback par jour de la semaine si exécution manuelle hors créneau
         fallback = {0: "promise", 1: "proverbe", 2: "jesus",
                     3: "psaume", 4: "prophetie", 5: "proverbe", 6: "psaume"}
         cat_name = fallback[datetime.datetime.utcnow().weekday()]
@@ -1211,13 +1159,13 @@ def pick_verse(progress):
     text     = clean_text(raw_text)
     display_book = "Psaumes" if book == "Psaume" else book
     ref      = f"{display_book} {ch}:{v}"
-    return text, ref, cat, cat_name
+    return text, ref, cat, cat_name, hour_utc
 
 
 # ---------------------------------------------------
 # ENVOI YOUTUBE SHORTS
 # ---------------------------------------------------
-def post_to_youtube(video_path, ref, text, cat, cat_name):
+def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
     if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
         print("⚠️  Credentials YouTube manquants — publication ignorée.")
         return
@@ -1240,8 +1188,7 @@ def post_to_youtube(video_path, ref, text, cat, cat_name):
 
         youtube = build("youtube", "v3", credentials=creds)
 
-        # ── Titre d'impact — contextuel, toujours juste pour la catégorie ──
-        title = build_yt_title(cat_name, cat, ref)
+        title = build_yt_title(cat_name, cat, ref, hour_utc)
 
         description = (
             f"{cat['emoji']} {ref}\n\n"
@@ -1288,7 +1235,7 @@ def post_to_youtube(video_path, ref, text, cat, cat_name):
 # ---------------------------------------------------
 def main():
     progress = load_json(PROGRESS_FILE)
-    text, ref, cat, cat_name = pick_verse(progress)
+    text, ref, cat, cat_name, hour_utc = pick_verse(progress)
     print(f"📖 Image — {ref} [{cat_name}]")
 
     img     = make_image(text, ref)
@@ -1309,7 +1256,7 @@ def main():
 # ---------------------------------------------------
 def main_reel():
     progress = load_json(PROGRESS_FILE)
-    text, ref, cat, cat_name = pick_verse(progress)
+    text, ref, cat, cat_name, hour_utc = pick_verse(progress)
     print(f"🎬 Reel — {ref} [{cat_name}]")
 
     if not os.path.exists("logo.png"):
@@ -1328,7 +1275,7 @@ def main_reel():
     send_video(video, caption)
     post_reel_to_facebook(video, ref, text, cat, cat_name)
     post_reel_to_instagram(video, ref, text, cat, cat_name)
-    post_to_youtube(video, ref, text, cat, cat_name)
+    post_to_youtube(video, ref, text, cat, cat_name, hour_utc)
     post_to_threads(make_image(text, ref), ref, text, cat, cat_name)
 
     save_json(PROGRESS_FILE, progress)
