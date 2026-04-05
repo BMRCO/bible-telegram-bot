@@ -42,24 +42,27 @@ PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "10924045220550807
 PROGRESS_FILE = "progress.json"
 BIBLE_FILE    = "bible/lsg1910.json"
 
-FONT_SERIF = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
+FONT_SERIF      = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 FONT_SERIF_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
-FONT_SANS  = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+FONT_SANS       = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 WATERMARK    = "LaBible.app"
 MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
 APP_URL      = "https://labible.app"
 
+# Hashtags de base communs (Instagram — base SEO forte)
 HASHTAGS_BASE_IG = [
     "#Bible", "#VersetDuJour", "#BibleFrancaise",
     "#Chrétien", "#Foi", "#Évangile", "#Jésus",
     "#ParoleDeDieu", "#LSG1910", "#LaBible",
 ]
 
+# Hashtags de base communs (Facebook — 5 max)
 HASHTAGS_BASE_FB = [
     "#Bible", "#VersetDuJour", "#Foi", "#BibleFrancaise", "#Chrétien",
 ]
 
+# Hashtags spécifiques par catégorie (Instagram — 5 supplémentaires = 15 total)
 HASHTAGS_CAT_IG = {
     "promise":   ["#Promesse", "#Espérance", "#PromesseDeDieu", "#Bénédiction", "#Confiance"],
     "jesus":     ["#JésusChrist", "#ParoleDeJésus", "#GrâceDeDieu", "#Rédemption", "#Amour"],
@@ -68,6 +71,7 @@ HASHTAGS_CAT_IG = {
     "prophetie": ["#Prophétie", "#EspoirEnDieu", "#Révélation", "#Accomplissement", "#GloireDeDieu"],
 }
 
+# Hashtags spécifiques par catégorie (Facebook — 2 supplémentaires)
 HASHTAGS_CAT_FB = {
     "promise":   ["#Promesse", "#Bénédiction"],
     "jesus":     ["#JésusChrist", "#GrâceDeDieu"],
@@ -76,6 +80,7 @@ HASHTAGS_CAT_FB = {
     "prophetie": ["#Prophétie", "#EspoirEnDieu"],
 }
 
+# Categorias disponíveis
 CATEGORIES = {
     "promise": {
         "key":   "i_promise",
@@ -109,7 +114,15 @@ CATEGORIES = {
     },
 }
 
-# Rotation par heure UTC
+# ---------------------------------------------------
+# ROTATION PAR HEURE UTC
+# 05h UTC → 07h France — image   → psaume (matin)
+# 07h UTC → 09h France — reel    → promise
+# 11h UTC → 13h France — image   → proverbe
+# 14h UTC → 16h France — reel    → jesus
+# 17h UTC → 19h France — image   → prophetie
+# 19h UTC → 21h France — reel    → psaume (soir)
+# ---------------------------------------------------
 HOUR_SCHEDULE = {
     5:  "psaume",
     7:  "promise",
@@ -121,16 +134,25 @@ HOUR_SCHEDULE = {
 
 
 def build_yt_title(cat_name, cat, ref, hour_utc):
+    """
+    Titres YouTube — playlists gérées automatiquement par règles YouTube.
+    Règles à configurer dans YouTube Studio :
+      Psaume du      → playlist Psaumes
+      Promesses de Dieu → playlist Promesses de Dieu
+      Paroles de Jésus  → playlist Paroles de Jésus
+      Sagesse Biblique  → playlist Sagesse Biblique
+      Prophéties Bibliques → playlist Prophéties Bibliques
+    """
     if cat_name == "psaume":
         label = "Psaume du Matin" if hour_utc == 5 else "Psaume du Soir"
     elif cat_name == "promise":
-        label = "Promesse de Dieu"
+        label = "Promesses de Dieu"
     elif cat_name == "jesus":
-        label = "Parole de Jésus"
+        label = "Paroles de Jésus"
     elif cat_name == "proverbe":
         label = "Sagesse Biblique"
     elif cat_name == "prophetie":
-        label = "Prophétie Biblique"
+        label = "Prophéties Bibliques"
     else:
         label = "Verset Biblique"
     title = f"{cat['emoji']} {label} — {ref} | Bible LSG1910"
@@ -198,9 +220,8 @@ def clean_text(text: str) -> str:
     text = re.sub(r'\s*([?!])', r' \1', text)
     text = text.replace("'", "\u2019").replace("'", "\u2019")
     text = text.replace("Eternel", "Éternel")
-    # Supprimer les ; et : en fin de texte (ponctuation de liste incomplète)
+    # Supprimer ; et : en fin de texte
     text = text.rstrip(';').rstrip(':').strip()
-    # Ajouter point final si absent
     if not text.endswith(('.', '!', '?')):
         text += '.'
     return text
@@ -257,6 +278,9 @@ def load_verse(book_name, chapter, verse):
     return index[real_name][str(chapter)][str(verse)]
 
 
+# ---------------------------------------------------
+# ENVOI TELEGRAM
+# ---------------------------------------------------
 def send_photo(path, caption):
     url = f"https://api.telegram.org/bot{TOKEN}/sendPhoto"
     reply_markup = json.dumps({
@@ -305,6 +329,9 @@ def send_video(path, caption):
     print("✅ Telegram vidéo publié")
 
 
+# ---------------------------------------------------
+# ENVOI FACEBOOK
+# ---------------------------------------------------
 def post_to_facebook(image_path, ref, text, cat, cat_name):
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN non défini — publication Facebook ignorée.")
@@ -358,6 +385,9 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name):
         print(f"❌ Erreur Facebook reel ({r.status_code}): {r.text}")
 
 
+# ---------------------------------------------------
+# UPLOAD IMAGE → ImgBB
+# ---------------------------------------------------
 def upload_to_imgbb(image_path):
     if not IMGBB_API_KEY:
         print("⚠️  IMGBB_API_KEY non défini — upload ignoré.")
@@ -379,6 +409,9 @@ def upload_to_imgbb(image_path):
         return None
 
 
+# ---------------------------------------------------
+# UPLOAD IMAGE → Cloudinary
+# ---------------------------------------------------
 def upload_to_cloudinary(image_path):
     if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
         print("⚠️  Cloudinary non configuré — fallback ImgBB.")
@@ -404,6 +437,9 @@ def upload_to_cloudinary(image_path):
         return upload_to_imgbb(image_path)
 
 
+# ---------------------------------------------------
+# UPLOAD VIDÉO → Cloudinary
+# ---------------------------------------------------
 def upload_video_public(video_path):
     if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
         print("⚠️  Cloudinary non configuré — upload vidéo ignoré.")
@@ -430,6 +466,9 @@ def upload_video_public(video_path):
         return None
 
 
+# ---------------------------------------------------
+# ENVOI INSTAGRAM
+# ---------------------------------------------------
 def post_to_instagram(image_path, ref, text, cat, cat_name):
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN manquant — Instagram ignoré.")
@@ -516,6 +555,9 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
         print(f"❌ Erreur publication reel Instagram ({r2.status_code}): {r2.text}")
 
 
+# ---------------------------------------------------
+# ENVOI PINTEREST
+# ---------------------------------------------------
 def post_to_pinterest(image_path, ref, text, cat, cat_name):
     if not PINTEREST_ACCESS_TOKEN:
         print("⚠️  PINTEREST_ACCESS_TOKEN non défini — Pinterest ignoré.")
@@ -527,9 +569,9 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
     book_chapter = ref.replace(" ", "-")
     app_link = f"{APP_URL}/#{book_chapter}"
     pin_keywords = {
-        "promise": "Promesse de Dieu", "jesus": "Parole de Jésus",
-        "psaume": "Psaume Biblique", "proverbe": "Sagesse de la Bible",
-        "prophetie": "Prophétie Accomplie",
+        "promise": "Promesses de Dieu", "jesus": "Paroles de Jésus",
+        "psaume": "Psaumes Bibliques", "proverbe": "Sagesse Biblique",
+        "prophetie": "Prophéties Bibliques",
     }
     pin_kw = pin_keywords.get(cat_name, "Verset Biblique")
     pin_title = f"{cat['emoji']} {pin_kw} — {ref} | LaBible.app"
@@ -539,14 +581,27 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
         f"📖 Lisez la Bible complète gratuitement sur LaBible.app\n\n"
         f"#Bible #VersetDuJour #LaBible #LSG1910 #BibleFrancais #Foi #Chrétien #Évangile #Jésus #Dieu"
     )
-    payload = {"board_id": PINTEREST_BOARD_ID, "title": pin_title, "description": pin_description, "link": app_link, "media_source": {"source_type": "image_url", "url": image_url}}
-    r = requests.post("https://api.pinterest.com/v5/pins", headers={"Authorization": f"Bearer {PINTEREST_ACCESS_TOKEN}", "Content-Type": "application/json"}, json=payload, timeout=60)
+    payload = {
+        "board_id": PINTEREST_BOARD_ID,
+        "title": pin_title,
+        "description": pin_description,
+        "link": app_link,
+        "media_source": {"source_type": "image_url", "url": image_url}
+    }
+    r = requests.post(
+        "https://api.pinterest.com/v5/pins",
+        headers={"Authorization": f"Bearer {PINTEREST_ACCESS_TOKEN}", "Content-Type": "application/json"},
+        json=payload, timeout=60
+    )
     if r.status_code in (200, 201):
         print(f"✅ Pinterest publié — pin_id: {r.json().get('id', 'inconnu')}")
     else:
         print(f"❌ Erreur Pinterest ({r.status_code}): {r.text}")
 
 
+# ---------------------------------------------------
+# ENVOI THREADS
+# ---------------------------------------------------
 def post_to_threads(image_path, ref, text, cat, cat_name):
     if not THREADS_ACCESS_TOKEN:
         print("⚠️  THREADS_ACCESS_TOKEN non défini — Threads ignoré.")
@@ -565,20 +620,31 @@ def post_to_threads(image_path, ref, text, cat, cat_name):
         f"👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n"
         f"{hashtags}"
     )
-    r = requests.post("https://graph.threads.net/v1.0/me/threads", data={"media_type": "IMAGE", "image_url": image_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
+    r = requests.post(
+        "https://graph.threads.net/v1.0/me/threads",
+        data={"media_type": "IMAGE", "image_url": image_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN},
+        timeout=60
+    )
     if r.status_code != 200:
         print(f"❌ Erreur container Threads ({r.status_code}): {r.text}")
         return
     container_id = r.json().get("id")
     print(f"✅ Container Threads créé : {container_id}")
     import time; time.sleep(5)
-    r2 = requests.post("https://graph.threads.net/v1.0/me/threads_publish", data={"creation_id": container_id, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
+    r2 = requests.post(
+        "https://graph.threads.net/v1.0/me/threads_publish",
+        data={"creation_id": container_id, "access_token": THREADS_ACCESS_TOKEN},
+        timeout=60
+    )
     if r2.status_code == 200:
         print(f"✅ Threads publié — id: {r2.json().get('id', 'inconnu')}")
     else:
         print(f"❌ Erreur publication Threads ({r2.status_code}): {r2.text}")
 
 
+# ---------------------------------------------------
+# IMAGE
+# ---------------------------------------------------
 PALETTES = [
     ((10, 14, 30),  (6,  10, 22),  (195, 165,  90), (195, 165,  90), (130, 120, 80)),
     ((8,  18, 38),  (5,  12, 28),  (160, 190, 220), (160, 190, 220), (100, 130, 160)),
@@ -724,6 +790,9 @@ def make_cover_image(ref):
     return out
 
 
+# ---------------------------------------------------
+# REEL
+# ---------------------------------------------------
 def wrap_text_with_quotes(draw, text, font, max_w):
     words = text.split()
     if not words: return [""]
@@ -884,6 +953,9 @@ def make_reel_video(text, ref, progress=None):
     return output_path
 
 
+# ---------------------------------------------------
+# SÉLECTION PAR HEURE UTC
+# ---------------------------------------------------
 def load_list(path):
     arr = load_json(path)
     if not arr:
@@ -931,6 +1003,10 @@ def pick_verse(progress):
     return text, ref, cat, cat_name, hour_utc
 
 
+# ---------------------------------------------------
+# ENVOI YOUTUBE SHORTS
+# Playlists gérées automatiquement par règles YouTube
+# ---------------------------------------------------
 def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
     if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
         print("⚠️  Credentials YouTube manquants — publication ignorée.")
@@ -940,6 +1016,7 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
         from googleapiclient.discovery import build
         from googleapiclient.http import MediaFileUpload
         from google.auth.transport.requests import Request
+
         creds = Credentials(
             token=None, refresh_token=YT_REFRESH_TOKEN,
             client_id=YT_CLIENT_ID, client_secret=YT_CLIENT_SECRET,
@@ -948,6 +1025,7 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
         )
         creds.refresh(Request())
         youtube = build("youtube", "v3", credentials=creds)
+
         title = build_yt_title(cat_name, cat, ref, hour_utc)
         description = (
             f"{cat['emoji']} {ref}\n\n"
@@ -956,7 +1034,12 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
             f"#Shorts #Bible #BibleFrancaise #VersetDuJour #Jésus #JésusChrist #Dieu #Foi #Évangile #Chrétien #ParoleDeDieu #Espérance #LSG1910 #Louange #GrâceDeDieu #Prière #Bénédiction #Adoration #{cat['tag'].lstrip('#')}"
         )
         body = {
-            "snippet": {"title": title, "description": description, "tags": ["Bible", "LaBible", "VersetDuJour", "LSG1910", "Shorts", "BibleFrancaise"], "categoryId": "22"},
+            "snippet": {
+                "title": title,
+                "description": description,
+                "tags": ["Bible", "LaBible", "VersetDuJour", "LSG1910", "Shorts", "BibleFrancaise"],
+                "categoryId": "22"
+            },
             "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}
         }
         media = MediaFileUpload(video_path, mimetype="video/mp4", resumable=True)
@@ -968,10 +1051,14 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
                 print(f"  ⏳ Upload YouTube : {int(status.progress() * 100)}%")
         video_id = response.get("id", "inconnu")
         print(f"✅ YouTube Short publié — https://youtube.com/shorts/{video_id}")
+
     except Exception as e:
         print(f"❌ Erreur YouTube : {e}")
 
 
+# ---------------------------------------------------
+# MAIN IMAGE
+# ---------------------------------------------------
 def main():
     progress = load_json(PROGRESS_FILE)
     text, ref, cat, cat_name, hour_utc = pick_verse(progress)
@@ -987,6 +1074,9 @@ def main():
     print("✅ Terminé (image).")
 
 
+# ---------------------------------------------------
+# MAIN REEL
+# ---------------------------------------------------
 def main_reel():
     progress = load_json(PROGRESS_FILE)
     text, ref, cat, cat_name, hour_utc = pick_verse(progress)
