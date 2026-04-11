@@ -809,6 +809,251 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
 
 
 # ---------------------------------------------------
+# PARABOLE VIDEO — vídeo longo 60-90s avec texte complet
+# ---------------------------------------------------
+def make_parabole_video(title, verses, progress=None):
+    """
+    verses = liste de tuples (ref, text)
+    ex: [("Luc 15:11", "Un homme avait deux fils."), ("Luc 15:12", "...")]
+    """
+    W, H = 1080, 1920
+    FPS = 30
+    SECS_PER_VERSE = 6  # secondes par verset
+    SECS_TITLE = 4      # secondes pour le titre
+    SECS_FINAL = 4      # secondes pour le final
+    TOTAL = FPS * (SECS_TITLE + len(verses) * SECS_PER_VERSE + SECS_FINAL)
+
+    fp  = FONT_SERIF
+    fpb = FONT_SERIF_BOLD
+    BORDER, CARD_PAD = 100, 100
+    MAX_TW = W - BORDER*2 - CARD_PAD*2
+
+    REEL_PALETTES = [
+        ((10, 14, 38),  (180, 148, 72),  (192, 158, 80),  (230, 228, 220), (160, 160, 175)),
+        ((30,  8, 12),  (210, 155, 75),  (220, 168, 85),  (255, 245, 225), (170, 145, 115)),
+        (( 8, 24, 16),  (130, 190, 110), (145, 205, 125), (235, 255, 235), (110, 155, 100)),
+        ((22,  8, 40),  (195, 160, 75),  (210, 175, 88),  (250, 245, 255), (155, 135, 180)),
+        ((10, 10, 10),  (195, 172,  95), (210, 187, 108), (250, 248, 235), (145, 135,  95)),
+    ]
+    seed = abs(hash(title)) % (2**31)
+    BG, GOLD, GR, WHITE, SIL = REEL_PALETTES[seed % len(REEL_PALETTES)]
+
+    def ease(t): t = max(0, min(1, t)); return t*t*(3-2*t)
+    def blend(base, a, bg=BG):
+        a = max(0, min(1, a))
+        return tuple(int(bg[i] + (base[i]-bg[i])*a) for i in range(3))
+
+    def draw_bg(draw):
+        for y in range(0, H, 4):
+            t2 = y/H
+            draw.rectangle([(0, y), (W, min(y+4, H))],
+                fill=tuple(max(0, int(BG[i]*(1-t2*0.25))) for i in range(3)))
+
+    def wrap(draw, text, font, max_w):
+        words = text.split()
+        if not words: return [""]
+        lines, current = [], words[0]
+        for w in words[1:]:
+            if w.startswith('?') or w.startswith('!'):
+                current += '\u00a0' + w
+                continue
+            test = current + " " + w
+            if draw.textlength(test, font=font) <= max_w:
+                current = test
+            else:
+                lines.append(current)
+                current = w
+        lines.append(current)
+        return lines
+
+    def autosize_font(draw, text, max_w, max_h):
+        for size in range(88, 32, -2):
+            fv = ImageFont.truetype(fp, size)
+            lines = wrap(draw, text, fv, max_w)
+            lh = size + 20
+            max_line_w = max(draw.textbbox((0,0), l, font=fv)[2] for l in lines)
+            if max_line_w <= max_w and lh * len(lines) <= max_h:
+                return fv, lines, lh
+        fv = ImageFont.truetype(fp, 32)
+        lines = wrap(draw, text, fv, max_w)
+        return fv, lines, 52
+
+    f_title_big = ImageFont.truetype(fpb, 96)
+    f_sub       = ImageFont.truetype(fp,  36)
+    f_ref       = ImageFont.truetype(fpb, 36)
+    f_wm        = ImageFont.truetype(FONT_SANS, 28)
+    max_text_h  = int((H - BORDER*2) * 0.65)
+
+    os.makedirs("frames", exist_ok=True)
+
+    for f in range(TOTAL):
+        s = f / FPS
+        img = Image.new("RGB", (W, H), BG)
+        draw = ImageDraw.Draw(img)
+        draw_bg(draw)
+
+        draw.rounded_rectangle([BORDER, BORDER, W-BORDER, H-BORDER], radius=40, outline=blend(GOLD, 0.8), width=5)
+        draw.rounded_rectangle([BORDER+10, BORDER+10, W-BORDER-10, H-BORDER-10], radius=34, outline=blend(GOLD, 0.25), width=1)
+
+        title_end = SECS_TITLE
+
+        if s < title_end:
+            a = ease(s/0.8) if s < 0.8 else (ease((title_end-s)/0.5) if s > title_end-0.5 else 1.0)
+            lines = wrap(draw, title, f_title_big, MAX_TW)
+            lh = 110
+            ty = H//2 - (len(lines)*lh)//2 - 60
+            for line in lines:
+                bbox = draw.textbbox((0,0), line, font=f_title_big)
+                tw = bbox[2]-bbox[0]
+                x = (W-tw)//2
+                draw.text((x+2, ty+2), line, font=f_title_big, fill=blend((0,0,0), a*0.5))
+                draw.text((x, ty), line, font=f_title_big, fill=blend(GOLD, a))
+                ty += lh
+            sub = "Les Paraboles de Jésus · LSG 1910"
+            bbox2 = draw.textbbox((0,0), sub, font=f_sub)
+            sw = bbox2[2]-bbox2[0]
+            draw.line([((W-300)//2, H//2+90), ((W+300)//2, H//2+90)], fill=blend(GOLD, a*0.5), width=1)
+            draw.text(((W-sw)//2, H//2+105), sub, font=f_sub, fill=blend(SIL, a*0.7))
+
+        elif s < title_end + len(verses) * SECS_PER_VERSE:
+            verse_s = s - title_end
+            verse_idx = int(verse_s / SECS_PER_VERSE)
+            verse_idx = min(verse_idx, len(verses)-1)
+            local_s = verse_s - verse_idx * SECS_PER_VERSE
+            a = ease(local_s/0.5) if local_s < 0.5 else (ease((SECS_PER_VERSE-local_s)/0.5) if local_s > SECS_PER_VERSE-0.5 else 1.0)
+
+            ref_v, text_v = verses[verse_idx]
+            num = f"{verse_idx+1}/{len(verses)}"
+            draw.text((BORDER+CARD_PAD, BORDER+50), num, font=f_wm, fill=blend(SIL, a*0.5))
+
+            text_q = f"« {text_v.rstrip('.')} »"
+            fv, lines, lh = autosize_font(draw, text_q, MAX_TW, max_text_h)
+            total_h = lh * len(lines)
+            ty = BORDER + (H - BORDER*2)//2 - total_h//2 - 40
+
+            for line in lines:
+                bbox = draw.textbbox((0,0), line, font=fv)
+                tw = bbox[2]-bbox[0]
+                x = (W-tw)//2
+                draw.text((x+2, ty+2), line, font=fv, fill=blend((0,0,0), a*0.6))
+                draw.text((x, ty), line, font=fv, fill=blend(WHITE, a))
+                ty += lh
+
+            lx1, lx2 = BORDER+CARD_PAD, W-BORDER-CARD_PAD
+            draw.line([(lx1, H-250), (lx2, H-250)], fill=blend(GOLD, a*0.8), width=2)
+            draw.text((lx1, H-230), ref_v, font=f_ref, fill=blend(GR, a))
+            draw.text((lx1, H-185), "LSG 1910", font=f_wm, fill=blend(SIL, a*0.85))
+            wbbox = draw.textbbox((0,0), WATERMARK, font=f_wm)
+            draw.text((lx2-(wbbox[2]-wbbox[0]), H-185), WATERMARK, font=f_wm, fill=blend(SIL, a*0.85))
+
+        else:
+            final_s = s - title_end - len(verses)*SECS_PER_VERSE
+            a = ease(final_s/0.8) if final_s < 0.8 else 1.0
+            msg = "Lisez la Bible complète"
+            bbox3 = draw.textbbox((0,0), msg, font=f_sub)
+            tw3 = bbox3[2]-bbox3[0]
+            draw.text(((W-tw3)//2, H//2-100), msg, font=f_sub, fill=blend(SIL, a*0.8))
+            app = "LaBible.app"
+            bbox4 = draw.textbbox((0,0), app, font=f_title_big)
+            tw4 = bbox4[2]-bbox4[0]
+            draw.text(((W-tw4)//2+2, H//2+2), app, font=f_title_big, fill=blend((0,0,0), a*0.5))
+            draw.text(((W-tw4)//2, H//2), app, font=f_title_big, fill=blend(GOLD, a))
+            sub2 = "Gratuit · Sans publicité · LSG 1910"
+            bbox5 = draw.textbbox((0,0), sub2, font=f_wm)
+            sw2 = bbox5[2]-bbox5[0]
+            draw.text(((W-sw2)//2, H//2+120), sub2, font=f_wm, fill=blend(SIL, a*0.6))
+
+        img.save(f"frames/frame_{f:04d}.png")
+
+    output_path = "parabole.mp4"
+    import glob, shutil
+    music_files = glob.glob("music/*.mp3") + glob.glob("music/*.m4a") + glob.glob("music/*.ogg")
+    music_file = None
+    if music_files:
+        last_music = progress.get("last_music", "") if progress else ""
+        available = [m for m in music_files if m != last_music] or music_files
+        music_file = random.choice(available)
+        if progress is not None:
+            progress["last_music"] = music_file
+    if music_file:
+        print(f"🎵 {music_file}")
+        subprocess.run(['ffmpeg', '-framerate', '30', '-i', 'frames/frame_%04d.png',
+            '-ss', '2', '-i', music_file,
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
+            '-c:a', 'aac', '-b:a', '192k', '-shortest', output_path, '-y'], capture_output=True)
+    else:
+        subprocess.run(['ffmpeg', '-framerate', '30', '-i', 'frames/frame_%04d.png',
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
+            output_path, '-y'], capture_output=True)
+    shutil.rmtree("frames", ignore_errors=True)
+    print(f"✅ Parabole vidéo : {output_path}")
+    return output_path
+
+
+def pick_parabole(progress):
+    """Charge la prochaine parabole depuis paraboles_curated.json"""
+    paraboles_file = "paraboles_curated.json"
+    arr = load_json(paraboles_file)
+    index = progress.get("i_parabole", 0)
+    if index >= len(arr):
+        index = 0
+    parabole = arr[index]
+    progress["i_parabole"] = index + 1
+    return parabole
+
+
+def main_parabole():
+    progress = load_json(PROGRESS_FILE)
+    parabole = pick_parabole(progress)
+    title = parabole["title"]
+    verses = [(v["ref"], v["text"]) for v in parabole["verses"]]
+    print(f"📖 Parabole — {title} ({len(verses)} versets)")
+
+    video = make_parabole_video(title, verses, progress)
+
+    # Caption court pour Telegram/Instagram
+    first_ref = verses[0][0] if verses else ""
+    caption = f"✝️ <b>{title}</b>\n{first_ref}\n#LaBible #LSG1910 #ParaboleDeJésus"
+    send_video(video, caption)
+
+    # Publier sur les plateformes
+    cat = CATEGORIES["jesus"]
+    post_reel_to_facebook(video, title, verses[0][1] if verses else "", cat, "jesus")
+    post_reel_to_instagram(video, title, verses[0][1] if verses else "", cat, "jesus")
+
+    # YouTube — titre long
+    try:
+        from google.oauth2.credentials import Credentials
+        from googleapiclient.discovery import build
+        from googleapiclient.http import MediaFileUpload
+        from google.auth.transport.requests import Request
+        if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
+            creds = Credentials(token=None, refresh_token=YT_REFRESH_TOKEN, client_id=YT_CLIENT_ID,
+                client_secret=YT_CLIENT_SECRET, token_uri="https://oauth2.googleapis.com/token",
+                scopes=["https://www.googleapis.com/auth/youtube.upload"])
+            creds.refresh(Request())
+            youtube = build("youtube", "v3", credentials=creds)
+            yt_title = f"✝️ {title} — Bible LSG1910"[:100]
+            description = f"✝️ {title}\n\n" + "\n".join([f"{r} — {t}" for r, t in verses]) + f"\n\n📖 Bible complète sur {APP_URL}\n\n#Bible #ParaboleDeJésus #LSG1910 #BibleFrancaise #Jésus #Foi"
+            body = {"snippet": {"title": yt_title, "description": description,
+                "tags": ["Bible", "Parabole", "Jésus", "LSG1910", "BibleFrancaise"], "categoryId": "22"},
+                "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}}
+            media = MediaFileUpload(video, mimetype="video/mp4", resumable=True)
+            request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
+            response = None
+            while response is None:
+                status, response = request.next_chunk()
+                if status:
+                    print(f"  ⏳ YouTube : {int(status.progress()*100)}%")
+            print(f"✅ YouTube publié — https://youtube.com/watch?v={response.get('id')}")
+    except Exception as e:
+        print(f"❌ YouTube parabole : {e}")
+
+    save_json(PROGRESS_FILE, progress)
+    print("✅ Terminé (parabole).")
+
+
+# ---------------------------------------------------
 # MAIN
 # ---------------------------------------------------
 def main():
@@ -853,5 +1098,7 @@ if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "reel":
         main_reel()
+    elif len(sys.argv) > 1 and sys.argv[1] == "parabole":
+        main_parabole()
     else:
         main()
