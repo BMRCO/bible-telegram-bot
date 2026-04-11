@@ -7,12 +7,13 @@ on:
         required: false
         default: 'image'
   schedule:
-    - cron: "0 5 * * *"   # 05h UTC → 07h France (image — Psaume du Matin)
-    - cron: "0 6 * * *"   # 06h UTC → 08h France (reel  — Promesses de Dieu)
-    - cron: "0 11 * * *"  # 11h UTC → 13h France (image — Sagesse Biblique)
-    - cron: "0 13 * * *"  # 13h UTC → 15h France (reel  — Paroles de Jésus)
-    - cron: "0 17 * * *"  # 17h UTC → 19h France (image — Prophéties Bibliques)
-    - cron: "0 19 * * *"  # 19h UTC → 21h France (reel  — Psaume du Soir)
+    - cron: "0 5 * * *"   # 05h UTC → 07h France (image    — Psaume du Matin)
+    - cron: "0 6 * * *"   # 06h UTC → 08h France (reel     — Promesses de Dieu)
+    - cron: "0 10 * * *"  # 10h UTC → 12h France (parabole — Parabole de Jésus)
+    - cron: "0 11 * * *"  # 11h UTC → 13h France (image    — Sagesse Biblique)
+    - cron: "0 13 * * *"  # 13h UTC → 15h France (reel     — Paroles de Jésus)
+    - cron: "0 17 * * *"  # 17h UTC → 19h France (image    — Prophéties Bibliques)
+    - cron: "0 19 * * *"  # 19h UTC → 21h France (reel     — Psaume du Soir)
 permissions:
   contents: write
 jobs:
@@ -36,6 +37,8 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "mode=${{ github.event.inputs.mode }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 10 * * *" ]; then
+            echo "mode=parabole" >> $GITHUB_OUTPUT
           elif [ "${{ github.event.schedule }}" = "0 6 * * *" ] || [ "${{ github.event.schedule }}" = "0 13 * * *" ] || [ "${{ github.event.schedule }}" = "0 19 * * *" ]; then
             echo "mode=reel" >> $GITHUB_OUTPUT
           else
