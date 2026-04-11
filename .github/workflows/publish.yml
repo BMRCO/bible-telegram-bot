@@ -7,12 +7,12 @@ on:
         required: false
         default: 'image'
   schedule:
-    - cron: "0 5 * * *"   # 05h00 UTC → 07h00 France (image)
-    - cron: "0 7 * * *"   # 07h00 UTC → 09h00 France (reel)
-    - cron: "0 11 * * *"  # 11h00 UTC → 13h00 France (image)
-    - cron: "0 14 * * *"  # 14h00 UTC → 16h00 France (reel)
-    - cron: "0 17 * * *"  # 17h00 UTC → 19h00 France (image)
-    - cron: "0 19 * * *"  # 19h00 UTC → 21h00 France (reel)
+    - cron: "0 5 * * *"   # 05h UTC → 07h France (image — Psaume du Matin)
+    - cron: "0 6 * * *"   # 06h UTC → 08h France (reel  — Promesses de Dieu)
+    - cron: "0 11 * * *"  # 11h UTC → 13h France (image — Sagesse Biblique)
+    - cron: "0 13 * * *"  # 13h UTC → 15h France (reel  — Paroles de Jésus)
+    - cron: "0 17 * * *"  # 17h UTC → 19h France (image — Prophéties Bibliques)
+    - cron: "0 19 * * *"  # 19h UTC → 21h France (reel  — Psaume du Soir)
 permissions:
   contents: write
 jobs:
@@ -36,7 +36,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "mode=${{ github.event.inputs.mode }}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.schedule }}" = "0 7 * * *" ] || [ "${{ github.event.schedule }}" = "0 14 * * *" ] || [ "${{ github.event.schedule }}" = "0 19 * * *" ]; then
+          elif [ "${{ github.event.schedule }}" = "0 6 * * *" ] || [ "${{ github.event.schedule }}" = "0 13 * * *" ] || [ "${{ github.event.schedule }}" = "0 19 * * *" ]; then
             echo "mode=reel" >> $GITHUB_OUTPUT
           else
             echo "mode=image" >> $GITHUB_OUTPUT
@@ -59,7 +59,7 @@ jobs:
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
         run: python bot.py ${{ steps.mode.outputs.mode }}
-      - name: Commit updates (progress + lists if changed)
+      - name: Commit updates
         run: |
           git config user.name "bible-telegram-bot"
           git config user.email "bible-telegram-bot@users.noreply.github.com"
