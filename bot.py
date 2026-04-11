@@ -148,6 +148,19 @@ def build_hashtags_fb(cat_name):
 
 
 def strip_rubric(text: str) -> str:
+    # Supprimer les préfixes courts type "De David." "Cantique des degrés." au début
+    prefix_patterns = [
+        r'^De David\.\s*',
+        r'^Cantique des degrés[^\.]*\.\s*',
+        r'^Psaume de David[^\.]*\.\s*',
+        r'^Prière de[^\.]*\.\s*',
+        r'^Pour le chef des chantres[^\.]*\.\s*',
+        r'^Maschil[^\.]*\.\s*',
+        r'^Michtam[^\.]*\.\s*',
+    ]
+    for pattern in prefix_patterns:
+        text = re.sub(pattern, '', text, flags=re.IGNORECASE).strip()
+
     rubric_keywords = [
         "chef des chantres", "maschil", "michtam", "cantique",
         "psaume de david", "prière de", "fils de koré", "sur alamoth",
@@ -504,6 +517,10 @@ def wrap_text(draw, text, font, max_w):
         return [""]
     lines, current = [], words[0]
     for w in words[1:]:
+        # Ne pas couper avant ? et ! — les garder avec le mot précédent
+        if w.startswith('?') or w.startswith('!'):
+            current = current + '\u00a0' + w
+            continue
         test = current + " " + w
         if draw.textlength(test, font=font) <= max_w:
             current = test
