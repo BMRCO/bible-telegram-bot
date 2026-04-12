@@ -1021,7 +1021,7 @@ def main_parabole():
     post_reel_to_facebook(video, title, verses[0][1] if verses else "", cat, "jesus")
     post_reel_to_instagram(video, title, verses[0][1] if verses else "", cat, "jesus")
 
-    # YouTube — titre long
+    # YouTube — titre avec référence
     try:
         from google.oauth2.credentials import Credentials
         from googleapiclient.discovery import build
@@ -1033,7 +1033,8 @@ def main_parabole():
                 scopes=["https://www.googleapis.com/auth/youtube.upload"])
             creds.refresh(Request())
             youtube = build("youtube", "v3", credentials=creds)
-            yt_title = f"✝️ {title} — Bible LSG1910"[:100]
+            ref_range = parabole.get("ref_range", verses[0][0] if verses else "")
+            yt_title = f"✝️ {title} — {ref_range} | Bible LSG1910"[:100]
             description = f"✝️ {title}\n\n" + "\n".join([f"{r} — {t}" for r, t in verses]) + f"\n\n📖 Bible complète sur {APP_URL}\n\n#Bible #ParaboleDeJésus #LSG1910 #BibleFrancaise #Jésus #Foi"
             body = {"snippet": {"title": yt_title, "description": description,
                 "tags": ["Bible", "Parabole", "Jésus", "LSG1910", "BibleFrancaise"], "categoryId": "22"},
