@@ -854,7 +854,7 @@ def make_parabole_video(title, verses, progress=None):
         if not words: return [""]
         lines, current = [], words[0]
         for w in words[1:]:
-            if w.startswith('?') or w.startswith('!'):
+            if w.startswith('?') or w.startswith('!') or w == '»':
                 current += '\u00a0' + w
                 continue
             test = current + " " + w
@@ -864,6 +864,10 @@ def make_parabole_video(title, verses, progress=None):
                 lines.append(current)
                 current = w
         lines.append(current)
+        # S'assurer que » est collé à la dernière ligne et non seul
+        if len(lines) > 1 and lines[-1].strip() == '»':
+            lines[-2] = lines[-2] + '\u00a0»'
+            lines.pop()
         return lines
 
     def autosize_font(draw, text, max_w, max_h):
