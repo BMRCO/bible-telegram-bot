@@ -56,11 +56,19 @@
     "title": "La brebis perdue",
     "ref_range": "Luc 15:3-7",
     "verses": [
-      {"ref": "Luc 15:3", "text": "Alors il leur dit cette parabole :"},
       {"ref": "Luc 15:4", "text": "Quel homme d'entre vous, s'il a cent brebis, et qu'il en perde une, ne laisse les quatre-vingt-dix-neuf autres dans le désert pour aller après celle qui est perdue, jusqu'à ce qu'il la retrouve ?"},
       {"ref": "Luc 15:5", "text": "Lorsqu'il l'a retrouvée, il la met avec joie sur ses épaules."},
       {"ref": "Luc 15:6", "text": "Et, de retour à la maison, il appelle ses amis et ses voisins, et leur dit : Réjouissez-vous avec moi, car j'ai retrouvé ma brebis qui était perdue."},
       {"ref": "Luc 15:7", "text": "Je vous dis de même qu'il y aura plus de joie dans le ciel pour un seul pécheur qui se repent, que pour quatre-vingt-dix-neuf justes qui n'ont pas besoin de repentance."}
+    ]
+  },
+  {
+    "title": "La pièce d'argent perdue",
+    "ref_range": "Luc 15:8-10",
+    "verses": [
+      {"ref": "Luc 15:8", "text": "Ou quelle femme, si elle a dix drachmes et qu'elle en perde une, n'allume une lampe, ne balaie la maison, et ne cherche avec soin jusqu'à ce qu'elle la retrouve ?"},
+      {"ref": "Luc 15:9", "text": "Lorsqu'elle l'a retrouvée, elle appelle ses amies et ses voisines, et dit : Réjouissez-vous avec moi, car j'ai retrouvé la drachme que j'avais perdue."},
+      {"ref": "Luc 15:10", "text": "De même, je vous dis, il y a de la joie devant les anges de Dieu pour un seul pécheur qui se repent."}
     ]
   },
   {
@@ -72,7 +80,6 @@
       {"ref": "Luc 16:22", "text": "Le pauvre mourut, et il fut porté par les anges dans le sein d'Abraham. Le riche mourut aussi, et fut enseveli."},
       {"ref": "Luc 16:23", "text": "Dans le séjour des morts, il leva les yeux ; il était en proie aux tourments, et il vit de loin Abraham, et Lazare dans son sein."},
       {"ref": "Luc 16:25", "text": "Abraham dit : Mon enfant, souviens-toi que tu as reçu tes biens pendant ta vie, et que Lazare a eu les maux pendant la sienne ; maintenant il est consolé, et toi, tu souffres."},
-      {"ref": "Luc 16:29", "text": "Abraham dit : Ils ont Moïse et les prophètes ; qu'ils les écoutent."},
       {"ref": "Luc 16:31", "text": "Et Abraham lui dit : S'ils n'écoutent pas Moïse et les prophètes, ils ne se laisseront pas persuader quand même quelqu'un des morts ressusciterait."}
     ]
   },
@@ -80,7 +87,6 @@
     "title": "Le pharisien et le publicain",
     "ref_range": "Luc 18:9-14",
     "verses": [
-      {"ref": "Luc 18:9", "text": "Il dit aussi cette parabole pour quelques-uns qui se persuadaient qu'ils étaient justes et qui méprisaient les autres :"},
       {"ref": "Luc 18:10", "text": "Deux hommes montèrent au temple pour prier ; l'un était pharisien, et l'autre publicain."},
       {"ref": "Luc 18:11", "text": "Le pharisien, debout, priait ainsi en lui-même : O Dieu, je te rends grâces de ce que je ne suis pas comme le reste des hommes, qui sont ravisseurs, injustes, adultères, ou même comme ce publicain."},
       {"ref": "Luc 18:13", "text": "Le publicain, se tenant à distance, n'osait pas même lever les yeux au ciel ; mais il se frappait la poitrine, en disant : O Dieu, sois apaisé envers moi, qui suis un pécheur."},
@@ -120,6 +126,100 @@
       {"ref": "Luc 13:7", "text": "Il dit au vigneron : Voilà trois ans que je viens chercher du fruit sur ce figuier, et je n'en trouve point. Coupe-le ; pourquoi occupe-t-il inutilement la terre ?"},
       {"ref": "Luc 13:8", "text": "Le vigneron répondit : Seigneur, laisse-le encore cette année, jusqu'à ce que je l'aie bêché et fumé."},
       {"ref": "Luc 13:9", "text": "Peut-être qu'il donnera du fruit à l'avenir ; sinon, tu le couperas."}
+    ]
+  },
+  {
+    "title": "Le grain de moutarde",
+    "ref_range": "Matthieu 13:31-32",
+    "verses": [
+      {"ref": "Matthieu 13:31", "text": "Il leur proposa une autre parabole, et dit : Le royaume des cieux est semblable à un grain de moutarde qu'un homme a pris et semé dans son champ."},
+      {"ref": "Matthieu 13:32", "text": "C'est la plus petite de toutes les semences ; mais quand il a poussé, il est plus grand que les légumes, et devient un arbre, de sorte que les oiseaux du ciel viennent habiter dans ses branches."}
+    ]
+  },
+  {
+    "title": "Le levain",
+    "ref_range": "Matthieu 13:33",
+    "verses": [
+      {"ref": "Matthieu 13:33", "text": "Il leur dit une autre parabole : Le royaume des cieux est semblable à du levain qu'une femme a pris et mis dans trois mesures de farine, jusqu'à ce que la pâte soit toute levée."}
+    ]
+  },
+  {
+    "title": "Le trésor caché",
+    "ref_range": "Matthieu 13:44",
+    "verses": [
+      {"ref": "Matthieu 13:44", "text": "Le royaume des cieux est encore semblable à un trésor caché dans un champ. L'homme qui l'a trouvé le cache ; et, dans sa joie, il va vendre tout ce qu'il a, et achète ce champ."}
+    ]
+  },
+  {
+    "title": "La perle précieuse",
+    "ref_range": "Matthieu 13:45-46",
+    "verses": [
+      {"ref": "Matthieu 13:45", "text": "Le royaume des cieux est encore semblable à un marchand qui cherche de belles perles."},
+      {"ref": "Matthieu 13:46", "text": "Il a trouvé une perle de grand prix ; il est allé vendre tout ce qu'il avait, et l'a achetée."}
+    ]
+  },
+  {
+    "title": "Le débiteur impitoyable",
+    "ref_range": "Matthieu 18:23-35",
+    "verses": [
+      {"ref": "Matthieu 18:23", "text": "C'est pourquoi le royaume des cieux est semblable à un roi qui voulut faire rendre compte à ses serviteurs."},
+      {"ref": "Matthieu 18:26", "text": "Le serviteur se jeta à ses pieds, et dit : Seigneur, aie patience envers moi, et je te paierai tout."},
+      {"ref": "Matthieu 18:27", "text": "Le maître de ce serviteur fut touché de compassion, il le laissa aller, et lui remit la dette."},
+      {"ref": "Matthieu 18:32", "text": "Alors son maître le fit appeler, et lui dit : Méchant serviteur, je t'avais remis toute cette dette, parce que tu m'en avais supplié."},
+      {"ref": "Matthieu 18:33", "text": "Ne devais-tu pas aussi avoir pitié de ton compagnon, comme j'ai eu pitié de toi ?"},
+      {"ref": "Matthieu 18:35", "text": "C'est ainsi que mon Père céleste vous traitera, si chacun de vous ne pardonne pas à son frère de tout son cœur."}
+    ]
+  },
+  {
+    "title": "Les deux fils",
+    "ref_range": "Matthieu 21:28-31",
+    "verses": [
+      {"ref": "Matthieu 21:28", "text": "Que vous en semble ? Un homme avait deux fils. Il s'approcha du premier, et dit : Mon enfant, va travailler aujourd'hui dans ma vigne."},
+      {"ref": "Matthieu 21:29", "text": "Il répondit : Je ne veux pas. Mais ensuite, s'étant repenti, il y alla."},
+      {"ref": "Matthieu 21:30", "text": "Il s'approcha de l'autre, et lui dit la même chose. Celui-ci répondit : Je veux bien, seigneur. Et il n'y alla pas."},
+      {"ref": "Matthieu 21:31", "text": "Lequel des deux a fait la volonté du père ? Le premier, répondirent-ils. Jésus leur dit : Je vous le dis en vérité, les publicains et les prostituées vous devancent dans le royaume de Dieu."}
+    ]
+  },
+  {
+    "title": "Les vignerons homicides",
+    "ref_range": "Matthieu 21:33-41",
+    "verses": [
+      {"ref": "Matthieu 21:33", "text": "Écoutez une autre parabole. Il y avait un homme, maître de maison, qui planta une vigne, l'entoura d'une haie, y creusa un pressoir, et bâtit une tour ; puis il la loua à des vignerons, et s'éloigna."},
+      {"ref": "Matthieu 21:37", "text": "Enfin il envoya vers eux son fils, en disant : Ils respecteront mon fils."},
+      {"ref": "Matthieu 21:38", "text": "Mais les vignerons, voyant le fils, dirent entre eux : Voici l'héritier ; venez, tuons-le, et emparons-nous de son héritage."},
+      {"ref": "Matthieu 21:41", "text": "Il fera périr misérablement ces méchants, et louera la vigne à d'autres vignerons, qui lui en remettront les fruits en leur saison."}
+    ]
+  },
+  {
+    "title": "La semence qui pousse",
+    "ref_range": "Marc 4:26-29",
+    "verses": [
+      {"ref": "Marc 4:26", "text": "Il dit encore : Il en est du royaume de Dieu comme lorsqu'un homme jette de la semence en terre."},
+      {"ref": "Marc 4:27", "text": "Qu'il dorme ou qu'il veille, nuit et jour, la semence germe et croît sans qu'il sache comment."},
+      {"ref": "Marc 4:28", "text": "La terre produit d'elle-même, d'abord l'herbe, puis l'épi, puis le grain tout formé dans l'épi."},
+      {"ref": "Marc 4:29", "text": "Et quand le fruit est mûr, on y met aussitôt la faucille, parce que la moisson est là."}
+    ]
+  },
+  {
+    "title": "Le fils prodigue — Le frère aîné",
+    "ref_range": "Luc 15:25-32",
+    "verses": [
+      {"ref": "Luc 15:25", "text": "Or, le fils aîné était dans les champs. Lorsqu'il revint et approcha de la maison, il entendit la musique et les danses."},
+      {"ref": "Luc 15:28", "text": "Il se mit en colère, et ne voulut pas entrer. Son père sortit, et le pria d'entrer."},
+      {"ref": "Luc 15:29", "text": "Mais il répondit à son père : Voilà tant d'années que je te sers, sans avoir jamais transgressé tes ordres, et jamais tu ne m'as donné un chevreau pour que je me réjouisse avec mes amis."},
+      {"ref": "Luc 15:31", "text": "Mon enfant, lui dit le père, tu es toujours avec moi, et tout ce que j'ai est à toi."},
+      {"ref": "Luc 15:32", "text": "Mais il fallait bien s'égayer et se réjouir, parce que ton frère que voilà était mort et qu'il est revenu à la vie, parce qu'il était perdu et qu'il est retrouvé."}
+    ]
+  },
+  {
+    "title": "Le juge inique",
+    "ref_range": "Luc 18:1-8",
+    "verses": [
+      {"ref": "Luc 18:1", "text": "Jésus leur adressa une parabole, pour montrer qu'il faut toujours prier, et ne pas se décourager."},
+      {"ref": "Luc 18:3", "text": "Il y avait dans cette ville une veuve qui venait lui dire : Fais-moi justice de ma partie adverse."},
+      {"ref": "Luc 18:5", "text": "Du moins, parce que cette veuve m'importune, je lui ferai justice, afin qu'elle ne vienne pas sans cesse me fatiguer."},
+      {"ref": "Luc 18:7", "text": "Et Dieu ne fera-t-il pas justice à ses élus, qui crient à lui jour et nuit, et tardera-t-il à leur égard ?"},
+      {"ref": "Luc 18:8", "text": "Je vous dis qu'il leur fera promptement justice. Mais, quand le Fils de l'homme viendra, trouvera-t-il la foi sur la terre ?"}
     ]
   }
 ]
