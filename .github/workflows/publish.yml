@@ -67,9 +67,7 @@ jobs:
           git config user.name "bible-telegram-bot"
           git config user.email "bible-telegram-bot@users.noreply.github.com"
           git add progress.json promesses_curated.json jesus_curated.json psaumes_curated.json proverbes_curated.json propheties_curated.json paraboles_curated.json || true
-          git commit -m "Update progress" || exit 0
-          git fetch origin main
-          git checkout origin/main -- progress.json || true
-          git add progress.json || true
-          git commit -m "Merge progress" || true
+          git diff --cached --quiet && exit 0
+          git commit -m "Update progress"
+          git pull --rebase=false -s ours origin main || true
           git push origin HEAD:main || true
