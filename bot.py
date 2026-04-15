@@ -83,10 +83,15 @@ CATEGORIES = {
 HOUR_SCHEDULE = {
     5:  "psaume",
     6:  "promise",
+    7:  "promise",
     11: "proverbe",
+    12: "proverbe",
     13: "jesus",
+    14: "jesus",
     17: "prophetie",
+    18: "prophetie",
     19: "psaume",
+    20: "psaume",
 }
 
 # Fallback par heure approximative — évite la répétition du même thème
