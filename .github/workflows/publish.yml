@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Mode (image ou reel)'
+        description: 'Mode (image, reel ou parabole)'
         required: false
         default: 'image'
   schedule:
@@ -44,6 +44,24 @@ jobs:
           else
             echo "mode=image" >> $GITHUB_OUTPUT
           fi
+      - name: Determine category
+        id: category
+        run: |
+          if [ "${{ github.event.schedule }}" = "0 5 * * *" ]; then
+            echo "cat=psaume" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 6 * * *" ]; then
+            echo "cat=promise" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 11 * * *" ]; then
+            echo "cat=proverbe" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 13 * * *" ]; then
+            echo "cat=jesus" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 17 * * *" ]; then
+            echo "cat=prophetie" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 19 * * *" ]; then
+            echo "cat=psaume" >> $GITHUB_OUTPUT
+          else
+            echo "cat=" >> $GITHUB_OUTPUT
+          fi
       - name: Post verse
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -61,6 +79,7 @@ jobs:
           CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          BOT_CATEGORY: ${{ steps.category.outputs.cat }}
         run: python bot.py ${{ steps.mode.outputs.mode }}
       - name: Commit updates
         run: |
