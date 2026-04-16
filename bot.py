@@ -923,16 +923,23 @@ def make_parabole_video(title, verses, progress=None):
 
         if s < title_end:
             a = ease(s/0.8) if s < 0.8 else (ease((title_end-s)/0.5) if s > title_end-0.5 else 1.0)
-            lines = wrap(draw, title, f_title_big, MAX_TW)
-            lh = 110
-            ty = H//2 - (len(lines)*lh)//2 - 60
-            for line in lines:
-                bbox = draw.textbbox((0,0), line, font=f_title_big)
+            # Autosize titre
+            for t_size in range(96, 48, -4):
+                ft = ImageFont.truetype(fpb, t_size)
+                t_lines = wrap(draw, title, ft, MAX_TW)
+                t_lh = t_size + 18
+                max_tw = max(draw.textbbox((0,0), l, font=ft)[2] for l in t_lines)
+                if max_tw <= MAX_TW and t_lh * len(t_lines) <= 320:
+                    break
+            t_total = t_lh * len(t_lines)
+            ty = H//2 - t_total//2 - 60
+            for line in t_lines:
+                bbox = draw.textbbox((0,0), line, font=ft)
                 tw = bbox[2]-bbox[0]
                 x = (W-tw)//2
-                draw.text((x+2, ty+2), line, font=f_title_big, fill=blend((0,0,0), a*0.5))
-                draw.text((x, ty), line, font=f_title_big, fill=blend(GOLD, a))
-                ty += lh
+                draw.text((x+2, ty+2), line, font=ft, fill=blend((0,0,0), a*0.5))
+                draw.text((x, ty), line, font=ft, fill=blend(GOLD, a))
+                ty += t_lh
             sub = "Les Paraboles de Jésus · LSG 1910"
             bbox2 = draw.textbbox((0,0), sub, font=f_sub)
             sw = bbox2[2]-bbox2[0]
