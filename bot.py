@@ -626,7 +626,7 @@ def make_reel_video(text, ref, progress=None):
     text_clean = text.rstrip('.')
     BORDER, CARD_PAD = 100, 100
     MAX_TW = W - BORDER*2 - CARD_PAD*2
-    size = 88
+    size = 72
     while size > 32:
         fv = ImageFont.truetype(fp, size)
         tmp = Image.new("RGB", (10, 10)); d = ImageDraw.Draw(tmp)
@@ -634,7 +634,7 @@ def make_reel_video(text, ref, progress=None):
         lh = size + 20
         max_line_w = max(d.textbbox((0,0), l, font=fv)[2] for l in test_lines)
         total_h = lh * len(test_lines)
-        if max_line_w <= MAX_TW and total_h <= int((H - BORDER*2) * 0.65):
+        if max_line_w <= MAX_TW and total_h <= int((H - BORDER*2) * 0.60):
             break
         size -= 2
     fv = ImageFont.truetype(fp, size)
@@ -708,7 +708,7 @@ def make_reel_video(text, ref, progress=None):
         # CTA — apparaît dans les dernières 5 secondes
         if s > TOTAL/FPS - 5:
             f_cta = ImageFont.truetype(FONT_SANS, 26)
-            cta = "Suis @labible.app pour un verset chaque jour 🙏"
+            cta = "Suis @labible.app pour un verset chaque jour"
             cta_a = ease((s - (TOTAL/FPS - 5)) / 1.0) * alpha
             cta_bbox = draw.textbbox((0,0), cta, font=f_cta)
             cta_w = cta_bbox[2] - cta_bbox[0]
