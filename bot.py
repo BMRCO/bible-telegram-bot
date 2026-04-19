@@ -503,7 +503,7 @@ def post_reel_to_threads(video_path, ref, text, cat, cat_name):
     if not THREADS_ACCESS_TOKEN:
         return
     print("📤 Upload vidéo Threads...")
-    video_url = upload_to_cloudinary(video_path, resource_type="video")
+    video_url = upload_video_public(video_path)
     if not video_url:
         print("❌ Threads — upload vidéo échoué")
         return
