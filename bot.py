@@ -207,6 +207,8 @@ def clean_text(text: str) -> str:
     text = re.sub(r'\s*([?!])', r' \1', text)
     text = text.replace("'", "\u2019").replace("'", "\u2019")
     text = text.replace("Eternel", "Éternel")
+    text = text.replace("coeur", "cœur")
+    text = text.replace("Coeur", "Cœur")
     text = text.rstrip(';').rstrip(':').strip()
     if not text.endswith(('.', '!', '?')):
         text += '.'
@@ -470,6 +472,16 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
 # ---------------------------------------------------
 # THREADS
 # ---------------------------------------------------
+def _threads_publish(container_id):
+    import time; time.sleep(5)
+    r2 = requests.post("https://graph.threads.net/v1.0/me/threads_publish",
+        data={"creation_id": container_id, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
+    if r2.status_code == 200:
+        print(f"✅ Threads publié — {r2.json().get('id')}")
+    else:
+        print(f"❌ Threads publication ({r2.status_code}): {r2.text}")
+
+
 def post_to_threads(image_path, ref, text, cat, cat_name):
     if not THREADS_ACCESS_TOKEN:
         return
@@ -484,14 +496,38 @@ def post_to_threads(image_path, ref, text, cat, cat_name):
     if r.status_code != 200:
         print(f"❌ Threads container ({r.status_code}): {r.text}")
         return
+    _threads_publish(r.json().get("id"))
+
+
+def post_reel_to_threads(video_path, ref, text, cat, cat_name):
+    if not THREADS_ACCESS_TOKEN:
+        return
+    print("📤 Upload vidéo Threads...")
+    video_url = upload_to_cloudinary(video_path, resource_type="video")
+    if not video_url:
+        print("❌ Threads — upload vidéo échoué")
+        return
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Bible complète gratuite sur {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    r = requests.post("https://graph.threads.net/v1.0/me/threads",
+        data={"media_type": "VIDEO", "video_url": video_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
+    if r.status_code != 200:
+        print(f"❌ Threads reel container ({r.status_code}): {r.text}")
+        return
     container_id = r.json().get("id")
-    import time; time.sleep(5)
-    r2 = requests.post("https://graph.threads.net/v1.0/me/threads_publish",
-        data={"creation_id": container_id, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
-    if r2.status_code == 200:
-        print(f"✅ Threads publié — {r2.json().get('id')}")
-    else:
-        print(f"❌ Threads publication ({r2.status_code}): {r2.text}")
+    # Attendre que le container soit prêt
+    import time
+    for _ in range(10):
+        time.sleep(6)
+        rs = requests.get(f"https://graph.threads.net/v1.0/{container_id}",
+            params={"fields": "status,error_message", "access_token": THREADS_ACCESS_TOKEN}, timeout=30)
+        status = rs.json().get("status", "")
+        print(f"⏳ Threads status: {status}")
+        if status == "FINISHED":
+            break
+        if status == "ERROR":
+            print(f"❌ Threads container error: {rs.json().get('error_message')}")
+            return
+    _threads_publish(container_id)
 
 
 # ---------------------------------------------------
@@ -1121,7 +1157,7 @@ def main_reel():
     post_reel_to_facebook(video, ref, text, cat, cat_name)
     post_reel_to_instagram(video, ref, text, cat, cat_name)
     post_to_youtube(video, ref, text, cat, cat_name, hour_utc)
-    post_to_threads(make_image(text, ref), ref, text, cat, cat_name)
+    post_reel_to_threads(video, ref, text, cat, cat_name)
     save_json(PROGRESS_FILE, progress)
     print("✅ Terminé (reel).")
 
