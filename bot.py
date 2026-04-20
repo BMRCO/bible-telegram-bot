@@ -584,7 +584,7 @@ def make_image(text, ref):
     pad_x, top, bottom = 140, 180, 330
     max_w, max_h = W - 2*pad_x, H - top - bottom
     chosen_font = chosen_lines = chosen_lh = None
-    for size in range(66, 34, -2):
+    for size in range(76, 38, -2):
         font = ImageFont.truetype(FONT_SERIF, size)
         lines = wrap_text(draw, text, font, max_w)
         lh = int(size * 1.38)
