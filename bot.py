@@ -156,6 +156,8 @@ def strip_rubric(text: str) -> str:
     # Supprimer les préfixes courts type "De David." "Cantique des degrés." au début
     prefix_patterns = [
         r'^De David\.\s*',
+        r'^Psaume\.\s*',
+        r'^Psaume de\b[^\.]*\.\s*',
         r'^Cantique des degrés[^\.]*\.\s*',
         r'^Psaume de David[^\.]*\.\s*',
         r'^Prière de[^\.]*\.\s*',
@@ -584,7 +586,7 @@ def make_image(text, ref):
     pad_x, top, bottom = 140, 180, 330
     max_w, max_h = W - 2*pad_x, H - top - bottom
     chosen_font = chosen_lines = chosen_lh = None
-    for size in range(88, 38, -2):
+    for size in range(76, 38, -2):
         font = ImageFont.truetype(FONT_SERIF, size)
         lines = wrap_text(draw, text, font, max_w)
         lh = int(size * 1.38)
