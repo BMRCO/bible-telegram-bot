@@ -156,8 +156,6 @@ def strip_rubric(text: str) -> str:
     # Supprimer les préfixes courts type "De David." "Cantique des degrés." au début
     prefix_patterns = [
         r'^De David\.\s*',
-        r'^Psaume\.\s*',
-        r'^Psaume de\b[^\.]*\.\s*',
         r'^Cantique des degrés[^\.]*\.\s*',
         r'^Psaume de David[^\.]*\.\s*',
         r'^Prière de[^\.]*\.\s*',
@@ -746,7 +744,7 @@ def make_reel_video(text, ref, progress=None):
         # CTA — apparaît dans les dernières 5 secondes
         if s > TOTAL/FPS - 5:
             f_cta = ImageFont.truetype(FONT_SANS, 26)
-            cta = "Suis @labible.app pour un verset chaque jour"
+            cta = "Abonnez-vous pour un verset biblique chaque jour 🙏"
             cta_a = ease((s - (TOTAL/FPS - 5)) / 1.0) * alpha
             cta_bbox = draw.textbbox((0,0), cta, font=f_cta)
             cta_w = cta_bbox[2] - cta_bbox[0]
