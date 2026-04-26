@@ -744,7 +744,7 @@ def make_reel_video(text, ref, progress=None):
         # CTA — apparaît dans les dernières 5 secondes
         if s > TOTAL/FPS - 5:
             f_cta = ImageFont.truetype(FONT_SANS, 26)
-            cta = "Abonnez-vous pour un verset biblique chaque jour 🙏"
+            cta = "Suis @labible.app pour un verset chaque jour"
             cta_a = ease((s - (TOTAL/FPS - 5)) / 1.0) * alpha
             cta_bbox = draw.textbbox((0,0), cta, font=f_cta)
             cta_w = cta_bbox[2] - cta_bbox[0]
@@ -813,12 +813,16 @@ def pick_verse(progress):
         else:
             print(f"🕐 {hour_utc}h UTC → {cat_name}")
     cat = CATEGORIES[cat_name]
-    for attempt in range(5):
+    for attempt in range(10):
         book, ch, v = pick_from_category(cat, progress)
         raw_text = load_verse(book, ch, v)
-        if not is_rubric(raw_text):
+        if is_rubric(raw_text):
+            print(f"⏭️  Rubrique ignorée : {book} {ch}:{v}")
+            continue
+        cleaned = clean_text(strip_rubric(raw_text))
+        if len(cleaned.split()) >= 5:
             break
-        print(f"⏭️  Rubrique ignorée : {book} {ch}:{v}")
+        print(f"⏭️  Verset trop court ignoré : {book} {ch}:{v} — « {cleaned} »")
     raw_text = strip_rubric(raw_text)
     text = clean_text(raw_text)
     display_book = "Psaumes" if book == "Psaume" else book
