@@ -744,7 +744,7 @@ def make_reel_video(text, ref, progress=None):
         # CTA — apparaît dans les dernières 5 secondes
         if s > TOTAL/FPS - 5:
             f_cta = ImageFont.truetype(FONT_SANS, 26)
-            cta = "Abonnez-vous pour plus de versets 🙏"
+            cta = "Abonnez-vous pour plus de versets"
             cta_a = ease((s - (TOTAL/FPS - 5)) / 1.0) * alpha
             cta_bbox = draw.textbbox((0,0), cta, font=f_cta)
             cta_w = cta_bbox[2] - cta_bbox[0]
