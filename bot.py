@@ -290,7 +290,7 @@ def post_to_facebook(image_path, ref, text, cat, cat_name):
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
-    msg = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement sur {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
+    msg = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
     with open(image_path, "rb") as f:
         r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/photos",
             data={"message": msg, "access_token": FB_PAGE_TOKEN}, files={"source": f}, timeout=60)
@@ -304,7 +304,7 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name):
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
-    desc = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Bible complète gratuite sur {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
+    desc = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n🔔 Abonnez-vous pour plus de versets 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
     with open(video_path, "rb") as f:
         r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
             data={"description": desc, "access_token": FB_PAGE_TOKEN}, files={"source": f}, timeout=120)
@@ -380,7 +380,7 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
         return
     if "cloudinary.com" in image_url:
         image_url = image_url.replace("/upload/", "/upload/f_jpg/")
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Bible complète gratuite sur {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"image_url": image_url, "caption": caption, "access_token": FB_PAGE_TOKEN}, timeout=60)
     if r.status_code != 200:
@@ -414,7 +414,7 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
     video_url = upload_video_public(video_path)
     if not video_url:
         return
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Bible complète gratuite sur {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n🔔 Abonnez-vous pour plus de versets 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"media_type": "REELS", "video_url": video_url, "caption": caption, "access_token": FB_PAGE_TOKEN, "thumb_offset": "7500"}, timeout=60)
     if r.status_code != 200:
@@ -456,7 +456,7 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
     payload = {
         "board_id": PINTEREST_BOARD_ID,
         "title": f"{cat['emoji']} {pin_keywords.get(cat_name, 'Verset Biblique')} — {ref} | LaBible.app",
-        "description": f"{cat['emoji']} « {text} »\n\n— {ref} (LSG 1910)\n\n📖 Lisez la Bible sur LaBible.app\n\n#Bible #VersetDuJour #LaBible #LSG1910 #Foi",
+        "description": f"{cat['emoji']} « {text} »\n\n— {ref} (LSG 1910)\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n#Bible #VersetDuJour #LaBible #LSG1910 #Foi",
         "link": f"{APP_URL}/#{ref.replace(' ', '-')}",
         "media_source": {"source_type": "image_url", "url": image_url}
     }
@@ -490,7 +490,7 @@ def post_to_threads(image_path, ref, text, cat, cat_name):
         return
     if "cloudinary.com" in image_url:
         image_url = image_url.replace("/upload/", "/upload/f_jpg/")
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Bible complète gratuite sur {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "IMAGE", "image_url": image_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
@@ -507,7 +507,7 @@ def post_reel_to_threads(video_path, ref, text, cat, cat_name):
     if not video_url:
         print("❌ Threads — upload vidéo échoué")
         return
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Bible complète gratuite sur {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n🔔 Abonnez-vous pour plus de versets 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "VIDEO", "video_url": video_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
@@ -844,9 +844,10 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
         creds.refresh(Request())
         youtube = build("youtube", "v3", credentials=creds)
         title = build_yt_title(cat_name, cat, ref, hour_utc)
-        description = (f"{cat['emoji']} {ref}\n\n« {text} »\n\n"
-            f"🔔 Abonne-toi pour un verset chaque jour\n"
-            f"📖 Bible complète gratuite sur {APP_URL}\n\n"
+        description = (f"« {text} »\n"
+            f"— {ref} (LSG1910)\n\n"
+            f"📖 Lisez la Bible complète gratuitement → {APP_URL}\n"
+            f"🔔 Abonnez-vous pour plus de versets 🙏\n\n"
             f"#Shorts #Bible #BibleFrancaise #VersetDuJour #Jésus #JésusChrist #Dieu #Foi #Évangile "
             f"#Chrétien #ParoleDeDieu #Espérance #LSG1910 #Louange #GrâceDeDieu #Prière #Bénédiction #{cat['tag'].lstrip('#')}")
         body = {"snippet": {"title": title, "description": description,
@@ -1102,7 +1103,11 @@ def main_parabole():
             youtube = build("youtube", "v3", credentials=creds)
             ref_range = parabole.get("ref_range", verses[0][0] if verses else "")
             yt_title = f"✝️ {title} — {ref_range} | Bible LSG1910"[:100]
-            description = f"✝️ {title}\n\n" + "\n".join([f"{r} — {t}" for r, t in verses]) + f"\n\n📖 Bible complète sur {APP_URL}\n\n#Bible #ParaboleDeJésus #LSG1910 #BibleFrancaise #Jésus #Foi"
+            description = (f"✝️ {title}\n\n"
+                + "\n".join([f"{r} — {t}" for r, t in verses])
+                + f"\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n"
+                + f"🔔 Abonnez-vous pour plus de versets 🙏\n\n"
+                + f"#Bible #ParaboleDeJésus #LSG1910 #BibleFrancaise #Jésus #Foi")
             body = {"snippet": {"title": yt_title, "description": description,
                 "tags": ["Bible", "Parabole", "Jésus", "LSG1910", "BibleFrancaise"], "categoryId": "22"},
                 "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}}
