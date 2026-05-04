@@ -48,27 +48,42 @@ HASHTAGS_BASE_FB = [
 ]
 
 HASHTAGS_CAT_IG = {
-    "promise":   ["#Promesse", "#Espérance", "#PromesseDeDieu", "#Bénédiction", "#Confiance"],
-    "jesus":     ["#JésusChrist", "#ParoleDeJésus", "#GrâceDeDieu", "#Rédemption", "#Amour"],
-    "psaume":    ["#Psaumes", "#Louange", "#Adoration", "#Prière", "#Cantique"],
-    "proverbe":  ["#Sagesse", "#Proverbes", "#SagesseDeJésus", "#Discernement", "#Conseil"],
-    "prophetie": ["#Prophétie", "#EspoirEnDieu", "#Révélation", "#Accomplissement", "#GloireDeDieu"],
+    "promise":    ["#Promesse", "#PromesseDeDieu", "#Bénédiction", "#Confiance", "#Fidélité"],
+    "jesus":      ["#JésusChrist", "#ParoleDeJésus", "#GrâceDeDieu", "#Rédemption", "#Évangile"],
+    "psaume":     ["#Psaumes", "#Louange", "#Adoration", "#Prière", "#Cantique"],
+    "proverbe":   ["#Sagesse", "#Proverbes", "#SagesseDeJésus", "#Discernement", "#Conseil"],
+    "prophetie":  ["#Prophétie", "#EspoirEnDieu", "#Révélation", "#Accomplissement", "#GloireDeDieu"],
+    "protection": ["#ProtectionDivine", "#Refuge", "#ForteresseDieu", "#Bouclier", "#Délivrance"],
+    "esperance":  ["#Espérance", "#Confiance", "#FoiEnDieu", "#Encouragement", "#Persévérance"],
+    "paix":       ["#PaixDeDieu", "#PaixIntérieure", "#Sérénité", "#Repos", "#Tranquillité"],
+    "amour":      ["#AmourDeDieu", "#GrâceDivine", "#AmourInconditionnel", "#Tendresse", "#Compassion"],
+    "priere":     ["#Prière", "#PrièreEtFoi", "#Intercession", "#Supplication", "#Méditation"],
 }
 
 HASHTAGS_CAT_FB = {
-    "promise":   ["#Promesse", "#Bénédiction"],
-    "jesus":     ["#JésusChrist", "#GrâceDeDieu"],
-    "psaume":    ["#Louange", "#Adoration"],
-    "proverbe":  ["#Sagesse", "#Discernement"],
-    "prophetie": ["#Prophétie", "#EspoirEnDieu"],
+    "promise":    ["#Promesse", "#Bénédiction"],
+    "jesus":      ["#JésusChrist", "#GrâceDeDieu"],
+    "psaume":     ["#Louange", "#Adoration"],
+    "proverbe":   ["#Sagesse", "#Discernement"],
+    "prophetie":  ["#Prophétie", "#EspoirEnDieu"],
+    "protection": ["#ProtectionDivine", "#Refuge"],
+    "esperance":  ["#Espérance", "#Confiance"],
+    "paix":       ["#PaixDeDieu", "#Sérénité"],
+    "amour":      ["#AmourDeDieu", "#GrâceDivine"],
+    "priere":     ["#Prière", "#FoiEnDieu"],
 }
 
 CATEGORIES = {
-    "promise":   {"key": "i_promise",   "file": "promesses_curated.json",  "emoji": "🌿", "tag": "#Promesse"},
-    "jesus":     {"key": "i_jesus",     "file": "jesus_curated.json",       "emoji": "✝️", "tag": "#ParoleDeJésus"},
-    "psaume":    {"key": "i_psaume",    "file": "psaumes_curated.json",     "emoji": "🎵", "tag": "#Psaumes"},
-    "proverbe":  {"key": "i_proverbe",  "file": "proverbes_curated.json",   "emoji": "💡", "tag": "#Sagesse"},
-    "prophetie": {"key": "i_prophetie", "file": "propheties_curated.json",  "emoji": "📯", "tag": "#Prophétie"},
+    "promise":    {"key": "i_promise",    "file": "promesses_curated.json",  "emoji": "🌿", "tag": "#Promesse"},
+    "jesus":      {"key": "i_jesus",      "file": "jesus_curated.json",       "emoji": "✝️", "tag": "#ParoleDeJésus"},
+    "psaume":     {"key": "i_psaume",     "file": "psaumes_curated.json",     "emoji": "🎵", "tag": "#Psaumes"},
+    "proverbe":   {"key": "i_proverbe",   "file": "proverbes_curated.json",   "emoji": "💡", "tag": "#Sagesse"},
+    "prophetie":  {"key": "i_prophetie",  "file": "propheties_curated.json",  "emoji": "📯", "tag": "#Prophétie"},
+    "protection": {"key": "i_protection", "file": "protection_curated.json",  "emoji": "🛡️", "tag": "#ProtectionDivine"},
+    "esperance":  {"key": "i_esperance",  "file": "esperance_curated.json",   "emoji": "💫", "tag": "#Espérance"},
+    "paix":       {"key": "i_paix",       "file": "paix_curated.json",        "emoji": "🕊️", "tag": "#PaixDeDieu"},
+    "amour":      {"key": "i_amour",      "file": "amour_curated.json",       "emoji": "❤️", "tag": "#AmourDeDieu"},
+    "priere":     {"key": "i_priere",     "file": "priere_curated.json",      "emoji": "🙏", "tag": "#Prière"},
 }
 
 # ---------------------------------------------------
@@ -80,45 +95,44 @@ CATEGORIES = {
 # 17h UTC → 19h France — image → prophetie
 # 19h UTC → 21h France — reel  → psaume  (Soir)
 # ---------------------------------------------------
+# ROTAÇÃO ESPIRITUAL DO DIA — 12 categorias com tema por hora
+# 🌅 Manhã: Protection (preparação do dia)
+# ☀️ Dia: rotação de Promesses, Sagesse, Jésus, Prophéties, Amour, Espérance, Paix, Prière
+# 🌙 Noite: Psaumes (paz para a noite)
 HOUR_SCHEDULE = {
-    5:  "psaume",
-    6:  "promise",
-    7:  "promise",
-    11: "proverbe",
-    12: "proverbe",
-    13: "jesus",
-    14: "jesus",
-    17: "prophetie",
-    18: "prophetie",
-    19: "psaume",
-    20: "psaume",
+    5:  "protection",  # Matin → Protection Divine (image)
+    7:  "promise",     # 9h FR → Promesse / Espérance (reel) — alterna por dia ímpar/par
+    11: "proverbe",    # 13h FR → Sagesse / Amour (image)
+    13: "jesus",       # 15h FR → Jésus / Prière (reel)
+    17: "prophetie",   # 19h FR → Prophétie / Paix (image)
+    19: "psaume",      # 21h FR → Psaume du Soir (reel)
 }
 
-# Fallback par heure approximative — évite la répétition du même thème
+# Fallback par heure — couvre toutes les 24h avec rotation entre 10 catégories
 HOUR_FALLBACK = {
-    0:  "promise",
+    0:  "amour",
     1:  "psaume",
-    2:  "proverbe",
-    3:  "jesus",
-    4:  "prophetie",
-    5:  "psaume",
+    2:  "paix",
+    3:  "priere",
+    4:  "protection",
+    5:  "protection",
     6:  "promise",
-    7:  "proverbe",
-    8:  "jesus",
-    9:  "prophetie",
+    7:  "esperance",
+    8:  "amour",
+    9:  "proverbe",
     10: "promise",
     11: "proverbe",
-    12: "jesus",
+    12: "amour",
     13: "jesus",
-    14: "prophetie",
+    14: "priere",
     15: "promise",
-    16: "proverbe",
+    16: "esperance",
     17: "prophetie",
-    18: "promise",
+    18: "paix",
     19: "psaume",
-    20: "proverbe",
+    20: "psaume",
     21: "jesus",
-    22: "promise",
+    22: "amour",
     23: "psaume",
 }
 
@@ -134,6 +148,16 @@ def build_yt_title(cat_name, cat, ref, hour_utc):
         label = "Sagesse Biblique"
     elif cat_name == "prophetie":
         label = "Prophéties Bibliques"
+    elif cat_name == "protection":
+        label = "Protection Divine"
+    elif cat_name == "esperance":
+        label = "Espérance et Confiance"
+    elif cat_name == "paix":
+        label = "Paix Intérieure"
+    elif cat_name == "amour":
+        label = "L'Amour de Dieu"
+    elif cat_name == "priere":
+        label = "Prière et Foi"
     else:
         label = "Verset Biblique"
     title = f"{cat['emoji']} {label} — {ref} | Bible LSG1910"
