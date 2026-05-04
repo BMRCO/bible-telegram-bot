@@ -1,68 +1,155 @@
-name: Post daily verse
+name: Publication automatique
+
 on:
+  schedule:
+    # Cron em UTC. França = UTC+2 (été) ou UTC+1 (hiver)
+    # 🌅 5h UTC → 7h FR  | Protection Divine (image)
+    # ☀️ 7h UTC → 9h FR  | Promesse / Espérance (reel)
+    # 🍽️ 11h UTC → 13h FR | Sagesse / Amour (image)
+    # 🌤️ 13h UTC → 15h FR | Jésus / Prière (reel)
+    # 🌇 17h UTC → 19h FR | Prophétie / Paix (image)
+    # 🌙 19h UTC → 21h FR | Psaume du Soir (reel)
+    - cron: '0 5 * * *'
+    - cron: '0 7 * * *'
+    - cron: '0 11 * * *'
+    - cron: '0 13 * * *'
+    - cron: '0 17 * * *'
+    - cron: '0 19 * * *'
   workflow_dispatch:
     inputs:
       mode:
-        description: 'Mode (image, reel ou parabole)'
+        description: 'Mode de publication'
+        required: true
+        type: choice
+        default: 'auto'
+        options:
+          - auto
+          - image
+          - reel
+      category:
+        description: 'Catégorie (laisser vide pour rotation auto)'
         required: false
-        default: 'image'
-  schedule:
-    - cron: "0 3 * * *"   # 03h UTC → 05h France (image    — Psaume du Matin)
-    - cron: "0 4 * * *"   # 04h UTC → 06h France (reel     — Promesses de Dieu)
-    - cron: "0 8 * * *"   # 08h UTC → 10h France (parabole — Parabole de Jésus)
-    - cron: "0 9 * * *"   # 09h UTC → 11h France (image    — Sagesse Biblique)
-    - cron: "0 11 * * *"  # 11h UTC → 13h France (reel     — Paroles de Jésus)
-    - cron: "0 15 * * *"  # 15h UTC → 17h France (image    — Prophéties Bibliques)
-    - cron: "0 17 * * *"  # 17h UTC → 19h France (reel     — Psaume du Soir)
-permissions:
-  contents: write
+        type: choice
+        default: ''
+        options:
+          - ''
+          - promise
+          - jesus
+          - psaume
+          - proverbe
+          - prophetie
+          - protection
+          - esperance
+          - paix
+          - amour
+          - priere
+
 jobs:
-  run:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Python
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - name: Install ffmpeg
-        run: sudo apt-get install -y ffmpeg
+          python-version: '3.11'
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-      - name: Determine mode
-        id: mode
+          pip install pillow requests numpy cloudinary google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Determine publication mode and category
+        id: schedule
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "mode=${{ github.event.inputs.mode }}" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.schedule }}" = "0 8 * * *" ]; then
-            echo "mode=parabole" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.schedule }}" = "0 4 * * *" ] || [ "${{ github.event.schedule }}" = "0 11 * * *" ] || [ "${{ github.event.schedule }}" = "0 17 * * *" ]; then
-            echo "mode=reel" >> $GITHUB_OUTPUT
+          # Lecture du cron pour déterminer image/reel et catégorie par défaut
+          SCHEDULE="${{ github.event.schedule }}"
+          MANUAL_MODE="${{ inputs.mode }}"
+          MANUAL_CAT="${{ inputs.category }}"
+
+          # Mode automatique baseado no cron
+          if [ -n "$SCHEDULE" ]; then
+            case "$SCHEDULE" in
+              "0 5 * * *")
+                echo "mode=image" >> $GITHUB_OUTPUT
+                echo "category=protection" >> $GITHUB_OUTPUT
+                echo "🌅 Cron 5h UTC → image protection"
+                ;;
+              "0 7 * * *")
+                echo "mode=reel" >> $GITHUB_OUTPUT
+                # Alterne entre promise et esperance par jour pair/impair
+                if [ $(($(date +%j) % 2)) -eq 0 ]; then
+                  echo "category=promise" >> $GITHUB_OUTPUT
+                  echo "☀️ Cron 7h UTC → reel promise"
+                else
+                  echo "category=esperance" >> $GITHUB_OUTPUT
+                  echo "☀️ Cron 7h UTC → reel esperance"
+                fi
+                ;;
+              "0 11 * * *")
+                echo "mode=image" >> $GITHUB_OUTPUT
+                if [ $(($(date +%j) % 2)) -eq 0 ]; then
+                  echo "category=proverbe" >> $GITHUB_OUTPUT
+                  echo "🍽️ Cron 11h UTC → image proverbe"
+                else
+                  echo "category=amour" >> $GITHUB_OUTPUT
+                  echo "🍽️ Cron 11h UTC → image amour"
+                fi
+                ;;
+              "0 13 * * *")
+                echo "mode=reel" >> $GITHUB_OUTPUT
+                if [ $(($(date +%j) % 2)) -eq 0 ]; then
+                  echo "category=jesus" >> $GITHUB_OUTPUT
+                  echo "🌤️ Cron 13h UTC → reel jesus"
+                else
+                  echo "category=priere" >> $GITHUB_OUTPUT
+                  echo "🌤️ Cron 13h UTC → reel priere"
+                fi
+                ;;
+              "0 17 * * *")
+                echo "mode=image" >> $GITHUB_OUTPUT
+                if [ $(($(date +%j) % 2)) -eq 0 ]; then
+                  echo "category=prophetie" >> $GITHUB_OUTPUT
+                  echo "🌇 Cron 17h UTC → image prophetie"
+                else
+                  echo "category=paix" >> $GITHUB_OUTPUT
+                  echo "🌇 Cron 17h UTC → image paix"
+                fi
+                ;;
+              "0 19 * * *")
+                echo "mode=reel" >> $GITHUB_OUTPUT
+                echo "category=psaume" >> $GITHUB_OUTPUT
+                echo "🌙 Cron 19h UTC → reel psaume (Soir)"
+                ;;
+              *)
+                echo "mode=image" >> $GITHUB_OUTPUT
+                echo "category=" >> $GITHUB_OUTPUT
+                echo "⚠️ Cron inattendu: $SCHEDULE"
+                ;;
+            esac
           else
-            echo "mode=image" >> $GITHUB_OUTPUT
+            # Mode manual via workflow_dispatch
+            if [ "$MANUAL_MODE" = "auto" ]; then
+              # Determinar mode pelo hour atual
+              HOUR=$(date -u +%H)
+              if [ "$HOUR" = "07" ] || [ "$HOUR" = "13" ] || [ "$HOUR" = "19" ]; then
+                echo "mode=reel" >> $GITHUB_OUTPUT
+              else
+                echo "mode=image" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "mode=$MANUAL_MODE" >> $GITHUB_OUTPUT
+            fi
+            echo "category=$MANUAL_CAT" >> $GITHUB_OUTPUT
+            echo "🔧 Mode manuel: mode=$MANUAL_MODE category=$MANUAL_CAT"
           fi
-      - name: Determine category
-        id: category
-        run: |
-          if [ "${{ github.event.schedule }}" = "0 3 * * *" ]; then
-            echo "cat=psaume" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.schedule }}" = "0 4 * * *" ]; then
-            echo "cat=promise" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.schedule }}" = "0 9 * * *" ]; then
-            echo "cat=proverbe" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.schedule }}" = "0 11 * * *" ]; then
-            echo "cat=jesus" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.schedule }}" = "0 15 * * *" ]; then
-            echo "cat=prophetie" >> $GITHUB_OUTPUT
-          elif [ "${{ github.event.schedule }}" = "0 17 * * *" ]; then
-            echo "cat=psaume" >> $GITHUB_OUTPUT
-          else
-            echo "cat=" >> $GITHUB_OUTPUT
-          fi
-      - name: Post verse
+
+      - name: Run bot
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
@@ -73,20 +160,24 @@ jobs:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
-          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
-          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
           CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
-          BOT_CATEGORY: ${{ steps.category.outputs.cat }}
-        run: python bot.py ${{ steps.mode.outputs.mode }}
-      - name: Commit updates
+          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
+          BOT_CATEGORY: ${{ steps.schedule.outputs.category }}
         run: |
-          git config user.name "bible-telegram-bot"
-          git config user.email "bible-telegram-bot@users.noreply.github.com"
-          git add progress.json promesses_curated.json jesus_curated.json psaumes_curated.json proverbes_curated.json propheties_curated.json paraboles_curated.json || true
-          git diff --cached --quiet && exit 0
-          git commit -m "Update progress"
-          git pull --rebase=false -s ours origin main || true
-          git push origin HEAD:main || true
+          if [ "${{ steps.schedule.outputs.mode }}" = "reel" ]; then
+            python bot.py reel
+          else
+            python bot.py
+          fi
+
+      - name: Commit progress
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add progress.json
+          git diff --staged --quiet || git commit -m "Update progress [skip ci]"
+          git push || true
