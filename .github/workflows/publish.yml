@@ -5,12 +5,14 @@ on:
     # Cron em UTC. França = UTC+2 (été) ou UTC+1 (hiver)
     # 🌅 5h UTC → 7h FR  | Protection Divine (image)
     # ☀️ 7h UTC → 9h FR  | Promesse / Espérance (reel)
+    # ✝️ 10h UTC → 12h FR | Parabole de Jésus (DIMANCHE seulement)
     # 🍽️ 11h UTC → 13h FR | Sagesse / Amour (image)
     # 🌤️ 13h UTC → 15h FR | Jésus / Prière (reel)
     # 🌇 17h UTC → 19h FR | Prophétie / Paix (image)
     # 🌙 19h UTC → 21h FR | Psaume du Soir (reel)
     - cron: '0 5 * * *'
     - cron: '0 7 * * *'
+    - cron: '0 10 * * 0'    # ✝️ Dimanche 10h UTC (12h FR) — Parabole de Jésus
     - cron: '0 11 * * *'
     - cron: '0 13 * * *'
     - cron: '0 17 * * *'
@@ -26,6 +28,7 @@ on:
           - auto
           - image
           - reel
+          - parabole
       category:
         description: 'Catégorie (laisser vide pour rotation auto)'
         required: false
@@ -121,6 +124,11 @@ jobs:
                   echo "🌇 Cron 17h UTC → image paix"
                 fi
                 ;;
+              "0 10 * * 0")
+                echo "mode=parabole" >> $GITHUB_OUTPUT
+                echo "category=jesus" >> $GITHUB_OUTPUT
+                echo "✝️ Cron Dimanche 10h UTC → parabole hebdomadaire"
+                ;;
               "0 19 * * *")
                 echo "mode=reel" >> $GITHUB_OUTPUT
                 echo "category=psaume" >> $GITHUB_OUTPUT
@@ -168,8 +176,11 @@ jobs:
           PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
           BOT_CATEGORY: ${{ steps.schedule.outputs.category }}
         run: |
-          if [ "${{ steps.schedule.outputs.mode }}" = "reel" ]; then
+          MODE="${{ steps.schedule.outputs.mode }}"
+          if [ "$MODE" = "reel" ]; then
             python bot.py reel
+          elif [ "$MODE" = "parabole" ]; then
+            python bot.py parabole
           else
             python bot.py
           fi
