@@ -65,7 +65,9 @@ jobs:
           pip install pillow requests numpy cloudinary google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
       - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
+        with:
+          ffmpeg-version: release
 
       - name: Determine publication mode and category
         id: schedule
@@ -85,7 +87,6 @@ jobs:
                 ;;
               "0 7 * * *")
                 echo "mode=reel" >> $GITHUB_OUTPUT
-                # Alterne entre promise et esperance par jour pair/impair
                 if [ $(($(date +%j) % 2)) -eq 0 ]; then
                   echo "category=promise" >> $GITHUB_OUTPUT
                   echo "☀️ Cron 7h UTC → reel promise"
@@ -143,7 +144,6 @@ jobs:
           else
             # Mode manual via workflow_dispatch
             if [ "$MANUAL_MODE" = "auto" ]; then
-              # Determinar mode pelo hour atual
               HOUR=$(date -u +%H)
               if [ "$HOUR" = "07" ] || [ "$HOUR" = "13" ] || [ "$HOUR" = "19" ]; then
                 echo "mode=reel" >> $GITHUB_OUTPUT
