@@ -2,13 +2,6 @@ name: Publication automatique
 
 on:
   schedule:
-    # Cron em UTC. França = UTC+2 (été) ou UTC+1 (hiver)
-    # 🌅 5h UTC → 7h FR  | Protection Divine (image)
-    # ☀️ 7h UTC → 9h FR  | Promesse de Dieu (reel)
-    # 🍽️ 11h UTC → 13h FR | Sagesse Biblique (image)
-    # 🌤️ 13h UTC → 15h FR | Paroles de Jésus (reel)
-    # 🌇 17h UTC → 19h FR | Prophétie Biblique (image)
-    # 🌙 19h UTC → 21h FR | Psaume du Soir (reel)
     - cron: '0 5 * * *'
     - cron: '0 7 * * *'
     - cron: '0 11 * * *'
@@ -59,9 +52,7 @@ jobs:
           pip install pillow requests numpy cloudinary google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
       - name: Install ffmpeg
-        uses: FedericoCarboni/setup-ffmpeg@v3
-        with:
-          ffmpeg-version: release
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
       - name: Determine publication mode and category
         id: schedule
