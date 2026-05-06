@@ -2,21 +2,13 @@ name: Publication automatique
 
 on:
   schedule:
-    # Cron em UTC. França = UTC+2 (été) ou UTC+1 (hiver)
-    # 🌅 5h07 UTC → 7h07 FR  | Protection Divine (image)
-    # ☀️ 7h07 UTC → 9h07 FR  | Promesse / Espérance (reel)
-    # ✝️ 10h07 UTC → 12h07 FR | Parabole de Jésus (DIMANCHE seulement)
-    # 🍽️ 11h07 UTC → 13h07 FR | Sagesse / Amour (image)
-    # 🌤️ 13h07 UTC → 15h07 FR | Jésus / Prière (reel)
-    # 🌇 17h07 UTC → 19h07 FR | Prophétie / Paix (image)
-    # 🌙 19h07 UTC → 21h07 FR | Psaume du Soir (reel)
-    - cron: '7 5 * * *'
-    - cron: '7 7 * * *'
-    - cron: '7 10 * * 0'    # ✝️ Dimanche 10h07 UTC (12h07 FR) — Parabole de Jésus
-    - cron: '7 11 * * *'
-    - cron: '7 13 * * *'
-    - cron: '7 17 * * *'
-    - cron: '7 19 * * *'
+    - cron: '0 5 * * *'
+    - cron: '0 7 * * *'
+    - cron: '0 10 * * 0'
+    - cron: '0 11 * * *'
+    - cron: '0 13 * * *'
+    - cron: '0 17 * * *'
+    - cron: '0 19 * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -78,65 +70,53 @@ jobs:
 
           if [ -n "$SCHEDULE" ]; then
             case "$SCHEDULE" in
-              "7 5 * * *")
+              "0 5 * * *")
                 echo "mode=image" >> $GITHUB_OUTPUT
                 echo "category=protection" >> $GITHUB_OUTPUT
-                echo "🌅 Cron 5h07 UTC → image protection"
                 ;;
-              "7 7 * * *")
+              "0 7 * * *")
                 echo "mode=reel" >> $GITHUB_OUTPUT
                 if [ $(($(date +%j) % 2)) -eq 0 ]; then
                   echo "category=promise" >> $GITHUB_OUTPUT
-                  echo "☀️ Cron 7h07 UTC → reel promise"
                 else
                   echo "category=esperance" >> $GITHUB_OUTPUT
-                  echo "☀️ Cron 7h07 UTC → reel esperance"
                 fi
                 ;;
-              "7 11 * * *")
+              "0 11 * * *")
                 echo "mode=image" >> $GITHUB_OUTPUT
                 if [ $(($(date +%j) % 2)) -eq 0 ]; then
                   echo "category=proverbe" >> $GITHUB_OUTPUT
-                  echo "🍽️ Cron 11h07 UTC → image proverbe"
                 else
                   echo "category=amour" >> $GITHUB_OUTPUT
-                  echo "🍽️ Cron 11h07 UTC → image amour"
                 fi
                 ;;
-              "7 13 * * *")
+              "0 13 * * *")
                 echo "mode=reel" >> $GITHUB_OUTPUT
                 if [ $(($(date +%j) % 2)) -eq 0 ]; then
                   echo "category=jesus" >> $GITHUB_OUTPUT
-                  echo "🌤️ Cron 13h07 UTC → reel jesus"
                 else
                   echo "category=priere" >> $GITHUB_OUTPUT
-                  echo "🌤️ Cron 13h07 UTC → reel priere"
                 fi
                 ;;
-              "7 17 * * *")
+              "0 17 * * *")
                 echo "mode=image" >> $GITHUB_OUTPUT
                 if [ $(($(date +%j) % 2)) -eq 0 ]; then
                   echo "category=prophetie" >> $GITHUB_OUTPUT
-                  echo "🌇 Cron 17h07 UTC → image prophetie"
                 else
                   echo "category=paix" >> $GITHUB_OUTPUT
-                  echo "🌇 Cron 17h07 UTC → image paix"
                 fi
                 ;;
-              "7 10 * * 0")
+              "0 10 * * 0")
                 echo "mode=parabole" >> $GITHUB_OUTPUT
                 echo "category=jesus" >> $GITHUB_OUTPUT
-                echo "✝️ Cron Dimanche 10h07 UTC → parabole hebdomadaire"
                 ;;
-              "7 19 * * *")
+              "0 19 * * *")
                 echo "mode=reel" >> $GITHUB_OUTPUT
                 echo "category=psaume" >> $GITHUB_OUTPUT
-                echo "🌙 Cron 19h07 UTC → reel psaume (Soir)"
                 ;;
               *)
                 echo "mode=image" >> $GITHUB_OUTPUT
                 echo "category=" >> $GITHUB_OUTPUT
-                echo "⚠️ Cron inattendu: $SCHEDULE"
                 ;;
             esac
           else
@@ -151,7 +131,6 @@ jobs:
               echo "mode=$MANUAL_MODE" >> $GITHUB_OUTPUT
             fi
             echo "category=$MANUAL_CAT" >> $GITHUB_OUTPUT
-            echo "🔧 Mode manuel: mode=$MANUAL_MODE category=$MANUAL_CAT"
           fi
 
       - name: Run bot
