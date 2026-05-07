@@ -2,6 +2,13 @@ name: Publication automatique
 
 on:
   schedule:
+    # Cada categoria alterna image/reel conforme dia par/ímpar do ano
+    # 🛡️ 5h UTC → 7h FR  | Protection (image par / reel ímpar)
+    # 🌿 7h UTC → 9h FR  | Promesse (reel par / image ímpar)
+    # 💡 11h UTC → 13h FR | Sagesse (image par / reel ímpar)
+    # ✝️ 13h UTC → 15h FR | Jésus (reel par / image ímpar)
+    # 📯 17h UTC → 19h FR | Prophétie (image par / reel ímpar)
+    # 🎵 19h UTC → 21h FR | Psaume du Soir (reel par / image ímpar)
     - cron: '0 5 * * *'
     - cron: '0 7 * * *'
     - cron: '0 11 * * *'
@@ -60,38 +67,58 @@ jobs:
           SCHEDULE="${{ github.event.schedule }}"
           MANUAL_MODE="${{ inputs.mode }}"
           MANUAL_CAT="${{ inputs.category }}"
+          DAY=$(date +%j)
+          IS_EVEN=$((DAY % 2))
 
           if [ -n "$SCHEDULE" ]; then
             case "$SCHEDULE" in
               "0 5 * * *")
-                echo "mode=image" >> $GITHUB_OUTPUT
+                if [ $IS_EVEN -eq 0 ]; then
+                  echo "mode=image" >> $GITHUB_OUTPUT
+                else
+                  echo "mode=reel" >> $GITHUB_OUTPUT
+                fi
                 echo "category=protection" >> $GITHUB_OUTPUT
-                echo "🌅 Cron 5h UTC → image protection"
                 ;;
               "0 7 * * *")
-                echo "mode=reel" >> $GITHUB_OUTPUT
+                if [ $IS_EVEN -eq 0 ]; then
+                  echo "mode=reel" >> $GITHUB_OUTPUT
+                else
+                  echo "mode=image" >> $GITHUB_OUTPUT
+                fi
                 echo "category=promise" >> $GITHUB_OUTPUT
-                echo "☀️ Cron 7h UTC → reel promise"
                 ;;
               "0 11 * * *")
-                echo "mode=image" >> $GITHUB_OUTPUT
+                if [ $IS_EVEN -eq 0 ]; then
+                  echo "mode=image" >> $GITHUB_OUTPUT
+                else
+                  echo "mode=reel" >> $GITHUB_OUTPUT
+                fi
                 echo "category=proverbe" >> $GITHUB_OUTPUT
-                echo "🍽️ Cron 11h UTC → image proverbe"
                 ;;
               "0 13 * * *")
-                echo "mode=reel" >> $GITHUB_OUTPUT
+                if [ $IS_EVEN -eq 0 ]; then
+                  echo "mode=reel" >> $GITHUB_OUTPUT
+                else
+                  echo "mode=image" >> $GITHUB_OUTPUT
+                fi
                 echo "category=jesus" >> $GITHUB_OUTPUT
-                echo "🌤️ Cron 13h UTC → reel jesus"
                 ;;
               "0 17 * * *")
-                echo "mode=image" >> $GITHUB_OUTPUT
+                if [ $IS_EVEN -eq 0 ]; then
+                  echo "mode=image" >> $GITHUB_OUTPUT
+                else
+                  echo "mode=reel" >> $GITHUB_OUTPUT
+                fi
                 echo "category=prophetie" >> $GITHUB_OUTPUT
-                echo "🌇 Cron 17h UTC → image prophetie"
                 ;;
               "0 19 * * *")
-                echo "mode=reel" >> $GITHUB_OUTPUT
+                if [ $IS_EVEN -eq 0 ]; then
+                  echo "mode=reel" >> $GITHUB_OUTPUT
+                else
+                  echo "mode=image" >> $GITHUB_OUTPUT
+                fi
                 echo "category=psaume" >> $GITHUB_OUTPUT
-                echo "🌙 Cron 19h UTC → reel psaume (Soir)"
                 ;;
               *)
                 echo "mode=image" >> $GITHUB_OUTPUT
