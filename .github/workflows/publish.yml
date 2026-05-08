@@ -2,18 +2,17 @@ name: Publication automatique
 
 on:
   schedule:
-    # Cada categoria alterna image/reel conforme dia par/ímpar do ano
-    # 🛡️ 5h UTC → 7h FR  | Protection (image par / reel ímpar)
-    # 🌿 7h UTC → 9h FR  | Promesse (reel par / image ímpar)
-    # 💡 11h UTC → 13h FR | Sagesse (image par / reel ímpar)
-    # ✝️ 13h UTC → 15h FR | Jésus (reel par / image ímpar)
-    # 📯 17h UTC → 19h FR | Prophétie (image par / reel ímpar)
-    # 🎵 19h UTC → 21h FR | Psaume du Soir (reel par / image ímpar)
-    - cron: '0 5 * * *'
-    - cron: '0 7 * * *'
+    # 🛡️ 3h UTC → 5h FR  | Protection
+    # 🌿 4h UTC → 6h FR  | Promesse
+    # 💡 9h UTC → 11h FR | Sagesse
+    # ✝️ 11h UTC → 13h FR | Jésus
+    # 📯 18h UTC → 20h FR | Prophétie
+    # 🎵 19h UTC → 21h FR | Psaume du Soir
+    - cron: '0 3 * * *'
+    - cron: '0 4 * * *'
+    - cron: '0 9 * * *'
     - cron: '0 11 * * *'
-    - cron: '0 13 * * *'
-    - cron: '0 17 * * *'
+    - cron: '0 18 * * *'
     - cron: '0 19 * * *'
   workflow_dispatch:
     inputs:
@@ -72,7 +71,7 @@ jobs:
 
           if [ -n "$SCHEDULE" ]; then
             case "$SCHEDULE" in
-              "0 5 * * *")
+              "0 3 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=image" >> $GITHUB_OUTPUT
                 else
@@ -80,7 +79,7 @@ jobs:
                 fi
                 echo "category=protection" >> $GITHUB_OUTPUT
                 ;;
-              "0 7 * * *")
+              "0 4 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=reel" >> $GITHUB_OUTPUT
                 else
@@ -88,7 +87,7 @@ jobs:
                 fi
                 echo "category=promise" >> $GITHUB_OUTPUT
                 ;;
-              "0 11 * * *")
+              "0 9 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=image" >> $GITHUB_OUTPUT
                 else
@@ -96,7 +95,7 @@ jobs:
                 fi
                 echo "category=proverbe" >> $GITHUB_OUTPUT
                 ;;
-              "0 13 * * *")
+              "0 11 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=reel" >> $GITHUB_OUTPUT
                 else
@@ -104,7 +103,7 @@ jobs:
                 fi
                 echo "category=jesus" >> $GITHUB_OUTPUT
                 ;;
-              "0 17 * * *")
+              "0 18 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=image" >> $GITHUB_OUTPUT
                 else
@@ -128,7 +127,7 @@ jobs:
           else
             if [ "$MANUAL_MODE" = "auto" ]; then
               HOUR=$(date -u +%H)
-              if [ "$HOUR" = "07" ] || [ "$HOUR" = "13" ] || [ "$HOUR" = "19" ]; then
+              if [ "$HOUR" = "04" ] || [ "$HOUR" = "11" ] || [ "$HOUR" = "19" ]; then
                 echo "mode=reel" >> $GITHUB_OUTPUT
               else
                 echo "mode=image" >> $GITHUB_OUTPUT
