@@ -2,14 +2,14 @@ name: Publication automatique
 
 on:
   schedule:
-    # 🛡️ 3h UTC → 5h FR  | Protection
-    # 🌿 4h UTC → 6h FR  | Promesse
+    # 🛡️ 5h UTC → 7h FR  | Protection
+    # 🌿 6h UTC → 8h FR  | Promesse
     # 💡 9h UTC → 11h FR | Sagesse
     # ✝️ 11h UTC → 13h FR | Jésus
     # 📯 18h UTC → 20h FR | Prophétie
     # 🎵 19h UTC → 21h FR | Psaume du Soir
-    - cron: '0 3 * * *'
-    - cron: '0 4 * * *'
+    - cron: '0 5 * * *'
+    - cron: '0 6 * * *'
     - cron: '0 9 * * *'
     - cron: '0 11 * * *'
     - cron: '0 18 * * *'
@@ -71,7 +71,7 @@ jobs:
 
           if [ -n "$SCHEDULE" ]; then
             case "$SCHEDULE" in
-              "0 3 * * *")
+              "0 5 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=image" >> $GITHUB_OUTPUT
                 else
@@ -79,7 +79,7 @@ jobs:
                 fi
                 echo "category=protection" >> $GITHUB_OUTPUT
                 ;;
-              "0 4 * * *")
+              "0 6 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=reel" >> $GITHUB_OUTPUT
                 else
@@ -127,7 +127,7 @@ jobs:
           else
             if [ "$MANUAL_MODE" = "auto" ]; then
               HOUR=$(date -u +%H)
-              if [ "$HOUR" = "04" ] || [ "$HOUR" = "11" ] || [ "$HOUR" = "19" ]; then
+              if [ "$HOUR" = "06" ] || [ "$HOUR" = "11" ] || [ "$HOUR" = "19" ]; then
                 echo "mode=reel" >> $GITHUB_OUTPUT
               else
                 echo "mode=image" >> $GITHUB_OUTPUT
