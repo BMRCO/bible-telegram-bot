@@ -2,18 +2,18 @@ name: Publication automatique
 
 on:
   schedule:
-    # 🛡️ 5h UTC → 7h FR  | Protection
-    # 🌿 6h UTC → 8h FR  | Promesse
-    # 💡 9h UTC → 11h FR | Sagesse
-    # ✝️ 11h UTC → 13h FR | Jésus
-    # 📯 18h UTC → 20h FR | Prophétie
-    # 🎵 19h UTC → 21h FR | Psaume du Soir
-    - cron: '0 5 * * *'
-    - cron: '0 6 * * *'
-    - cron: '0 9 * * *'
-    - cron: '0 11 * * *'
-    - cron: '0 18 * * *'
-    - cron: '0 19 * * *'
+    # 🛡️ 5h07 UTC → ~7h FR  | Protection
+    # 🌿 6h13 UTC → ~8h FR  | Promesse
+    # 💡 9h22 UTC → ~11h FR | Sagesse
+    # ✝️ 11h31 UTC → ~13h FR | Jésus
+    # 📯 18h43 UTC → ~20h FR | Prophétie
+    # 🎵 19h52 UTC → ~21h FR | Psaume du Soir
+    - cron: '7 5 * * *'
+    - cron: '13 6 * * *'
+    - cron: '22 9 * * *'
+    - cron: '31 11 * * *'
+    - cron: '43 18 * * *'
+    - cron: '52 19 * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -40,10 +40,20 @@ on:
           - prophetie
           - protection
 
+permissions:
+  contents: write
+
+concurrency:
+  group: verses-post
+  cancel-in-progress: false
+
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      - name: Current UTC time (debug atraso real)
+        run: date -u
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -71,7 +81,7 @@ jobs:
 
           if [ -n "$SCHEDULE" ]; then
             case "$SCHEDULE" in
-              "0 5 * * *")
+              "7 5 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=image" >> $GITHUB_OUTPUT
                 else
@@ -79,7 +89,7 @@ jobs:
                 fi
                 echo "category=protection" >> $GITHUB_OUTPUT
                 ;;
-              "0 6 * * *")
+              "13 6 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=reel" >> $GITHUB_OUTPUT
                 else
@@ -87,7 +97,7 @@ jobs:
                 fi
                 echo "category=promise" >> $GITHUB_OUTPUT
                 ;;
-              "0 9 * * *")
+              "22 9 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=image" >> $GITHUB_OUTPUT
                 else
@@ -95,7 +105,7 @@ jobs:
                 fi
                 echo "category=proverbe" >> $GITHUB_OUTPUT
                 ;;
-              "0 11 * * *")
+              "31 11 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=reel" >> $GITHUB_OUTPUT
                 else
@@ -103,7 +113,7 @@ jobs:
                 fi
                 echo "category=jesus" >> $GITHUB_OUTPUT
                 ;;
-              "0 18 * * *")
+              "43 18 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=image" >> $GITHUB_OUTPUT
                 else
@@ -111,7 +121,7 @@ jobs:
                 fi
                 echo "category=prophetie" >> $GITHUB_OUTPUT
                 ;;
-              "0 19 * * *")
+              "52 19 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=reel" >> $GITHUB_OUTPUT
                 else
