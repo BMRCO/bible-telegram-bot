@@ -1,16 +1,21 @@
 name: Publication automatique
 
 on:
-  # 🚫 CRON DESATIVADO PARA PENTECÔTE (24 mai 2026)
-  # Para reativar amanhã, descomenta as linhas cron: abaixo
-  #
-  # schedule:
-  #   - cron: '3 5 * * *'
-  #   - cron: '12 7 * * *'
-  #   - cron: '0 10 * * *'
-  #   - cron: '45 13 * * *'
-  #   - cron: '41 17 * * *'
-  #   - cron: '8 19 * * *'
+  schedule:
+    # Cron em UTC. França = UTC+2 (été) ou UTC+1 (hiver)
+    # Cada categoria alterna image/reel conforme dia par/ímpar do ano
+    # 🛡️ 5h03 UTC → 7h03 FR  | Protection (image par / reel ímpar)
+    # 🌿 7h12 UTC → 9h12 FR  | Promesse (reel par / image ímpar)
+    # 💡 10h00 UTC → 12h00 FR | Sagesse (image par / reel ímpar)
+    # ✝️ 13h45 UTC → 15h45 FR | Jésus (reel par / image ímpar)
+    # 📯 17h41 UTC → 19h41 FR | Prophétie (image par / reel ímpar)
+    # 🎵 19h08 UTC → 21h08 FR | Psaume du Soir (reel par / image ímpar)
+    - cron: '3 5 * * *'
+    - cron: '12 7 * * *'
+    - cron: '0 10 * * *'
+    - cron: '45 13 * * *'
+    - cron: '41 17 * * *'
+    - cron: '8 19 * * *'
   workflow_dispatch:
     inputs:
       mode:
@@ -48,7 +53,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Current UTC time
+      - name: Current UTC time (debug atraso real)
         run: date -u
 
       - name: Checkout
@@ -70,19 +75,80 @@ jobs:
       - name: Determine publication mode and category
         id: schedule
         run: |
+          SCHEDULE="${{ github.event.schedule }}"
           MANUAL_MODE="${{ inputs.mode }}"
           MANUAL_CAT="${{ inputs.category }}"
-          if [ "$MANUAL_MODE" = "auto" ]; then
-            HOUR=$(date -u +%H)
-            if [ "$HOUR" = "07" ] || [ "$HOUR" = "13" ] || [ "$HOUR" = "19" ]; then
-              echo "mode=reel" >> $GITHUB_OUTPUT
-            else
-              echo "mode=image" >> $GITHUB_OUTPUT
-            fi
+          DAY=$(date +%j)
+          IS_EVEN=$((DAY % 2))
+
+          if [ -n "$SCHEDULE" ]; then
+            case "$SCHEDULE" in
+              "3 5 * * *")
+                if [ $IS_EVEN -eq 0 ]; then
+                  echo "mode=image" >> $GITHUB_OUTPUT
+                else
+                  echo "mode=reel" >> $GITHUB_OUTPUT
+                fi
+                echo "category=protection" >> $GITHUB_OUTPUT
+                ;;
+              "12 7 * * *")
+                if [ $IS_EVEN -eq 0 ]; then
+                  echo "mode=reel" >> $GITHUB_OUTPUT
+                else
+                  echo "mode=image" >> $GITHUB_OUTPUT
+                fi
+                echo "category=promise" >> $GITHUB_OUTPUT
+                ;;
+              "0 10 * * *")
+                if [ $IS_EVEN -eq 0 ]; then
+                  echo "mode=image" >> $GITHUB_OUTPUT
+                else
+                  echo "mode=reel" >> $GITHUB_OUTPUT
+                fi
+                echo "category=proverbe" >> $GITHUB_OUTPUT
+                ;;
+              "45 13 * * *")
+                if [ $IS_EVEN -eq 0 ]; then
+                  echo "mode=reel" >> $GITHUB_OUTPUT
+                else
+                  echo "mode=image" >> $GITHUB_OUTPUT
+                fi
+                echo "category=jesus" >> $GITHUB_OUTPUT
+                ;;
+              "41 17 * * *")
+                if [ $IS_EVEN -eq 0 ]; then
+                  echo "mode=image" >> $GITHUB_OUTPUT
+                else
+                  echo "mode=reel" >> $GITHUB_OUTPUT
+                fi
+                echo "category=prophetie" >> $GITHUB_OUTPUT
+                ;;
+              "8 19 * * *")
+                if [ $IS_EVEN -eq 0 ]; then
+                  echo "mode=reel" >> $GITHUB_OUTPUT
+                else
+                  echo "mode=image" >> $GITHUB_OUTPUT
+                fi
+                echo "category=psaume" >> $GITHUB_OUTPUT
+                ;;
+              *)
+                echo "mode=image" >> $GITHUB_OUTPUT
+                echo "category=" >> $GITHUB_OUTPUT
+                ;;
+            esac
           else
-            echo "mode=$MANUAL_MODE" >> $GITHUB_OUTPUT
+            if [ "$MANUAL_MODE" = "auto" ]; then
+              HOUR=$(date -u +%H)
+              if [ "$HOUR" = "07" ] || [ "$HOUR" = "13" ] || [ "$HOUR" = "19" ]; then
+                echo "mode=reel" >> $GITHUB_OUTPUT
+              else
+                echo "mode=image" >> $GITHUB_OUTPUT
+              fi
+            else
+              echo "mode=$MANUAL_MODE" >> $GITHUB_OUTPUT
+            fi
+            echo "category=$MANUAL_CAT" >> $GITHUB_OUTPUT
           fi
-          echo "category=$MANUAL_CAT" >> $GITHUB_OUTPUT
 
       - name: Run bot
         env:
