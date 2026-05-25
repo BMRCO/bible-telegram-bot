@@ -22,6 +22,7 @@ on:
 
     # 🎵 17h08 UTC → 19h08 FR | Psaume du Soir (reel par / image ímpar)
     - cron: '8 17 * * *'
+
   workflow_dispatch:
     inputs:
       mode:
@@ -34,6 +35,7 @@ on:
           - image
           - reel
           - parabole
+
       category:
         description: 'Catégorie (laisser vide pour rotation auto)'
         required: false
@@ -58,6 +60,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+
     steps:
       - name: Current UTC time (debug atraso real)
         run: date -u
@@ -89,7 +92,8 @@ jobs:
 
           if [ -n "$SCHEDULE" ]; then
             case "$SCHEDULE" in
-              "3 5 * * *")
+
+              "3 4 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=image" >> $GITHUB_OUTPUT
                 else
@@ -97,7 +101,8 @@ jobs:
                 fi
                 echo "category=protection" >> $GITHUB_OUTPUT
                 ;;
-              "12 7 * * *")
+
+              "12 6 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=reel" >> $GITHUB_OUTPUT
                 else
@@ -105,7 +110,8 @@ jobs:
                 fi
                 echo "category=promise" >> $GITHUB_OUTPUT
                 ;;
-              "0 10 * * *")
+
+              "2 9 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=image" >> $GITHUB_OUTPUT
                 else
@@ -113,7 +119,8 @@ jobs:
                 fi
                 echo "category=proverbe" >> $GITHUB_OUTPUT
                 ;;
-              "45 13 * * *")
+
+              "45 12 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=reel" >> $GITHUB_OUTPUT
                 else
@@ -121,7 +128,8 @@ jobs:
                 fi
                 echo "category=jesus" >> $GITHUB_OUTPUT
                 ;;
-              "41 17 * * *")
+
+              "41 16 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=image" >> $GITHUB_OUTPUT
                 else
@@ -129,7 +137,8 @@ jobs:
                 fi
                 echo "category=prophetie" >> $GITHUB_OUTPUT
                 ;;
-              "8 19 * * *")
+
+              "8 17 * * *")
                 if [ $IS_EVEN -eq 0 ]; then
                   echo "mode=reel" >> $GITHUB_OUTPUT
                 else
@@ -137,22 +146,29 @@ jobs:
                 fi
                 echo "category=psaume" >> $GITHUB_OUTPUT
                 ;;
+
               *)
                 echo "mode=image" >> $GITHUB_OUTPUT
                 echo "category=" >> $GITHUB_OUTPUT
                 ;;
+
             esac
+
           else
+
             if [ "$MANUAL_MODE" = "auto" ]; then
               HOUR=$(date -u +%H)
-              if [ "$HOUR" = "07" ] || [ "$HOUR" = "13" ] || [ "$HOUR" = "19" ]; then
+
+              if [ "$HOUR" = "06" ] || [ "$HOUR" = "12" ] || [ "$HOUR" = "17" ]; then
                 echo "mode=reel" >> $GITHUB_OUTPUT
               else
                 echo "mode=image" >> $GITHUB_OUTPUT
               fi
+
             else
               echo "mode=$MANUAL_MODE" >> $GITHUB_OUTPUT
             fi
+
             echo "category=$MANUAL_CAT" >> $GITHUB_OUTPUT
           fi
 
@@ -174,12 +190,16 @@ jobs:
           PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
           PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
           BOT_CATEGORY: ${{ steps.schedule.outputs.category }}
+
         run: |
           MODE="${{ steps.schedule.outputs.mode }}"
+
           if [ "$MODE" = "reel" ]; then
             python bot.py reel
+
           elif [ "$MODE" = "parabole" ]; then
             python bot.py parabole
+
           else
             python bot.py
           fi
@@ -188,6 +208,9 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
           git add progress.json
+
           git diff --staged --quiet || git commit -m "Update progress [skip ci]"
+
           git push || true
