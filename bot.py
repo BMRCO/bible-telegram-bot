@@ -26,6 +26,17 @@ THREADS_ACCESS_TOKEN = os.environ.get("THREADS_ACCESS_TOKEN", "")
 PINTEREST_ACCESS_TOKEN = os.environ.get("PINTEREST_ACCESS_TOKEN", "")
 PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "1092404522055080754")
 
+# ----- Filtro de plataforma (para runs manuais) -----
+ONLY_PLATFORM = os.environ.get("ONLY_PLATFORM", "all").strip().lower()
+if ONLY_PLATFORM in ("", "all"):
+    ONLY_PLATFORM = "all"
+
+def should_post(platform: str) -> bool:
+    if ONLY_PLATFORM == "all":
+        return True
+    return platform == ONLY_PLATFORM
+# ----------------------------------------------------
+
 PROGRESS_FILE = "progress.json"
 BIBLE_FILE    = "bible/lsg1910.json"
 
@@ -74,26 +85,15 @@ CATEGORIES = {
     "protection": {"key": "i_protection", "file": "protection_curated.json",  "emoji": "🛡️", "tag": "#ProtectionDivine"},
 }
 
-# ---------------------------------------------------
-# ROTATION PAR HEURE UTC — alignée avec publish.yml
-# 05h UTC → 07h France — image → psaume  (Matin)
-# 06h UTC → 08h France — reel  → promise
-# 11h UTC → 13h France — image → proverbe
-# 13h UTC → 15h France — reel  → jesus
-# 17h UTC → 19h France — image → prophetie
-# 19h UTC → 21h France — reel  → psaume  (Soir)
-# ---------------------------------------------------
-# Schedule simples — 1 categoria por slot, fixa
 HOUR_SCHEDULE = {
-    5:  "protection",  # 7h FR → Protection Divine (image)
-    7:  "promise",     # 9h FR → Promesse de Dieu (reel)
-    11: "proverbe",    # 13h FR → Sagesse Biblique (image)
-    13: "jesus",       # 15h FR → Paroles de Jésus (reel)
-    17: "prophetie",   # 19h FR → Prophétie Biblique (image)
-    19: "psaume",      # 21h FR → Psaume du Soir (reel)
+    5:  "protection",
+    7:  "promise",
+    11: "proverbe",
+    13: "jesus",
+    17: "prophetie",
+    19: "psaume",
 }
 
-# Fallback par heure — toutes les 24h avec rotation entre 6 catégories
 HOUR_FALLBACK = {
     0:  "promise",   1:  "psaume",    2:  "proverbe",  3:  "jesus",
     4:  "prophetie", 5:  "protection",6:  "promise",   7:  "promise",
@@ -136,7 +136,6 @@ def build_hashtags_fb(cat_name):
 
 
 def strip_rubric(text: str) -> str:
-    # Supprimer les préfixes courts type "De David." "Cantique des degrés." au début
     prefix_patterns = [
         r'^De David\.\s*',
         r'^Cantique des degrés[^\.]*\.\s*',
@@ -148,7 +147,6 @@ def strip_rubric(text: str) -> str:
     ]
     for pattern in prefix_patterns:
         text = re.sub(pattern, '', text, flags=re.IGNORECASE).strip()
-
     rubric_keywords = [
         "chef des chantres", "maschil", "michtam", "cantique",
         "psaume de david", "prière de", "fils de koré", "sur alamoth",
@@ -247,6 +245,9 @@ def load_verse(book_name, chapter, verse):
 # TELEGRAM
 # ---------------------------------------------------
 def send_photo(path, caption):
+    if not should_post("telegram"):
+        print("⏭️  Telegram skip (filtro)")
+        return
     reply_markup = json.dumps({"inline_keyboard": [[{"text": "📖 Lire dans LaBible.app", "url": MINI_APP_URL}]]})
     with open(path, "rb") as f:
         r = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendPhoto",
@@ -257,6 +258,9 @@ def send_photo(path, caption):
 
 
 def send_video(path, caption):
+    if not should_post("telegram"):
+        print("⏭️  Telegram skip (filtro)")
+        return
     reply_markup = json.dumps({"inline_keyboard": [[{"text": "📖 Lire dans LaBible.app", "url": MINI_APP_URL}]]})
     with open(path, "rb") as f:
         r = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendVideo",
@@ -270,6 +274,9 @@ def send_video(path, caption):
 # FACEBOOK
 # ---------------------------------------------------
 def post_to_facebook(image_path, ref, text, cat, cat_name):
+    if not should_post("facebook"):
+        print("⏭️  Facebook skip (filtro)")
+        return
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
@@ -284,6 +291,9 @@ def post_to_facebook(image_path, ref, text, cat, cat_name):
 
 
 def post_reel_to_facebook(video_path, ref, text, cat, cat_name):
+    if not should_post("facebook"):
+        print("⏭️  Facebook reel skip (filtro)")
+        return
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
@@ -356,6 +366,9 @@ def upload_video_public(video_path):
 # INSTAGRAM
 # ---------------------------------------------------
 def post_to_instagram(image_path, ref, text, cat, cat_name):
+    if not should_post("instagram"):
+        print("⏭️  Instagram skip (filtro)")
+        return
     if not FB_PAGE_TOKEN:
         return
     image_url = upload_to_cloudinary(image_path)
@@ -392,6 +405,9 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
 
 
 def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
+    if not should_post("instagram"):
+        print("⏭️  Instagram reel skip (filtro)")
+        return
     if not FB_PAGE_TOKEN:
         return
     video_url = upload_video_public(video_path)
@@ -429,6 +445,9 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
 # PINTEREST
 # ---------------------------------------------------
 def post_to_pinterest(image_path, ref, text, cat, cat_name):
+    if not should_post("pinterest"):
+        print("⏭️  Pinterest skip (filtro)")
+        return
     if not PINTEREST_ACCESS_TOKEN:
         return
     image_url = upload_to_imgbb(image_path)
@@ -455,6 +474,28 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
 # ---------------------------------------------------
 # THREADS
 # ---------------------------------------------------
+def _build_threads_caption(cat, ref, text, cat_name, with_subscribe=False):
+    """Caption Threads com truncamento automático para 500 chars."""
+    base = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 {APP_URL}"
+    if with_subscribe:
+        base += "\n🔔 Abonnez-vous"
+    base += f"\n\n👇 Partagez 🙏"
+    hashtags = build_hashtags_ig(cat_name)
+    full = f"{base}\n\n{hashtags}"
+    if len(full) <= 500:
+        return full
+    short_tags = f"#Bible #LSG1910 {cat['tag']}"
+    full = f"{base}\n\n{short_tags}"
+    if len(full) <= 500:
+        return full
+    if len(base) <= 500:
+        return base
+    overhead = len(base) - len(text)
+    max_text = 500 - overhead - 3
+    truncated_text = text[:max_text] + "..."
+    return f"{cat['emoji']} {ref}\n\n« {truncated_text} »\n\n📖 {APP_URL}"
+
+
 def _threads_publish(container_id):
     import time; time.sleep(5)
     r2 = requests.post("https://graph.threads.net/v1.0/me/threads_publish",
@@ -466,6 +507,9 @@ def _threads_publish(container_id):
 
 
 def post_to_threads(image_path, ref, text, cat, cat_name):
+    if not should_post("threads"):
+        print("⏭️  Threads skip (filtro)")
+        return
     if not THREADS_ACCESS_TOKEN:
         return
     image_url = upload_to_cloudinary(image_path)
@@ -473,7 +517,7 @@ def post_to_threads(image_path, ref, text, cat, cat_name):
         return
     if "cloudinary.com" in image_url:
         image_url = image_url.replace("/upload/", "/upload/f_jpg/")
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n👇 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    caption = _build_threads_caption(cat, ref, text, cat_name, with_subscribe=False)
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "IMAGE", "image_url": image_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
@@ -483,6 +527,9 @@ def post_to_threads(image_path, ref, text, cat, cat_name):
 
 
 def post_reel_to_threads(video_path, ref, text, cat, cat_name):
+    if not should_post("threads"):
+        print("⏭️  Threads reel skip (filtro)")
+        return
     if not THREADS_ACCESS_TOKEN:
         return
     print("📤 Upload vidéo Threads...")
@@ -490,14 +537,13 @@ def post_reel_to_threads(video_path, ref, text, cat, cat_name):
     if not video_url:
         print("❌ Threads — upload vidéo échoué")
         return
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n🔔 Abonnez-vous pour plus de versets 🙏\n\n👇 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    caption = _build_threads_caption(cat, ref, text, cat_name, with_subscribe=True)
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "VIDEO", "video_url": video_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
         print(f"❌ Threads reel container ({r.status_code}): {r.text}")
         return
     container_id = r.json().get("id")
-    # Attendre que le container soit prêt
     import time
     for _ in range(10):
         time.sleep(6)
@@ -541,7 +587,6 @@ def wrap_text(draw, text, font, max_w):
         return [""]
     lines, current = [], words[0]
     for w in words[1:]:
-        # Ne pas couper avant ? et ! — les garder avec le mot précédent
         if w.startswith('?') or w.startswith('!'):
             current = current + '\u00a0' + w
             continue
@@ -724,7 +769,6 @@ def make_reel_video(text, ref, progress=None):
         draw.text((lx1, FT+44), "LSG 1910", font=fl, fill=blend(SIL, fa*0.85))
         wbbox = draw.textbbox((0,0), WATERMARK, font=fw)
         draw.text((lx2-(wbbox[2]-wbbox[0]), FT+44), WATERMARK, font=fw, fill=blend(SIL, fa*0.85))
-        # CTA — apparaît dans les dernières 5 secondes
         if s > TOTAL/FPS - 5:
             f_cta = ImageFont.truetype(FONT_SANS, 26)
             cta = "Abonnez-vous pour plus de versets"
@@ -784,7 +828,6 @@ def pick_from_category(cat, progress):
 
 def pick_verse(progress):
     hour_utc = datetime.datetime.utcnow().hour
-    # Usar categoria definida pelo publish.yml se disponível
     cat_name = os.environ.get("BOT_CATEGORY", "").strip()
     if cat_name and cat_name in CATEGORIES:
         print(f"📌 Catégorie forcée : {cat_name}")
@@ -813,6 +856,9 @@ def pick_verse(progress):
 # YOUTUBE
 # ---------------------------------------------------
 def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
+    if not should_post("youtube"):
+        print("⏭️  YouTube skip (filtro)")
+        return
     if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
         print("⚠️  Credentials YouTube manquants.")
         return
@@ -849,25 +895,19 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
 
 
 # ---------------------------------------------------
-# PARABOLE VIDEO — vídeo longo 60-90s avec texte complet
+# PARABOLE VIDEO
 # ---------------------------------------------------
 def make_parabole_video(title, verses, progress=None):
-    """
-    verses = liste de tuples (ref, text)
-    ex: [("Luc 15:11", "Un homme avait deux fils."), ("Luc 15:12", "...")]
-    """
     W, H = 1080, 1920
     FPS = 30
-    SECS_PER_VERSE = 6  # secondes par verset
-    SECS_TITLE = 4      # secondes pour le titre
-    SECS_FINAL = 4      # secondes pour le final
+    SECS_PER_VERSE = 6
+    SECS_TITLE = 4
+    SECS_FINAL = 4
     TOTAL = FPS * (SECS_TITLE + len(verses) * SECS_PER_VERSE + SECS_FINAL)
-
     fp  = FONT_SERIF
     fpb = FONT_SERIF_BOLD
     BORDER, CARD_PAD = 100, 100
     MAX_TW = W - BORDER*2 - CARD_PAD*2
-
     REEL_PALETTES = [
         ((10, 14, 38),  (180, 148, 72),  (192, 158, 80),  (230, 228, 220), (160, 160, 175)),
         ((30,  8, 12),  (210, 155, 75),  (220, 168, 85),  (255, 245, 225), (170, 145, 115)),
@@ -877,18 +917,15 @@ def make_parabole_video(title, verses, progress=None):
     ]
     seed = abs(hash(title)) % (2**31)
     BG, GOLD, GR, WHITE, SIL = REEL_PALETTES[seed % len(REEL_PALETTES)]
-
     def ease(t): t = max(0, min(1, t)); return t*t*(3-2*t)
     def blend(base, a, bg=BG):
         a = max(0, min(1, a))
         return tuple(int(bg[i] + (base[i]-bg[i])*a) for i in range(3))
-
     def draw_bg(draw):
         for y in range(0, H, 4):
             t2 = y/H
             draw.rectangle([(0, y), (W, min(y+4, H))],
                 fill=tuple(max(0, int(BG[i]*(1-t2*0.25))) for i in range(3)))
-
     def wrap(draw, text, font, max_w):
         words = text.split()
         if not words: return [""]
@@ -904,12 +941,10 @@ def make_parabole_video(title, verses, progress=None):
                 lines.append(current)
                 current = w
         lines.append(current)
-        # S'assurer que » est collé à la dernière ligne et non seul
         if len(lines) > 1 and lines[-1].strip() == '»':
             lines[-2] = lines[-2] + '\u00a0»'
             lines.pop()
         return lines
-
     def autosize_font(draw, text, max_w, max_h):
         for size in range(88, 32, -2):
             fv = ImageFont.truetype(fp, size)
@@ -921,29 +956,22 @@ def make_parabole_video(title, verses, progress=None):
         fv = ImageFont.truetype(fp, 32)
         lines = wrap(draw, text, fv, max_w)
         return fv, lines, 52
-
     f_title_big = ImageFont.truetype(fpb, 96)
     f_sub       = ImageFont.truetype(fp,  36)
     f_ref       = ImageFont.truetype(fpb, 36)
     f_wm        = ImageFont.truetype(FONT_SANS, 28)
     max_text_h  = int((H - BORDER*2) * 0.65)
-
     os.makedirs("frames", exist_ok=True)
-
     for f in range(TOTAL):
         s = f / FPS
         img = Image.new("RGB", (W, H), BG)
         draw = ImageDraw.Draw(img)
         draw_bg(draw)
-
         draw.rounded_rectangle([BORDER, BORDER, W-BORDER, H-BORDER], radius=40, outline=blend(GOLD, 0.8), width=5)
         draw.rounded_rectangle([BORDER+10, BORDER+10, W-BORDER-10, H-BORDER-10], radius=34, outline=blend(GOLD, 0.25), width=1)
-
         title_end = SECS_TITLE
-
         if s < title_end:
             a = ease(s/0.8) if s < 0.8 else (ease((title_end-s)/0.5) if s > title_end-0.5 else 1.0)
-            # Autosize titre
             for t_size in range(96, 48, -4):
                 ft = ImageFont.truetype(fpb, t_size)
                 t_lines = wrap(draw, title, ft, MAX_TW)
@@ -965,23 +993,19 @@ def make_parabole_video(title, verses, progress=None):
             sw = bbox2[2]-bbox2[0]
             draw.line([((W-300)//2, H//2+90), ((W+300)//2, H//2+90)], fill=blend(GOLD, a*0.5), width=1)
             draw.text(((W-sw)//2, H//2+105), sub, font=f_sub, fill=blend(SIL, a*0.7))
-
         elif s < title_end + len(verses) * SECS_PER_VERSE:
             verse_s = s - title_end
             verse_idx = int(verse_s / SECS_PER_VERSE)
             verse_idx = min(verse_idx, len(verses)-1)
             local_s = verse_s - verse_idx * SECS_PER_VERSE
             a = ease(local_s/0.5) if local_s < 0.5 else (ease((SECS_PER_VERSE-local_s)/0.5) if local_s > SECS_PER_VERSE-0.5 else 1.0)
-
             ref_v, text_v = verses[verse_idx]
             num = f"{verse_idx+1}/{len(verses)}"
             draw.text((BORDER+CARD_PAD, BORDER+50), num, font=f_wm, fill=blend(SIL, a*0.5))
-
             text_q = f"« {text_v.rstrip('.')} »"
             fv, lines, lh = autosize_font(draw, text_q, MAX_TW, max_text_h)
             total_h = lh * len(lines)
             ty = BORDER + (H - BORDER*2)//2 - total_h//2 - 40
-
             for line in lines:
                 bbox = draw.textbbox((0,0), line, font=fv)
                 tw = bbox[2]-bbox[0]
@@ -989,14 +1013,12 @@ def make_parabole_video(title, verses, progress=None):
                 draw.text((x+2, ty+2), line, font=fv, fill=blend((0,0,0), a*0.6))
                 draw.text((x, ty), line, font=fv, fill=blend(WHITE, a))
                 ty += lh
-
             lx1, lx2 = BORDER+CARD_PAD, W-BORDER-CARD_PAD
             draw.line([(lx1, H-250), (lx2, H-250)], fill=blend(GOLD, a*0.8), width=2)
             draw.text((lx1, H-230), ref_v, font=f_ref, fill=blend(GR, a))
             draw.text((lx1, H-185), "LSG 1910", font=f_wm, fill=blend(SIL, a*0.85))
             wbbox = draw.textbbox((0,0), WATERMARK, font=f_wm)
             draw.text((lx2-(wbbox[2]-wbbox[0]), H-185), WATERMARK, font=f_wm, fill=blend(SIL, a*0.85))
-
         else:
             final_s = s - title_end - len(verses)*SECS_PER_VERSE
             a = ease(final_s/0.8) if final_s < 0.8 else 1.0
@@ -1013,9 +1035,7 @@ def make_parabole_video(title, verses, progress=None):
             bbox5 = draw.textbbox((0,0), sub2, font=f_wm)
             sw2 = bbox5[2]-bbox5[0]
             draw.text(((W-sw2)//2, H//2+120), sub2, font=f_wm, fill=blend(SIL, a*0.6))
-
         img.save(f"frames/frame_{f:04d}.png")
-
     output_path = "parabole.mp4"
     import glob, shutil
     music_files = glob.glob("music/*.mp3") + glob.glob("music/*.m4a") + glob.glob("music/*.ogg")
@@ -1042,7 +1062,6 @@ def make_parabole_video(title, verses, progress=None):
 
 
 def pick_parabole(progress):
-    """Charge la prochaine parabole depuis paraboles_curated.json"""
     paraboles_file = "paraboles_curated.json"
     arr = load_json(paraboles_file)
     index = progress.get("i_parabole", 0)
@@ -1058,27 +1077,20 @@ def main_parabole():
     parabole = pick_parabole(progress)
     title = parabole["title"]
     verses = [(v["ref"], v["text"]) for v in parabole["verses"]]
-    print(f"📖 Parabole — {title} ({len(verses)} versets)")
-
+    print(f"📖 Parabole — {title} ({len(verses)} versets) | platform={ONLY_PLATFORM}")
     video = make_parabole_video(title, verses, progress)
-
-    # Caption court pour Telegram/Instagram
     first_ref = verses[0][0] if verses else ""
     caption = f"✝️ <b>{title}</b>\n{first_ref}\n\n📲 Partage cette parabole avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBible #LSG1910 #ParaboleDeJésus"
     send_video(video, caption)
-
-    # Publier sur les plateformes
     cat = CATEGORIES["jesus"]
     post_reel_to_facebook(video, title, verses[0][1] if verses else "", cat, "jesus")
     post_reel_to_instagram(video, title, verses[0][1] if verses else "", cat, "jesus")
-
-    # YouTube — titre avec référence
     try:
         from google.oauth2.credentials import Credentials
         from googleapiclient.discovery import build
         from googleapiclient.http import MediaFileUpload
         from google.auth.transport.requests import Request
-        if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
+        if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN and should_post("youtube"):
             creds = Credentials(token=None, refresh_token=YT_REFRESH_TOKEN, client_id=YT_CLIENT_ID,
                 client_secret=YT_CLIENT_SECRET, token_uri="https://oauth2.googleapis.com/token",
                 scopes=["https://www.googleapis.com/auth/youtube.upload"])
@@ -1104,7 +1116,6 @@ def main_parabole():
             print(f"✅ YouTube publié — https://youtube.com/watch?v={response.get('id')}")
     except Exception as e:
         print(f"❌ YouTube parabole : {e}")
-
     save_json(PROGRESS_FILE, progress)
     print("✅ Terminé (parabole).")
 
@@ -1115,7 +1126,7 @@ def main_parabole():
 def main():
     progress = load_json(PROGRESS_FILE)
     text, ref, cat, cat_name, hour_utc = pick_verse(progress)
-    print(f"📖 Image — {ref} [{cat_name}]")
+    print(f"📖 Image — {ref} [{cat_name}] | platform={ONLY_PLATFORM}")
     img = make_image(text, ref)
     caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBible #LSG1910 #versetdujour {cat['tag']}"
     send_photo(img, caption)
@@ -1130,7 +1141,7 @@ def main():
 def main_reel():
     progress = load_json(PROGRESS_FILE)
     text, ref, cat, cat_name, hour_utc = pick_verse(progress)
-    print(f"🎬 Reel — {ref} [{cat_name}]")
+    print(f"🎬 Reel — {ref} [{cat_name}] | platform={ONLY_PLATFORM}")
     if not os.path.exists("logo.png"):
         try:
             r = requests.get("https://labible.app/icons/icon-512x512.png", timeout=10)
