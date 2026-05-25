@@ -4,18 +4,24 @@ on:
   schedule:
     # Cron em UTC. França = UTC+2 (été) ou UTC+1 (hiver)
     # Cada categoria alterna image/reel conforme dia par/ímpar do ano
-    # 🛡️ 5h03 UTC → 7h03 FR  | Protection (image par / reel ímpar)
-    # 🌿 7h12 UTC → 9h12 FR  | Promesse (reel par / image ímpar)
-    # 💡 10h00 UTC → 12h00 FR | Sagesse (image par / reel ímpar)
-    # ✝️ 13h45 UTC → 15h45 FR | Jésus (reel par / image ímpar)
-    # 📯 17h41 UTC → 19h41 FR | Prophétie (image par / reel ímpar)
-    # 🎵 19h08 UTC → 21h08 FR | Psaume du Soir (reel par / image ímpar)
-    - cron: '3 5 * * *'
-    - cron: '12 7 * * *'
-    - cron: '0 10 * * *'
-    - cron: '45 13 * * *'
-    - cron: '41 17 * * *'
-    - cron: '8 19 * * *'
+
+    # 🛡️ 4h03 UTC → 6h03 FR | Protection (image par / reel ímpar)
+    - cron: '3 4 * * *'
+
+    # 🌿 6h12 UTC → 8h12 FR | Promesse (reel par / image ímpar)
+    - cron: '12 6 * * *'
+
+    # 💡 9h02 UTC → 11h02 FR | Sagesse (image par / reel ímpar)
+    - cron: '2 9 * * *'
+
+    # ✝️ 12h45 UTC → 14h45 FR | Jésus (reel par / image ímpar)
+    - cron: '45 12 * * *'
+
+    # 📯 16h41 UTC → 18h41 FR | Prophétie (image par / reel ímpar)
+    - cron: '41 16 * * *'
+
+    # 🎵 17h08 UTC → 19h08 FR | Psaume du Soir (reel par / image ímpar)
+    - cron: '8 17 * * *'
   workflow_dispatch:
     inputs:
       mode:
