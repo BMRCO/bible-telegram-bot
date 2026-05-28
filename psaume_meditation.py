@@ -1,0 +1,453 @@
+"""
+psaume_meditation.py
+====================
+Gera vídeo horizontal 1920×1080 de meditação completa de um Salmo.
+Versículo a versículo com fade lento, música suave de fundo.
+
+Uso:
+    python psaume_meditation.py            → Salmo seguinte (progresso automático)
+    python psaume_meditation.py 23         → Salmo 23 específico
+    python psaume_meditation.py 119 1-22   → Salmo 119 versos 1-22 (para divisão)
+
+Estado salvo em: progress_meditation.json
+"""
+
+import os
+import sys
+import json
+import math
+import random
+import subprocess
+import glob
+import shutil
+
+import requests
+from PIL import Image, ImageDraw, ImageFont
+
+# Reutiliza utilitários do bot
+from bot import (
+    load_json, save_json, load_verse, clean_text, strip_rubric, is_rubric,
+    BIBLE_FILE, APP_URL, WATERMARK,
+    FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
+)
+
+YT_CLIENT_ID      = os.environ.get("YOUTUBE_CLIENT_ID", "")
+YT_CLIENT_SECRET  = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
+YT_REFRESH_TOKEN  = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
+
+PROGRESS_FILE = "progress_meditation.json"
+
+# Configuração
+W, H = 1920, 1080
+FPS = 30
+SECS_PER_VERSE = 10        # 10s por versículo (meditação lenta)
+SECS_INTRO     = 5
+SECS_OUTRO     = 5
+FADE_DURATION  = 1.0        # 1s de fade in/out por versículo
+
+# Divisão do Salmo 119
+PSAUME_119_PARTS = [
+    (1, 22), (23, 44), (45, 66), (67, 88),
+    (89, 110), (111, 132), (133, 154), (155, 176),
+]
+
+# Paleta navy/gold (mantém identidade)
+BG_TOP    = (10, 14, 38)
+BG_BOTTOM = (6, 10, 28)
+GOLD      = (212, 175, 55)
+GOLD_BRIGHT = (232, 196, 80)
+WHITE     = (245, 240, 230)
+SIL       = (160, 160, 175)
+
+
+def ease(t):
+    t = max(0, min(1, t))
+    return t * t * (3 - 2 * t)
+
+
+def gradient_bg(W, H, top, bot):
+    img = Image.new("RGB", (W, H), top)
+    draw = ImageDraw.Draw(img)
+    for y in range(H):
+        t = y / H
+        c = tuple(int(top[i] + (bot[i] - top[i]) * t) for i in range(3))
+        draw.line([(0, y), (W, y)], fill=c)
+    return img
+
+
+def wrap(draw, text, font, max_w):
+    words = text.split()
+    if not words:
+        return [""]
+    lines, current = [], words[0]
+    for w in words[1:]:
+        if w.startswith('?') or w.startswith('!') or w == '»':
+            current = current + '\u00a0' + w
+            continue
+        test = current + " " + w
+        if draw.textlength(test, font=font) <= max_w:
+            current = test
+        else:
+            lines.append(current)
+            current = w
+    lines.append(current)
+    if len(lines) > 1 and lines[-1].strip() == '»':
+        lines[-2] = lines[-2] + '\u00a0»'
+        lines.pop()
+    return lines
+
+
+def autosize_font(draw, text, max_w, max_h):
+    """Tamanho de fonte que cabe no espaço."""
+    for size in range(78, 36, -2):
+        fv = ImageFont.truetype(FONT_SERIF, size)
+        lines = wrap(draw, text, fv, max_w)
+        lh = size + 24
+        max_line_w = max(draw.textbbox((0, 0), l, font=fv)[2] for l in lines)
+        if max_line_w <= max_w and lh * len(lines) <= max_h:
+            return fv, lines, lh
+    fv = ImageFont.truetype(FONT_SERIF, 36)
+    lines = wrap(draw, text, fv, max_w)
+    return fv, lines, 60
+
+
+def fetch_psaume_verses(num, vfrom=None, vto=None):
+    """Carrega todos os versículos de um Salmo (ou um intervalo)."""
+    data = load_json(BIBLE_FILE)
+    verses = []
+    for v in data["verses"]:
+        if v["book_name"] == "Psaume" and int(v["chapter"]) == num:
+            if vfrom is not None and int(v["verse"]) < vfrom:
+                continue
+            if vto is not None and int(v["verse"]) > vto:
+                continue
+            verses.append((int(v["verse"]), v["text"]))
+    verses.sort(key=lambda x: x[0])
+    return verses
+
+
+def make_meditation_video(num, verses_with_idx, part_label=None):
+    """
+    Gera vídeo de meditação.
+    verses_with_idx: lista de tuplos (verse_num, text)
+    part_label: ex. "1-22" se for Salmo 119 dividido
+    """
+    n_verses = len(verses_with_idx)
+    TOTAL = FPS * (SECS_INTRO + n_verses * SECS_PER_VERSE + SECS_OUTRO)
+
+    BORDER = 80
+    CARD_PAD = 120
+    MAX_TW = W - BORDER * 2 - CARD_PAD * 2
+    max_text_h = int((H - BORDER * 2) * 0.55)
+
+    # Pre-calcular fonte e linhas para cada versículo (otimização)
+    tmp = Image.new("RGB", (10, 10))
+    d_tmp = ImageDraw.Draw(tmp)
+    verse_layouts = []
+    for vnum, vtext in verses_with_idx:
+        cleaned = clean_text(strip_rubric(vtext)).rstrip('.')
+        text_q = f"« {cleaned} »"
+        fv, lines, lh = autosize_font(d_tmp, text_q, MAX_TW, max_text_h)
+        verse_layouts.append((vnum, fv, lines, lh))
+
+    f_title = ImageFont.truetype(FONT_SERIF_BOLD, 90)
+    f_sub = ImageFont.truetype(FONT_SERIF, 42)
+    f_vnum = ImageFont.truetype(FONT_SERIF_BOLD, 48)
+    f_wm = ImageFont.truetype(FONT_SANS, 32)
+    f_outro = ImageFont.truetype(FONT_SERIF_BOLD, 110)
+    f_outro_sub = ImageFont.truetype(FONT_SERIF, 38)
+
+    os.makedirs("frames", exist_ok=True)
+
+    title_text = f"Psaume {num}"
+    if part_label:
+        title_text += f" — {part_label}"
+
+    for f in range(TOTAL):
+        s = f / FPS
+        img = gradient_bg(W, H, BG_TOP, BG_BOTTOM)
+        draw = ImageDraw.Draw(img)
+
+        # Border discreto
+        draw.rounded_rectangle(
+            [BORDER, BORDER, W - BORDER, H - BORDER],
+            radius=24, outline=tuple(int(c * 0.7) for c in GOLD), width=2,
+        )
+
+        # ---------- INTRO ----------
+        if s < SECS_INTRO:
+            a = ease(s / 1.0) if s < 1.0 else (ease((SECS_INTRO - s) / 1.0) if s > SECS_INTRO - 1.0 else 1.0)
+            color_title = tuple(int(BG_TOP[i] + (GOLD_BRIGHT[i] - BG_TOP[i]) * a) for i in range(3))
+            color_sub = tuple(int(BG_TOP[i] + (SIL[i] - BG_TOP[i]) * a * 0.8) for i in range(3))
+
+            # Title centrado
+            bb = draw.textbbox((0, 0), title_text, font=f_title)
+            tw = bb[2] - bb[0]
+            draw.text(((W - tw) // 2, H // 2 - 80), title_text, font=f_title, fill=color_title)
+
+            # Subtitle
+            sub = "Bible Louis Segond 1910 · Méditation"
+            bb2 = draw.textbbox((0, 0), sub, font=f_sub)
+            sw = bb2[2] - bb2[0]
+            draw.line(
+                [((W - 400) // 2, H // 2 + 20), ((W + 400) // 2, H // 2 + 20)],
+                fill=color_sub, width=1,
+            )
+            draw.text(((W - sw) // 2, H // 2 + 40), sub, font=f_sub, fill=color_sub)
+
+        # ---------- VERSÍCULOS ----------
+        elif s < SECS_INTRO + n_verses * SECS_PER_VERSE:
+            verse_s = s - SECS_INTRO
+            verse_idx = int(verse_s / SECS_PER_VERSE)
+            verse_idx = min(verse_idx, n_verses - 1)
+            local_s = verse_s - verse_idx * SECS_PER_VERSE
+
+            # Fade in / hold / fade out
+            if local_s < FADE_DURATION:
+                a = ease(local_s / FADE_DURATION)
+            elif local_s > SECS_PER_VERSE - FADE_DURATION:
+                a = ease((SECS_PER_VERSE - local_s) / FADE_DURATION)
+            else:
+                a = 1.0
+
+            vnum, fv, lines, lh = verse_layouts[verse_idx]
+
+            # Versículo número no canto
+            vnum_text = str(vnum)
+            color_vnum = tuple(int(BG_TOP[i] + (GOLD[i] - BG_TOP[i]) * a * 0.85) for i in range(3))
+            draw.text((BORDER + 60, BORDER + 50), vnum_text, font=f_vnum, fill=color_vnum)
+
+            # Texto do versículo centrado
+            total_h = lh * len(lines)
+            ty = BORDER + (H - BORDER * 2) // 2 - total_h // 2
+
+            color_text = tuple(int(BG_TOP[i] + (WHITE[i] - BG_TOP[i]) * a) for i in range(3))
+            color_shadow = tuple(int(BG_TOP[i] * (1 - a * 0.5)) for i in range(3))
+
+            for line in lines:
+                bb = draw.textbbox((0, 0), line, font=fv)
+                tw = bb[2] - bb[0]
+                x = (W - tw) // 2
+                draw.text((x + 2, ty + 2), line, font=fv, fill=color_shadow)
+                draw.text((x, ty), line, font=fv, fill=color_text)
+                ty += lh
+
+            # Rodapé: referência + watermark
+            color_ref = tuple(int(BG_TOP[i] + (GOLD[i] - BG_TOP[i]) * a * 0.7) for i in range(3))
+            ref_text = f"Psaume {num}:{vnum}"
+            draw.text((BORDER + CARD_PAD, H - BORDER - 70), ref_text, font=f_sub, fill=color_ref)
+            wm_bb = draw.textbbox((0, 0), WATERMARK, font=f_wm)
+            draw.text(
+                (W - BORDER - CARD_PAD - (wm_bb[2] - wm_bb[0]), H - BORDER - 65),
+                WATERMARK, font=f_wm, fill=color_ref,
+            )
+
+        # ---------- OUTRO ----------
+        else:
+            outro_s = s - SECS_INTRO - n_verses * SECS_PER_VERSE
+            a = ease(outro_s / 1.0) if outro_s < 1.0 else 1.0
+            color_app = tuple(int(BG_TOP[i] + (GOLD_BRIGHT[i] - BG_TOP[i]) * a) for i in range(3))
+            color_sub = tuple(int(BG_TOP[i] + (SIL[i] - BG_TOP[i]) * a * 0.7) for i in range(3))
+
+            msg = "Méditez la Parole chaque jour"
+            bb = draw.textbbox((0, 0), msg, font=f_sub)
+            tw = bb[2] - bb[0]
+            draw.text(((W - tw) // 2, H // 2 - 130), msg, font=f_sub, fill=color_sub)
+
+            app = "LaBible.app"
+            bb2 = draw.textbbox((0, 0), app, font=f_outro)
+            tw2 = bb2[2] - bb2[0]
+            draw.text(((W - tw2) // 2 + 3, H // 2 - 30 + 3), app, font=f_outro, fill=(0, 0, 0))
+            draw.text(((W - tw2) // 2, H // 2 - 30), app, font=f_outro, fill=color_app)
+
+            sub2 = "Gratuit · Sans publicité · LSG 1910"
+            bb3 = draw.textbbox((0, 0), sub2, font=f_outro_sub)
+            sw2 = bb3[2] - bb3[0]
+            draw.text(((W - sw2) // 2, H // 2 + 110), sub2, font=f_outro_sub, fill=color_sub)
+
+        img.save(f"frames/frame_{f:04d}.png")
+
+    # Música — escolher música mais longa (>= duração do vídeo se possível)
+    output_path = f"meditation_psaume_{num}{'_' + part_label.replace('-', '_') if part_label else ''}.mp4"
+    video_duration = SECS_INTRO + n_verses * SECS_PER_VERSE + SECS_OUTRO
+    print(f"⏱️  Duração do vídeo: {video_duration}s ({video_duration/60:.1f} min)")
+
+    music_files = sorted(
+        glob.glob("music/*.mp3") + glob.glob("music/*.m4a") + glob.glob("music/*.ogg"),
+        key=lambda f: os.path.getsize(f),
+        reverse=True,  # maiores primeiro
+    )
+
+    if music_files:
+        music_file = music_files[0]  # mais longa (proxy: maior tamanho)
+        print(f"🎵 Música: {music_file}")
+        subprocess.run([
+            'ffmpeg', '-framerate', str(FPS), '-i', 'frames/frame_%04d.png',
+            '-stream_loop', '-1', '-i', music_file,
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
+            '-c:a', 'aac', '-b:a', '192k',
+            '-af', 'volume=0.5',
+            '-shortest', output_path, '-y',
+        ], capture_output=True)
+    else:
+        print("⚠️  Sem música disponível")
+        subprocess.run([
+            'ffmpeg', '-framerate', str(FPS), '-i', 'frames/frame_%04d.png',
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
+            output_path, '-y',
+        ], capture_output=True)
+
+    shutil.rmtree("frames", ignore_errors=True)
+    print(f"✅ Vídeo: {output_path}")
+    return output_path
+
+
+def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
+    """Upload do vídeo para YouTube como vídeo normal (não Short)."""
+    if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
+        print("⚠️  Credentials YouTube ausentes.")
+        return None
+
+    from google.oauth2.credentials import Credentials
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaFileUpload
+    from google.auth.transport.requests import Request
+
+    creds = Credentials(
+        token=None, refresh_token=YT_REFRESH_TOKEN, client_id=YT_CLIENT_ID,
+        client_secret=YT_CLIENT_SECRET, token_uri="https://oauth2.googleapis.com/token",
+        scopes=["https://www.googleapis.com/auth/youtube.upload"],
+    )
+    creds.refresh(Request())
+    youtube = build("youtube", "v3", credentials=creds)
+
+    title = f"🎵 Méditation du Psaume {num}"
+    if part_label:
+        title += f" ({part_label})"
+    title += " | LSG1910"
+    if len(title) > 100:
+        title = title[:97] + "..."
+
+    # Lista de versículos para descrição
+    verses_text = "\n".join(
+        f"Psaume {num}:{vnum} — {clean_text(strip_rubric(vtext)).rstrip('.')}."
+        for vnum, vtext in verses_with_idx
+    )
+
+    description = (
+        f"🎵 Méditation du Psaume {num}{' (' + part_label + ')' if part_label else ''}\n"
+        f"Bible Louis Segond 1910\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"{verses_text}\n\n"
+        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"📖 Lisez la Bible complète gratuitement → {APP_URL}\n"
+        f"🔔 Abonnez-vous pour plus de méditations 🙏\n\n"
+        f"#Bible #Psaumes #Méditation #LSG1910 #ParoleDeDieu "
+        f"#Foi #Prière #Chrétien #BibleFrancaise #Adoration"
+    )
+    # YouTube limita descrição a 5000 chars
+    if len(description) > 5000:
+        description = description[:4997] + "..."
+
+    body = {
+        "snippet": {
+            "title": title,
+            "description": description,
+            "tags": [
+                "Bible", "Psaumes", "Méditation", "LSG1910",
+                "ParoleDeDieu", "Foi", "Prière", "Chrétien", "BibleFrancaise",
+            ],
+            "categoryId": "22",
+        },
+        "status": {
+            "privacyStatus": "public",
+            "selfDeclaredMadeForKids": False,
+        },
+    }
+
+    media = MediaFileUpload(video_path, mimetype="video/mp4", resumable=True, chunksize=1024 * 1024)
+    request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
+
+    response = None
+    while response is None:
+        status, response = request.next_chunk()
+        if status:
+            print(f"  ⏳ Upload: {int(status.progress() * 100)}%")
+
+    video_id = response.get("id")
+    print(f"✅ YouTube: https://youtube.com/watch?v={video_id}")
+    return video_id
+
+
+def main():
+    # ─── Parse args ───
+    args = sys.argv[1:]
+    if args:
+        # Modo manual: psaume_meditation.py 23  |  psaume_meditation.py 119 1-22
+        num = int(args[0])
+        if len(args) >= 2 and "-" in args[1]:
+            vfrom_str, vto_str = args[1].split("-")
+            vfrom, vto = int(vfrom_str), int(vto_str)
+            part_label = f"{vfrom}-{vto}"
+        else:
+            vfrom = vto = None
+            part_label = None
+    else:
+        # Modo automático: usa progress_meditation.json
+        if os.path.exists(PROGRESS_FILE):
+            progress = load_json(PROGRESS_FILE)
+        else:
+            progress = {"next_psaume": 1, "psaume_119_part": 0}
+
+        num = progress.get("next_psaume", 1)
+        part_label = None
+        vfrom = vto = None
+
+        # Caso especial: Psaume 119 dividido
+        if num == 119:
+            part_idx = progress.get("psaume_119_part", 0)
+            if part_idx < len(PSAUME_119_PARTS):
+                vfrom, vto = PSAUME_119_PARTS[part_idx]
+                part_label = f"{vfrom}-{vto}"
+                progress["psaume_119_part"] = part_idx + 1
+                if part_idx + 1 >= len(PSAUME_119_PARTS):
+                    # Acabou as 8 partes → seguir para 120
+                    progress["next_psaume"] = 120
+                    progress["psaume_119_part"] = 0
+            else:
+                progress["next_psaume"] = 120
+                progress["psaume_119_part"] = 0
+                num = 120
+        else:
+            progress["next_psaume"] = num + 1
+            if progress["next_psaume"] > 150:
+                progress["next_psaume"] = 1  # recomeça do início
+
+        save_json(PROGRESS_FILE, progress)
+
+    print(f"🎵 Méditation — Psaume {num}{' (' + part_label + ')' if part_label else ''}")
+
+    # ─── Carregar versículos ───
+    verses = fetch_psaume_verses(num, vfrom, vto)
+    if not verses:
+        print(f"❌ Nenhum versículo encontrado para Psaume {num}")
+        sys.exit(1)
+
+    # Remover rubricas demasiado curtas (linhas como "De David")
+    filtered = [(vn, vt) for vn, vt in verses if not is_rubric(vt)]
+    if filtered:
+        verses = filtered
+
+    print(f"📖 {len(verses)} versículos")
+
+    # ─── Gerar vídeo ───
+    video_path = make_meditation_video(num, verses, part_label)
+
+    # ─── Upload YouTube ───
+    upload_to_youtube(video_path, num, verses, part_label)
+
+    print("✅ Terminé (méditation).")
+
+
+if __name__ == "__main__":
+    main()
