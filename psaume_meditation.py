@@ -35,6 +35,11 @@ YT_CLIENT_ID      = os.environ.get("YOUTUBE_CLIENT_ID", "")
 YT_CLIENT_SECRET  = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
 YT_REFRESH_TOKEN  = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
 
+TELEGRAM_TOKEN   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHANNEL = os.environ.get("TELEGRAM_CHANNEL", "")
+FB_PAGE_ID       = os.environ.get("FB_PAGE_ID", "1018605031335601")
+FB_PAGE_TOKEN    = os.environ.get("FB_PAGE_TOKEN", "")
+
 PROGRESS_FILE = "progress_meditation.json"
 
 # Configuração
@@ -309,6 +314,68 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     return output_path
 
 
+def post_to_telegram(video_path, num, part_label=None):
+    """Publica a meditação no canal Telegram."""
+    if not TELEGRAM_TOKEN or not TELEGRAM_CHANNEL:
+        print("⚠️  Telegram credentials ausentes.")
+        return
+    label = f"Psaume {num}" + (f" ({part_label})" if part_label else "")
+    caption = (
+        f"🎵 <b>Méditation — {label}</b>\n"
+        f"Bible Louis Segond 1910\n\n"
+        f"Prenez un moment pour méditer la Parole. 🙏\n\n"
+        f"📖 labible.app\n\n"
+        f"#LaBible #Psaumes #Méditation #LSG1910"
+    )
+    reply_markup = json.dumps({"inline_keyboard": [[
+        {"text": "📖 Lire dans LaBible.app", "url": "https://t.me/BIBLE_APP_BOT/labible"}
+    ]]})
+    try:
+        with open(video_path, "rb") as f:
+            r = requests.post(
+                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendVideo",
+                data={"chat_id": TELEGRAM_CHANNEL, "caption": caption,
+                      "parse_mode": "HTML", "disable_web_page_preview": True,
+                      "reply_markup": reply_markup},
+                files={"video": f}, timeout=180,
+            )
+        if r.status_code == 200:
+            print("✅ Telegram publié")
+        else:
+            print(f"❌ Telegram ({r.status_code}): {r.text[:200]}")
+    except Exception as e:
+        print(f"❌ Telegram: {e}")
+
+
+def post_to_facebook(video_path, num, part_label=None):
+    """Publica a meditação como vídeo na página Facebook."""
+    if not FB_PAGE_TOKEN:
+        print("⚠️  FB_PAGE_TOKEN ausente.")
+        return
+    label = f"Psaume {num}" + (f" ({part_label})" if part_label else "")
+    desc = (
+        f"🎵 Méditation — {label}\n"
+        f"Bible Louis Segond 1910\n\n"
+        f"Prenez un moment pour méditer la Parole de Dieu. 🙏\n\n"
+        f"📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n"
+        f"#Bible #Psaumes #Méditation #LSG1910 #ParoleDeDieu #Foi"
+    )
+    try:
+        with open(video_path, "rb") as f:
+            r = requests.post(
+                f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
+                data={"title": f"Méditation — {label} | LSG1910",
+                      "description": desc, "access_token": FB_PAGE_TOKEN},
+                files={"source": f}, timeout=300,
+            )
+        if r.status_code == 200:
+            print(f"✅ Facebook publié — {r.json().get('id')}")
+        else:
+            print(f"❌ Facebook ({r.status_code}): {r.text[:200]}")
+    except Exception as e:
+        print(f"❌ Facebook: {e}")
+
+
 def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
     """Upload do vídeo para YouTube como vídeo normal (não Short)."""
     if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
@@ -452,6 +519,10 @@ def main():
 
     # ─── Upload YouTube ───
     upload_to_youtube(video_path, num, verses, part_label)
+
+    # ─── Telegram + Facebook ───
+    post_to_telegram(video_path, num, part_label)
+    post_to_facebook(video_path, num, part_label)
 
     print("✅ Terminé (méditation).")
 
