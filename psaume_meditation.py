@@ -273,10 +273,17 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     print(f"⏱️  Duração do vídeo: {video_duration}s ({video_duration/60:.1f} min)")
 
     music_files = sorted(
-        glob.glob("music/*.mp3") + glob.glob("music/*.m4a") + glob.glob("music/*.ogg"),
+        glob.glob("music_meditation/*.mp3") + glob.glob("music_meditation/*.m4a") + glob.glob("music_meditation/*.ogg"),
         key=lambda f: os.path.getsize(f),
         reverse=True,  # maiores primeiro
     )
+    # Fallback para a pasta music/ se music_meditation/ estiver vazia
+    if not music_files:
+        music_files = sorted(
+            glob.glob("music/*.mp3") + glob.glob("music/*.m4a") + glob.glob("music/*.ogg"),
+            key=lambda f: os.path.getsize(f),
+            reverse=True,
+        )
 
     if music_files:
         music_file = music_files[0]  # mais longa (proxy: maior tamanho)
@@ -321,7 +328,7 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
     creds.refresh(Request())
     youtube = build("youtube", "v3", credentials=creds)
 
-    title = f"🎵 Méditation du Psaume {num}"
+    title = f"Psaume {num}"
     if part_label:
         title += f" ({part_label})"
     title += " | LSG1910"
