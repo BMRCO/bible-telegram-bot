@@ -56,13 +56,24 @@ PSAUME_119_PARTS = [
     (89, 110), (111, 132), (133, 154), (155, 176),
 ]
 
-# Paleta navy/gold (mantém identidade)
-BG_TOP    = (10, 14, 38)
-BG_BOTTOM = (6, 10, 28)
-GOLD      = (212, 175, 55)
-GOLD_BRIGHT = (232, 196, 80)
-WHITE     = (245, 240, 230)
-SIL       = (160, 160, 175)
+# Leque de 4 paletas serenas para Salmos — rotação por número (nunca 2 seguidas iguais)
+# Cada uma: (BG_TOP, BG_BOTTOM, GOLD/accent, GOLD_BRIGHT, WHITE, SIL)
+PSAUME_PALETTES = [
+    # Bleu nuit
+    ((8,14,38),  (4,8,24),   (160,190,220), (185,210,235), (240,245,255), (120,150,180)),
+    # Navy + or
+    ((10,16,42), (5,9,24),   (212,175,55),  (232,196,88),  (240,238,230), (150,160,180)),
+    # Pourpre
+    ((24,10,40), (14,5,26),  (190,160,210), (210,180,228), (245,240,250), (150,135,175)),
+    # Teal
+    ((6,28,30),  (3,16,18),  (130,200,195), (155,215,210), (235,250,248), (110,165,160)),
+]
+
+
+def get_palette(num):
+    """Rotação por número do Salmo — garante variedade."""
+    idx = (num - 1) % len(PSAUME_PALETTES)
+    return PSAUME_PALETTES[idx]
 
 
 def ease(t):
@@ -139,6 +150,9 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     """
     n_verses = len(verses_with_idx)
     TOTAL = FPS * (SECS_INTRO + n_verses * SECS_PER_VERSE + SECS_OUTRO)
+
+    # Paleta por rotação (número do Salmo)
+    BG_TOP, BG_BOTTOM, GOLD, GOLD_BRIGHT, WHITE, SIL = get_palette(num)
 
     BORDER = 80
     CARD_PAD = 120
