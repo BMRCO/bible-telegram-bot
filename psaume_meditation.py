@@ -286,27 +286,31 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
 
         img.save(f"frames/frame_{f:04d}.png")
 
-    # Música — escolher música mais longa (>= duração do vídeo se possível)
+    # Música — rotação por número do Salmo (cada Salmo usa uma faixa diferente,
+    # nunca duas seguidas iguais quando há ≥2 faixas). A música faz loop
+    # automático (-stream_loop -1) para cobrir toda a duração do vídeo, por isso
+    # o comprimento de cada faixa não importa.
     output_path = f"meditation_psaume_{num}{'_' + part_label.replace('-', '_') if part_label else ''}.mp4"
     video_duration = SECS_INTRO + n_verses * SECS_PER_VERSE + SECS_OUTRO
     print(f"⏱️  Duração do vídeo: {video_duration}s ({video_duration/60:.1f} min)")
 
     music_files = sorted(
-        glob.glob("music_meditation/*.mp3") + glob.glob("music_meditation/*.m4a") + glob.glob("music_meditation/*.ogg"),
-        key=lambda f: os.path.getsize(f),
-        reverse=True,  # maiores primeiro
+        glob.glob("music_meditation/*.mp3")
+        + glob.glob("music_meditation/*.m4a")
+        + glob.glob("music_meditation/*.ogg")
     )
     # Fallback para a pasta music/ se music_meditation/ estiver vazia
     if not music_files:
         music_files = sorted(
-            glob.glob("music/*.mp3") + glob.glob("music/*.m4a") + glob.glob("music/*.ogg"),
-            key=lambda f: os.path.getsize(f),
-            reverse=True,
+            glob.glob("music/*.mp3")
+            + glob.glob("music/*.m4a")
+            + glob.glob("music/*.ogg")
         )
 
     if music_files:
-        music_file = music_files[0]  # mais longa (proxy: maior tamanho)
-        print(f"🎵 Música: {music_file}")
+        idx = (num - 1) % len(music_files)
+        music_file = music_files[idx]  # rotação por nº do Salmo
+        print(f"🎵 Música: {music_file} ({idx + 1}/{len(music_files)})")
         subprocess.run([
             'ffmpeg', '-framerate', str(FPS), '-i', 'frames/frame_%04d.png',
             '-stream_loop', '-1', '-i', music_file,
