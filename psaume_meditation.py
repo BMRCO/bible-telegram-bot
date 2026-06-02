@@ -76,6 +76,41 @@ def get_palette(num):
     return PSAUME_PALETTES[idx]
 
 
+def is_safe_music(path):
+    """
+    Filtro anti-Content-ID. Aceita só faixas com aspeto de download Pixabay
+    (minúsculas, sem espaços nem parênteses), tipo 'artista-titulo-12345.mp3'.
+    Rejeita ficheiros com aspeto de título de vídeo do YouTube
+    ('Christian Background Music (Heavens...)'), que costumam apanhar reclamação.
+    """
+    stem = os.path.splitext(os.path.basename(path))[0]
+    if " " in stem or "(" in stem or ")" in stem:
+        return False
+    if any(c.isupper() for c in stem):
+        return False
+    return True
+
+
+def pick_safe_music(num):
+    """Devolve a faixa a usar (rotação por nº do Salmo), só entre as 'seguras'."""
+    import glob
+    for folder in ("music_meditation", "music"):
+        all_tracks = sorted(
+            glob.glob(f"{folder}/*.mp3")
+            + glob.glob(f"{folder}/*.m4a")
+            + glob.glob(f"{folder}/*.ogg")
+        )
+        safe = [t for t in all_tracks if is_safe_music(t)]
+        if safe:
+            idx = (num - 1) % len(safe)
+            print(f"🎵 Música: {safe[idx]} ({idx + 1}/{len(safe)} seguras em {folder}/)")
+            return safe[idx]
+        if all_tracks:
+            print(f"⚠️  {folder}/ só tem faixas suspeitas (possível Content ID) — ignoradas.")
+    print("⚠️  Nenhuma faixa segura encontrada — vídeo sem música.")
+    return None
+
+
 def ease(t):
     t = max(0, min(1, t))
     return t * t * (3 - 2 * t)
@@ -294,23 +329,11 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     video_duration = SECS_INTRO + n_verses * SECS_PER_VERSE + SECS_OUTRO
     print(f"⏱️  Duração do vídeo: {video_duration}s ({video_duration/60:.1f} min)")
 
-    music_files = sorted(
-        glob.glob("music_meditation/*.mp3")
-        + glob.glob("music_meditation/*.m4a")
-        + glob.glob("music_meditation/*.ogg")
-    )
-    # Fallback para a pasta music/ se music_meditation/ estiver vazia
-    if not music_files:
-        music_files = sorted(
-            glob.glob("music/*.mp3")
-            + glob.glob("music/*.m4a")
-            + glob.glob("music/*.ogg")
-        )
+    # Só faixas "seguras" (Pixabay), rotação por nº do Salmo. Ignora ficheiros
+    # com nome de título de vídeo do YouTube (risco de reclamação Content ID).
+    music_file = pick_safe_music(num)
 
-    if music_files:
-        idx = (num - 1) % len(music_files)
-        music_file = music_files[idx]  # rotação por nº do Salmo
-        print(f"🎵 Música: {music_file} ({idx + 1}/{len(music_files)})")
+    if music_file:
         subprocess.run([
             'ffmpeg', '-framerate', str(FPS), '-i', 'frames/frame_%04d.png',
             '-stream_loop', '-1', '-i', music_file,
