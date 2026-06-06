@@ -67,6 +67,7 @@ HASHTAGS_CAT_IG = {
     "psaume":    ["#Psaumes", "#Louange", "#Adoration", "#Prière", "#Cantique"],
     "proverbe":  ["#Sagesse", "#Proverbes", "#SagesseDeJésus", "#Discernement", "#Conseil"],
     "prophetie": ["#Prophétie", "#EspoirEnDieu", "#Révélation", "#Accomplissement", "#GloireDeDieu"],
+    "protection": ["#Protection", "#ProtectionDivine", "#Refuge", "#Sécurité", "#Confiance"],
 }
 
 HASHTAGS_CAT_FB = {
@@ -75,6 +76,7 @@ HASHTAGS_CAT_FB = {
     "psaume":    ["#Louange", "#Adoration"],
     "proverbe":  ["#Sagesse", "#Discernement"],
     "prophetie": ["#Prophétie", "#EspoirEnDieu"],
+    "protection": ["#Protection", "#Refuge"],
 }
 
 CATEGORIES = {
@@ -83,6 +85,7 @@ CATEGORIES = {
     "psaume":    {"key": "i_psaume",    "file": "psaumes_curated.json",     "emoji": "🎵", "tag": "#Psaumes"},
     "proverbe":  {"key": "i_proverbe",  "file": "proverbes_curated.json",   "emoji": "💡", "tag": "#Sagesse"},
     "prophetie": {"key": "i_prophetie", "file": "propheties_curated.json",  "emoji": "📯", "tag": "#Prophétie"},
+    "protection": {"key": "i_protection", "file": "protection_curated.json", "emoji": "🛡️", "tag": "#Protection"},
 }
 
 # ---------------------------------------------------
@@ -148,6 +151,8 @@ def build_yt_title(cat_name, cat, ref, hour_utc):
         label = "Sagesse Biblique"
     elif cat_name == "prophetie":
         label = "Prophéties Bibliques"
+    elif cat_name == "protection":
+        label = "Protection Divine"
     else:
         label = "Verset Biblique"
     title = f"{cat['emoji']} {label} — {ref} | Bible LSG1910"
@@ -488,7 +493,8 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
     if not image_url:
         return
     pin_keywords = {"promise": "Promesses de Dieu", "jesus": "Paroles de Jésus",
-                    "psaume": "Psaumes Bibliques", "proverbe": "Sagesse Biblique", "prophetie": "Prophéties Bibliques"}
+                    "psaume": "Psaumes Bibliques", "proverbe": "Sagesse Biblique", "prophetie": "Prophéties Bibliques",
+                    "protection": "Protection Divine"}
     payload = {
         "board_id": PINTEREST_BOARD_ID,
         "title": f"{cat['emoji']} {pin_keywords.get(cat_name, 'Verset Biblique')} — {ref} | LaBible.app",
@@ -592,6 +598,7 @@ IMAGE_PALETTE_BY_CAT = {
     "jesus":     ((12, 12, 12), (4,   4,  4),  (205, 180, 120), (205, 180, 120), (125, 112,  72)),
     "proverbe":  ((26, 18,  8), (15, 10,  4),  (214, 170,  90), (214, 170,  90), (150, 120,  70)),
     "prophetie": ((22, 10, 38), (13,  5, 24),  (190, 160, 210), (190, 160, 210), (140, 120, 165)),
+    "protection": (( 8, 22, 28), (4,  13, 17),  (130, 195, 200), (130, 195, 200), (90,  140, 150)),
 }
 
 # Paleta de reel por tema (BG, GOLD/accent, GR/ref, WHITE/texto, SIL/secundário)
@@ -601,6 +608,7 @@ REEL_PALETTE_BY_CAT = {
     "jesus":     ((10, 10, 10), (200, 176, 100), (214, 190, 112), (250, 248, 236), (150, 140, 100)),
     "proverbe":  ((24, 16,  6), (216, 168,  80), (226, 182,  96), (252, 244, 226), (168, 142,  98)),
     "prophetie": ((22,  8, 40), (190, 158, 210), (206, 176, 224), (248, 242, 252), (150, 132, 178)),
+    "protection": (( 6, 26, 30), (130, 200, 195), (150, 210, 205), (235, 250, 248), (110, 165, 160)),
 }
 
 
