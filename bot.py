@@ -26,6 +26,20 @@ THREADS_ACCESS_TOKEN = os.environ.get("THREADS_ACCESS_TOKEN", "")
 PINTEREST_ACCESS_TOKEN = os.environ.get("PINTEREST_ACCESS_TOKEN", "")
 PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "1092404522055080754")
 
+# ----- Filtro de plataforma (para testes manuais) -----
+# Definido pela variável de ambiente ONLY_PLATFORM (passada pelo publish.yml).
+# Valores: all | telegram | facebook | instagram | youtube | pinterest | threads
+ONLY_PLATFORM = os.environ.get("ONLY_PLATFORM", "all").strip().lower()
+if ONLY_PLATFORM in ("", "all"):
+    ONLY_PLATFORM = "all"
+
+def should_post(platform: str) -> bool:
+    """True se a plataforma deve publicar neste run. 'all' = publica em todas."""
+    if ONLY_PLATFORM == "all":
+        return True
+    return platform == ONLY_PLATFORM
+# -------------------------------------------------------
+
 PROGRESS_FILE = "progress.json"
 BIBLE_FILE    = "bible/lsg1910.json"
 
@@ -171,6 +185,7 @@ def strip_rubric(text: str) -> str:
         "psaume de david", "prière de", "fils de koré", "sur alamoth",
         "sur les", "au chef", "à jouer", "pour les", "jeduthun",
         "higgaion", "sheminith", "nehiloth", "neginoth", "gittith",
+        "instruments à cordes", "instruments à vent",
     ]
     t = text.lower()
     for kw in rubric_keywords:
@@ -264,6 +279,9 @@ def load_verse(book_name, chapter, verse):
 # TELEGRAM
 # ---------------------------------------------------
 def send_photo(path, caption):
+    if not should_post("telegram"):
+        print("⏭️  Telegram skip (filtro)")
+        return
     reply_markup = json.dumps({"inline_keyboard": [[{"text": "📖 Lire dans LaBible.app", "url": MINI_APP_URL}]]})
     with open(path, "rb") as f:
         r = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendPhoto",
@@ -274,6 +292,9 @@ def send_photo(path, caption):
 
 
 def send_video(path, caption):
+    if not should_post("telegram"):
+        print("⏭️  Telegram skip (filtro)")
+        return
     reply_markup = json.dumps({"inline_keyboard": [[{"text": "📖 Lire dans LaBible.app", "url": MINI_APP_URL}]]})
     with open(path, "rb") as f:
         r = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendVideo",
@@ -287,6 +308,9 @@ def send_video(path, caption):
 # FACEBOOK
 # ---------------------------------------------------
 def post_to_facebook(image_path, ref, text, cat, cat_name):
+    if not should_post("facebook"):
+        print("⏭️  Facebook skip (filtro)")
+        return
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
@@ -301,6 +325,9 @@ def post_to_facebook(image_path, ref, text, cat, cat_name):
 
 
 def post_reel_to_facebook(video_path, ref, text, cat, cat_name):
+    if not should_post("facebook"):
+        print("⏭️  Facebook reel skip (filtro)")
+        return
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
@@ -373,6 +400,9 @@ def upload_video_public(video_path):
 # INSTAGRAM
 # ---------------------------------------------------
 def post_to_instagram(image_path, ref, text, cat, cat_name):
+    if not should_post("instagram"):
+        print("⏭️  Instagram skip (filtro)")
+        return
     if not FB_PAGE_TOKEN:
         return
     image_url = upload_to_cloudinary(image_path)
@@ -409,6 +439,9 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
 
 
 def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
+    if not should_post("instagram"):
+        print("⏭️  Instagram reel skip (filtro)")
+        return
     if not FB_PAGE_TOKEN:
         return
     video_url = upload_video_public(video_path)
@@ -446,6 +479,9 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
 # PINTEREST
 # ---------------------------------------------------
 def post_to_pinterest(image_path, ref, text, cat, cat_name):
+    if not should_post("pinterest"):
+        print("⏭️  Pinterest skip (filtro)")
+        return
     if not PINTEREST_ACCESS_TOKEN:
         return
     image_url = upload_to_imgbb(image_path)
@@ -483,6 +519,9 @@ def _threads_publish(container_id):
 
 
 def post_to_threads(image_path, ref, text, cat, cat_name):
+    if not should_post("threads"):
+        print("⏭️  Threads skip (filtro)")
+        return
     if not THREADS_ACCESS_TOKEN:
         return
     image_url = upload_to_cloudinary(image_path)
@@ -500,6 +539,9 @@ def post_to_threads(image_path, ref, text, cat, cat_name):
 
 
 def post_reel_to_threads(video_path, ref, text, cat, cat_name):
+    if not should_post("threads"):
+        print("⏭️  Threads reel skip (filtro)")
+        return
     if not THREADS_ACCESS_TOKEN:
         return
     print("📤 Upload vidéo Threads...")
@@ -542,6 +584,25 @@ PALETTES = [
     ((10, 20, 50),  (6,  14, 36),  (200, 165,  80), (200, 165,  80), (130, 110,  55)),
 ]
 
+# Paleta de imagem por tema (bg_top, bg_bot, border, ref, watermark)
+# 🌿 Promesses=vert · 🎵 Psaumes=bleu nuit · ✝️ Jésus=noir&or · 💡 Sagesse=ambre · 📯 Prophéties=pourpre
+IMAGE_PALETTE_BY_CAT = {
+    "promise":   ((10, 24, 16), (5,  14,  9),  (150, 200, 130), (150, 200, 130), (95,  140,  85)),
+    "psaume":    (( 8, 16, 40), (4,   9, 24),  (150, 185, 220), (150, 185, 220), (100, 130, 165)),
+    "jesus":     ((12, 12, 12), (4,   4,  4),  (205, 180, 120), (205, 180, 120), (125, 112,  72)),
+    "proverbe":  ((26, 18,  8), (15, 10,  4),  (214, 170,  90), (214, 170,  90), (150, 120,  70)),
+    "prophetie": ((22, 10, 38), (13,  5, 24),  (190, 160, 210), (190, 160, 210), (140, 120, 165)),
+}
+
+# Paleta de reel por tema (BG, GOLD/accent, GR/ref, WHITE/texto, SIL/secundário)
+REEL_PALETTE_BY_CAT = {
+    "promise":   (( 8, 24, 16), (140, 195, 115), (155, 205, 125), (236, 252, 238), (115, 160, 105)),
+    "psaume":    (( 8, 14, 40), (150, 185, 220), (170, 200, 228), (235, 242, 252), (135, 160, 190)),
+    "jesus":     ((10, 10, 10), (200, 176, 100), (214, 190, 112), (250, 248, 236), (150, 140, 100)),
+    "proverbe":  ((24, 16,  6), (216, 168,  80), (226, 182,  96), (252, 244, 226), (168, 142,  98)),
+    "prophetie": ((22,  8, 40), (190, 158, 210), (206, 176, 224), (248, 242, 252), (150, 132, 178)),
+}
+
 
 def _gradient(W, H, top, bot):
     img = Image.new("RGB", (W, H))
@@ -572,8 +633,8 @@ def wrap_text(draw, text, font, max_w):
     return lines
 
 
-def make_image(text, ref):
-    palette = random.choice(PALETTES)
+def make_image(text, ref, cat_name=None):
+    palette = IMAGE_PALETTE_BY_CAT.get(cat_name) or random.choice(PALETTES)
     bg_top, bg_bot, color_border, color_ref, color_wm = palette
     W, H = 1080, 1080
     img = _gradient(W, H, bg_top, bg_bot)
@@ -653,7 +714,7 @@ def wrap_text_with_quotes(draw, text, font, max_w):
     return lines
 
 
-def make_reel_video(text, ref, progress=None):
+def make_reel_video(text, ref, progress=None, cat_name=None):
     W, H = 1080, 1920
     FPS, TOTAL = 30, 30 * 15
     seed = abs(hash(ref)) % (2**31)
@@ -686,7 +747,7 @@ def make_reel_video(text, ref, progress=None):
         ((22,  8, 40), (195, 160, 75),  (210, 175, 88),  (250, 245, 255), (155, 135, 180)),
         ((10, 10, 10), (195, 172,  95), (210, 187, 108), (250, 248, 235), (145, 135,  95)),
     ]
-    BG, GOLD, GR, WHITE, SIL = REEL_PALETTES[seed % len(REEL_PALETTES)]
+    BG, GOLD, GR, WHITE, SIL = REEL_PALETTE_BY_CAT.get(cat_name) or REEL_PALETTES[seed % len(REEL_PALETTES)]
     CX1, CY1, CX2, CY2 = BORDER, BORDER, W-BORDER, H-BORDER
     N_P = 30
     px = rng.uniform(CX1+20, CX2-20, N_P); py = rng.uniform(CY1+20, CY2-20, N_P)
@@ -794,9 +855,14 @@ def reshuffle_if_needed(path, index):
 def pick_from_category(cat, progress):
     index = progress.get(cat["key"], 0)
     arr, index = reshuffle_if_needed(cat["file"], index)
-    book, ch, v = arr[index]
+    entry = arr[index]
+    book, ch = entry[0], entry[1]
+    if len(entry) >= 4:
+        vstart, vend = entry[2], entry[3]   # intervalle : [livre, chap, début, fin]
+    else:
+        vstart = vend = entry[2]            # verset unique : [livre, chap, verset]
     progress[cat["key"]] = index + 1
-    return book, ch, v
+    return book, ch, vstart, vend
 
 
 def pick_verse(progress):
@@ -814,15 +880,19 @@ def pick_verse(progress):
             print(f"🕐 {hour_utc}h UTC → {cat_name}")
     cat = CATEGORIES[cat_name]
     for attempt in range(5):
-        book, ch, v = pick_from_category(cat, progress)
-        raw_text = load_verse(book, ch, v)
+        book, ch, vstart, vend = pick_from_category(cat, progress)
+        # Joindre les versets de l'intervalle (vstart..vend) — un seul si vstart == vend
+        raw_text = " ".join(load_verse(book, ch, vv) for vv in range(vstart, vend + 1))
         if not is_rubric(raw_text):
             break
-        print(f"⏭️  Rubrique ignorée : {book} {ch}:{v}")
+        print(f"⏭️  Rubrique ignorée : {book} {ch}:{vstart}")
     raw_text = strip_rubric(raw_text)
     text = clean_text(raw_text)
     display_book = "Psaumes" if book == "Psaume" else book
-    ref = f"{display_book} {ch}:{v}"
+    if vstart == vend:
+        ref = f"{display_book} {ch}:{vstart}"
+    else:
+        ref = f"{display_book} {ch}:{vstart}-{vend}"
     return text, ref, cat, cat_name, hour_utc
 
 
@@ -830,6 +900,9 @@ def pick_verse(progress):
 # YOUTUBE
 # ---------------------------------------------------
 def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
+    if not should_post("youtube"):
+        print("⏭️  YouTube skip (filtro)")
+        return
     if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
         print("⚠️  Credentials YouTube manquants.")
         return
@@ -1095,7 +1168,7 @@ def main_parabole():
         from googleapiclient.discovery import build
         from googleapiclient.http import MediaFileUpload
         from google.auth.transport.requests import Request
-        if YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
+        if should_post("youtube") and YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
             creds = Credentials(token=None, refresh_token=YT_REFRESH_TOKEN, client_id=YT_CLIENT_ID,
                 client_secret=YT_CLIENT_SECRET, token_uri="https://oauth2.googleapis.com/token",
                 scopes=["https://www.googleapis.com/auth/youtube.upload"])
@@ -1133,7 +1206,7 @@ def main():
     progress = load_json(PROGRESS_FILE)
     text, ref, cat, cat_name, hour_utc = pick_verse(progress)
     print(f"📖 Image — {ref} [{cat_name}]")
-    img = make_image(text, ref)
+    img = make_image(text, ref, cat_name)
     caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partage ce verset avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBible #LSG1910 #versetdujour {cat['tag']}"
     send_photo(img, caption)
     post_to_facebook(img, ref, text, cat, cat_name)
@@ -1156,7 +1229,7 @@ def main_reel():
                     f.write(r.content)
         except Exception as e:
             print(f"⚠️ Logo : {e}")
-    video = make_reel_video(text, ref, progress)
+    video = make_reel_video(text, ref, progress, cat_name)
     caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partage ce verset avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBible #LSG1910 #versetdujour {cat['tag']}"
     send_video(video, caption)
     post_reel_to_facebook(video, ref, text, cat, cat_name)
