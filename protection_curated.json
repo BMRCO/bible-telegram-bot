@@ -1,75 +1,340 @@
 [
-  ["Psaume", 91, 1],
-  ["Psaume", 91, 2],
-  ["Psaume", 91, 3],
-  ["Psaume", 91, 4],
-  ["Psaume", 91, 5],
-  ["Psaume", 91, 7],
-  ["Psaume", 91, 9],
-  ["Psaume", 91, 10],
-  ["Psaume", 91, 11],
-  ["Psaume", 91, 14],
-  ["Psaume", 91, 15],
-  ["Psaume", 121, 3],
-  ["Psaume", 121, 5],
-  ["Psaume", 121, 7],
-  ["Psaume", 121, 8],
-  ["Psaume", 27, 1],
-  ["Psaume", 27, 5],
-  ["Psaume", 27, 14],
-  ["Psaume", 18, 2],
-  ["Psaume", 18, 3],
-  ["Psaume", 18, 19],
-  ["Psaume", 18, 30],
-  ["Psaume", 32, 7],
-  ["Psaume", 34, 4],
-  ["Psaume", 34, 7],
-  ["Psaume", 34, 17],
-  ["Psaume", 34, 19],
-  ["Psaume", 46, 1],
-  ["Psaume", 46, 7],
-  ["Psaume", 46, 11],
-  ["Psaume", 61, 3],
-  ["Psaume", 62, 6],
-  ["Psaume", 62, 7],
-  ["Psaume", 62, 8],
-  ["Psaume", 50, 15],
-  ["Psaume", 56, 3],
-  ["Psaume", 56, 4],
-  ["Psaume", 59, 16],
-  ["Psaume", 138, 7],
-  ["Psaume", 144, 2],
-  ["Psaume", 145, 18],
-  ["Psaume", 145, 19],
-  ["Ésaïe", 41, 10],
-  ["Ésaïe", 41, 13],
-  ["Ésaïe", 43, 1],
-  ["Ésaïe", 43, 2],
-  ["Ésaïe", 54, 17],
-  ["Ésaïe", 49, 25],
-  ["Deutéronome", 31, 6],
-  ["Deutéronome", 31, 8],
-  ["Deutéronome", 33, 27],
-  ["Josué", 1, 9],
-  ["Proverbes", 18, 10],
-  ["Proverbes", 30, 5],
-  ["Nahum", 1, 7],
-  ["Sophonie", 3, 17],
-  ["2 Samuel", 22, 3],
-  ["2 Samuel", 22, 31],
-  ["2 Thessaloniciens", 3, 3],
-  ["2 Timothée", 4, 18],
-  ["Jean", 10, 28],
-  ["Jean", 10, 29],
-  ["Romains", 8, 31],
-  ["Romains", 8, 37],
-  ["Romains", 8, 38],
-  ["Romains", 8, 39],
-  ["Éphésiens", 6, 10],
-  ["Éphésiens", 6, 11],
-  ["Éphésiens", 6, 13],
-  ["Hébreux", 13, 6],
-  ["1 Pierre", 5, 7],
-  ["1 Jean", 5, 18],
-  ["Apocalypse", 3, 10]
+  [
+    "Psaume",
+    91,
+    1
+  ],
+  [
+    "Psaume",
+    91,
+    2
+  ],
+  [
+    "Psaume",
+    91,
+    3
+  ],
+  [
+    "Psaume",
+    91,
+    4
+  ],
+  [
+    "Psaume",
+    91,
+    5,
+    6
+  ],
+  [
+    "Psaume",
+    91,
+    7
+  ],
+  [
+    "Psaume",
+    91,
+    9
+  ],
+  [
+    "Psaume",
+    91,
+    10
+  ],
+  [
+    "Psaume",
+    91,
+    11,
+    12
+  ],
+  [
+    "Psaume",
+    91,
+    14
+  ],
+  [
+    "Psaume",
+    91,
+    15
+  ],
+  [
+    "Psaume",
+    121,
+    3
+  ],
+  [
+    "Psaume",
+    121,
+    5
+  ],
+  [
+    "Psaume",
+    121,
+    7,
+    8
+  ],
+  [
+    "Psaume",
+    27,
+    1
+  ],
+  [
+    "Psaume",
+    27,
+    5
+  ],
+  [
+    "Psaume",
+    27,
+    14
+  ],
+  [
+    "Psaume",
+    18,
+    2
+  ],
+  [
+    "Psaume",
+    18,
+    3
+  ],
+  [
+    "Psaume",
+    18,
+    19
+  ],
+  [
+    "Psaume",
+    18,
+    30
+  ],
+  [
+    "Psaume",
+    32,
+    7
+  ],
+  [
+    "Psaume",
+    34,
+    4
+  ],
+  [
+    "Psaume",
+    34,
+    7
+  ],
+  [
+    "Psaume",
+    34,
+    17
+  ],
+  [
+    "Psaume",
+    34,
+    19
+  ],
+  [
+    "Psaume",
+    46,
+    1
+  ],
+  [
+    "Psaume",
+    46,
+    7
+  ],
+  [
+    "Psaume",
+    61,
+    3
+  ],
+  [
+    "Psaume",
+    62,
+    6
+  ],
+  [
+    "Psaume",
+    62,
+    7
+  ],
+  [
+    "Psaume",
+    62,
+    8
+  ],
+  [
+    "Psaume",
+    50,
+    15
+  ],
+  [
+    "Psaume",
+    56,
+    3,
+    4
+  ],
+  [
+    "Psaume",
+    59,
+    16
+  ],
+  [
+    "Psaume",
+    138,
+    7
+  ],
+  [
+    "Psaume",
+    144,
+    2
+  ],
+  [
+    "Psaume",
+    145,
+    18,
+    19
+  ],
+  [
+    "Ésaïe",
+    41,
+    10
+  ],
+  [
+    "Ésaïe",
+    41,
+    13
+  ],
+  [
+    "Ésaïe",
+    43,
+    1
+  ],
+  [
+    "Ésaïe",
+    43,
+    2
+  ],
+  [
+    "Ésaïe",
+    54,
+    17
+  ],
+  [
+    "Ésaïe",
+    49,
+    25
+  ],
+  [
+    "Deutéronome",
+    31,
+    6
+  ],
+  [
+    "Deutéronome",
+    31,
+    8
+  ],
+  [
+    "Deutéronome",
+    33,
+    27
+  ],
+  [
+    "Josué",
+    1,
+    9
+  ],
+  [
+    "Proverbes",
+    18,
+    10
+  ],
+  [
+    "Proverbes",
+    30,
+    5
+  ],
+  [
+    "Nahum",
+    1,
+    7
+  ],
+  [
+    "Sophonie",
+    3,
+    17
+  ],
+  [
+    "2 Samuel",
+    22,
+    3
+  ],
+  [
+    "2 Samuel",
+    22,
+    31
+  ],
+  [
+    "2 Thessaloniciens",
+    3,
+    3
+  ],
+  [
+    "2 Timothée",
+    4,
+    18
+  ],
+  [
+    "Jean",
+    10,
+    28,
+    29
+  ],
+  [
+    "Romains",
+    8,
+    31
+  ],
+  [
+    "Romains",
+    8,
+    37
+  ],
+  [
+    "Romains",
+    8,
+    38,
+    39
+  ],
+  [
+    "Éphésiens",
+    6,
+    10,
+    11
+  ],
+  [
+    "Éphésiens",
+    6,
+    13
+  ],
+  [
+    "Hébreux",
+    13,
+    6
+  ],
+  [
+    "1 Pierre",
+    5,
+    7
+  ],
+  [
+    "1 Jean",
+    5,
+    18
+  ],
+  [
+    "Apocalypse",
+    3,
+    10
+  ]
 ]
