@@ -172,18 +172,22 @@ def build_hashtags_fb(cat_name):
 
 
 def strip_rubric(text: str) -> str:
-    # Supprimer les préfixes courts type "De David." "Cantique des degrés." au début
-    prefix_patterns = [
-        r'^De David\.\s*',
-        r'^Cantique des degrés[^\.]*\.\s*',
-        r'^Psaume de David[^\.]*\.\s*',
-        r'^Prière de[^\.]*\.\s*',
-        r'^Pour le chef des chantres[^\.]*\.\s*',
-        r'^Maschil[^\.]*\.\s*',
-        r'^Michtam[^\.]*\.\s*',
-    ]
-    for pattern in prefix_patterns:
-        text = re.sub(pattern, '', text, flags=re.IGNORECASE).strip()
+    text = text.replace("¶", "").strip()
+    # Supprimer une chaîne d'indications liminaires, segment par segment
+    # ex. "Au chef des chantres. De David. Psaume. Eternel! tu me sondes..."
+    lead_rubric = re.compile(
+        r'^\s*(?:'
+        r'au chef des chantres[^.]*|pour le chef des chantres[^.]*|au chef[^.]*|'
+        r'psaume de david[^.]*|psaume|cantique des degrés[^.]*|cantique|de david|'
+        r'des fils de koré[^.]*|fils de koré[^.]*|sur alamoth[^.]*|sur la[^.]*|'
+        r'prière de[^.]*|maschil[^.]*|michtam[^.]*|hymne[^.]*'
+        r')\s*\.\s*',
+        flags=re.IGNORECASE,
+    )
+    prev = None
+    while prev != text:
+        prev = text
+        text = lead_rubric.sub('', text, count=1).strip()
 
     rubric_keywords = [
         "chef des chantres", "maschil", "michtam", "cantique",
@@ -229,7 +233,7 @@ def clean_text(text: str) -> str:
     text = text.replace("Eternel", "Éternel")
     text = text.replace("coeur", "cœur")
     text = text.replace("Coeur", "Cœur")
-    text = text.rstrip(';').rstrip(':').strip()
+    text = text.rstrip(';').rstrip(':').rstrip(',').strip()
     if not text.endswith(('.', '!', '?')):
         text += '.'
     return text
