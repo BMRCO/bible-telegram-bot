@@ -83,28 +83,29 @@ jobs:
           SCHEDULE="${{ github.event.schedule }}"
           MANUAL_MODE="${{ inputs.mode }}"
           MANUAL_CAT="${{ inputs.category }}"
-          DAY=$(date +%j)
-          IS_EVEN=$((DAY % 2))
 
+          # Calendrier : 4 reels / 2 images par jour (priorité aux reels pour l'algorithme)
+          # reels : 05h protection, 07h promise, 13h jesus, 19h psaume
+          # images : 10h proverbe, 17h prophetie
           if [ -n "$SCHEDULE" ]; then
             case "$SCHEDULE" in
               "3 5 * * *")
-                if [ $IS_EVEN -eq 0 ]; then echo "mode=image" >> $GITHUB_OUTPUT; else echo "mode=reel" >> $GITHUB_OUTPUT; fi
+                echo "mode=reel" >> $GITHUB_OUTPUT
                 echo "category=protection" >> $GITHUB_OUTPUT ;;
               "12 7 * * *")
-                if [ $IS_EVEN -eq 0 ]; then echo "mode=reel" >> $GITHUB_OUTPUT; else echo "mode=image" >> $GITHUB_OUTPUT; fi
+                echo "mode=reel" >> $GITHUB_OUTPUT
                 echo "category=promise" >> $GITHUB_OUTPUT ;;
               "0 10 * * *")
-                if [ $IS_EVEN -eq 0 ]; then echo "mode=image" >> $GITHUB_OUTPUT; else echo "mode=reel" >> $GITHUB_OUTPUT; fi
+                echo "mode=image" >> $GITHUB_OUTPUT
                 echo "category=proverbe" >> $GITHUB_OUTPUT ;;
               "45 13 * * *")
-                if [ $IS_EVEN -eq 0 ]; then echo "mode=reel" >> $GITHUB_OUTPUT; else echo "mode=image" >> $GITHUB_OUTPUT; fi
+                echo "mode=reel" >> $GITHUB_OUTPUT
                 echo "category=jesus" >> $GITHUB_OUTPUT ;;
               "41 17 * * *")
-                if [ $IS_EVEN -eq 0 ]; then echo "mode=image" >> $GITHUB_OUTPUT; else echo "mode=reel" >> $GITHUB_OUTPUT; fi
+                echo "mode=image" >> $GITHUB_OUTPUT
                 echo "category=prophetie" >> $GITHUB_OUTPUT ;;
               "8 19 * * *")
-                if [ $IS_EVEN -eq 0 ]; then echo "mode=reel" >> $GITHUB_OUTPUT; else echo "mode=image" >> $GITHUB_OUTPUT; fi
+                echo "mode=reel" >> $GITHUB_OUTPUT
                 echo "category=psaume" >> $GITHUB_OUTPUT ;;
               *)
                 echo "mode=image" >> $GITHUB_OUTPUT
