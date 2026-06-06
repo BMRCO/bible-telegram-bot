@@ -1,368 +1,1741 @@
 [
-  ["Genèse", 28, 15],
-  ["Exode", 14, 14],
-  ["Exode", 33, 14],
-  ["Deutéronome", 31, 6],
-  ["Deutéronome", 31, 8],
-  ["Deutéronome", 33, 25],
-  ["Deutéronome", 33, 27],
-  ["Josué", 1, 5],
-  ["Josué", 1, 7],
-  ["Josué", 1, 9],
-  ["1 Samuel", 12, 22],
-  ["1 Chroniques", 16, 11],
-  ["Néhémie", 8, 10],
-  ["Job", 5, 17],
-  ["Job", 8, 7],
-  ["Job", 11, 18],
-  ["Job", 22, 21],
-  ["Job", 23, 10],
-  ["Proverbes", 3, 5],
-  ["Proverbes", 3, 6],
-  ["Proverbes", 3, 9],
-  ["Proverbes", 3, 10],
-  ["Proverbes", 3, 24],
-  ["Proverbes", 16, 3],
-  ["Proverbes", 16, 7],
-  ["Proverbes", 16, 9],
-  ["Proverbes", 16, 20],
-  ["Proverbes", 18, 10],
-  ["Proverbes", 19, 21],
-  ["Proverbes", 19, 23],
-  ["Proverbes", 22, 4],
-  ["Proverbes", 28, 13],
-  ["Proverbes", 30, 5],
-  ["Ecclésiaste", 3, 11],
-  ["Cantique", 6, 3],
-  ["Ésaïe", 1, 18],
-  ["Ésaïe", 25, 1],
-  ["Ésaïe", 26, 3],
-  ["Ésaïe", 26, 4],
-  ["Ésaïe", 26, 12],
-  ["Ésaïe", 30, 15],
-  ["Ésaïe", 30, 18],
-  ["Ésaïe", 32, 17],
-  ["Ésaïe", 40, 8],
-  ["Ésaïe", 40, 11],
-  ["Ésaïe", 40, 28],
-  ["Ésaïe", 40, 29],
-  ["Ésaïe", 40, 30],
-  ["Ésaïe", 40, 31],
-  ["Ésaïe", 41, 10],
-  ["Ésaïe", 41, 13],
-  ["Ésaïe", 42, 16],
-  ["Ésaïe", 43, 1],
-  ["Ésaïe", 43, 2],
-  ["Ésaïe", 43, 4],
-  ["Ésaïe", 43, 18],
-  ["Ésaïe", 43, 19],
-  ["Ésaïe", 43, 25],
-  ["Ésaïe", 44, 3],
-  ["Ésaïe", 46, 4],
-  ["Ésaïe", 48, 17],
-  ["Ésaïe", 49, 15],
-  ["Ésaïe", 49, 16],
-  ["Ésaïe", 50, 4],
-  ["Ésaïe", 54, 10],
-  ["Ésaïe", 54, 17],
-  ["Ésaïe", 55, 1],
-  ["Ésaïe", 55, 6],
-  ["Ésaïe", 55, 7],
-  ["Ésaïe", 55, 8],
-  ["Ésaïe", 55, 9],
-  ["Ésaïe", 55, 10],
-  ["Ésaïe", 55, 11],
-  ["Ésaïe", 55, 12],
-  ["Ésaïe", 57, 15],
-  ["Ésaïe", 58, 9],
-  ["Ésaïe", 58, 11],
-  ["Ésaïe", 65, 24],
-  ["Jérémie", 17, 7],
-  ["Jérémie", 17, 8],
-  ["Jérémie", 29, 11],
-  ["Jérémie", 29, 12],
-  ["Jérémie", 29, 13],
-  ["Jérémie", 31, 3],
-  ["Jérémie", 32, 17],
-  ["Jérémie", 32, 27],
-  ["Jérémie", 33, 3],
-  ["Lamentations", 3, 22],
-  ["Lamentations", 3, 23],
-  ["Lamentations", 3, 24],
-  ["Lamentations", 3, 25],
-  ["Lamentations", 3, 26],
-  ["Lamentations", 3, 31],
-  ["Lamentations", 3, 32],
-  ["Lamentations", 3, 33],
-  ["Sophonie", 3, 17],
-  ["Nahum", 1, 7],
-  ["Habacuc", 3, 17],
-  ["Habacuc", 3, 18],
-  ["Habacuc", 3, 19],
-  ["Aggée", 2, 9],
-  ["Malachie", 3, 6],
-  ["Malachie", 3, 10],
-  ["Matthieu", 5, 3],
-  ["Matthieu", 5, 4],
-  ["Matthieu", 5, 5],
-  ["Matthieu", 5, 6],
-  ["Matthieu", 5, 7],
-  ["Matthieu", 5, 8],
-  ["Matthieu", 5, 9],
-  ["Matthieu", 5, 16],
-  ["Matthieu", 6, 6],
-  ["Matthieu", 6, 14],
-  ["Matthieu", 6, 19],
-  ["Matthieu", 6, 20],
-  ["Matthieu", 6, 21],
-  ["Matthieu", 6, 25],
-  ["Matthieu", 6, 26],
-  ["Matthieu", 6, 27],
-  ["Matthieu", 6, 33],
-  ["Matthieu", 6, 34],
-  ["Matthieu", 7, 7],
-  ["Matthieu", 7, 8],
-  ["Matthieu", 7, 11],
-  ["Matthieu", 11, 28],
-  ["Matthieu", 11, 29],
-  ["Matthieu", 11, 30],
-  ["Matthieu", 18, 19],
-  ["Matthieu", 18, 20],
-  ["Matthieu", 21, 22],
-  ["Matthieu", 28, 20],
-  ["Marc", 9, 23],
-  ["Marc", 10, 27],
-  ["Marc", 11, 24],
-  ["Luc", 1, 37],
-  ["Luc", 6, 37],
-  ["Luc", 6, 38],
-  ["Luc", 11, 9],
-  ["Luc", 11, 10],
-  ["Luc", 11, 13],
-  ["Luc", 12, 7],
-  ["Luc", 12, 22],
-  ["Luc", 12, 24],
-  ["Luc", 12, 25],
-  ["Luc", 12, 27],
-  ["Luc", 12, 31],
-  ["Luc", 12, 32],
-  ["Luc", 18, 27],
-  ["Jean", 3, 16],
-  ["Jean", 3, 17],
-  ["Jean", 4, 14],
-  ["Jean", 5, 24],
-  ["Jean", 6, 35],
-  ["Jean", 6, 37],
-  ["Jean", 6, 47],
-  ["Jean", 6, 51],
-  ["Jean", 7, 38],
-  ["Jean", 8, 12],
-  ["Jean", 8, 32],
-  ["Jean", 8, 36],
-  ["Jean", 10, 9],
-  ["Jean", 10, 10],
-  ["Jean", 10, 27],
-  ["Jean", 10, 28],
-  ["Jean", 10, 29],
-  ["Jean", 11, 25],
-  ["Jean", 11, 26],
-  ["Jean", 14, 1],
-  ["Jean", 14, 2],
-  ["Jean", 14, 3],
-  ["Jean", 14, 6],
-  ["Jean", 14, 13],
-  ["Jean", 14, 14],
-  ["Jean", 14, 16],
-  ["Jean", 14, 18],
-  ["Jean", 14, 23],
-  ["Jean", 14, 27],
-  ["Jean", 15, 5],
-  ["Jean", 15, 7],
-  ["Jean", 15, 11],
-  ["Jean", 16, 24],
-  ["Jean", 16, 33],
-  ["Jean", 17, 3],
-  ["Jean", 20, 29],
-  ["Actes", 1, 8],
-  ["Actes", 16, 31],
-  ["Romains", 5, 1],
-  ["Romains", 5, 3],
-  ["Romains", 5, 4],
-  ["Romains", 5, 5],
-  ["Romains", 5, 8],
-  ["Romains", 6, 23],
-  ["Romains", 8, 1],
-  ["Romains", 8, 14],
-  ["Romains", 8, 15],
-  ["Romains", 8, 16],
-  ["Romains", 8, 17],
-  ["Romains", 8, 18],
-  ["Romains", 8, 26],
-  ["Romains", 8, 28],
-  ["Romains", 8, 31],
-  ["Romains", 8, 32],
-  ["Romains", 8, 35],
-  ["Romains", 8, 37],
-  ["Romains", 8, 38],
-  ["Romains", 8, 39],
-  ["Romains", 10, 9],
-  ["Romains", 10, 10],
-  ["Romains", 10, 11],
-  ["Romains", 10, 13],
-  ["Romains", 12, 12],
-  ["Romains", 12, 21],
-  ["Romains", 15, 4],
-  ["Romains", 15, 13],
-  ["1 Corinthiens", 1, 9],
-  ["1 Corinthiens", 2, 9],
-  ["1 Corinthiens", 10, 13],
-  ["1 Corinthiens", 13, 4],
-  ["1 Corinthiens", 13, 7],
-  ["1 Corinthiens", 13, 8],
-  ["1 Corinthiens", 13, 13],
-  ["1 Corinthiens", 15, 57],
-  ["1 Corinthiens", 15, 58],
-  ["2 Corinthiens", 1, 3],
-  ["2 Corinthiens", 1, 4],
-  ["2 Corinthiens", 4, 8],
-  ["2 Corinthiens", 4, 9],
-  ["2 Corinthiens", 4, 16],
-  ["2 Corinthiens", 4, 17],
-  ["2 Corinthiens", 4, 18],
-  ["2 Corinthiens", 5, 7],
-  ["2 Corinthiens", 5, 17],
-  ["2 Corinthiens", 9, 7],
-  ["2 Corinthiens", 9, 8],
-  ["2 Corinthiens", 12, 9],
-  ["2 Corinthiens", 12, 10],
-  ["Galates", 2, 20],
-  ["Galates", 5, 22],
-  ["Galates", 5, 23],
-  ["Galates", 6, 7],
-  ["Galates", 6, 9],
-  ["Éphésiens", 1, 3],
-  ["Éphésiens", 1, 7],
-  ["Éphésiens", 2, 4],
-  ["Éphésiens", 2, 5],
-  ["Éphésiens", 2, 8],
-  ["Éphésiens", 2, 10],
-  ["Éphésiens", 3, 16],
-  ["Éphésiens", 3, 17],
-  ["Éphésiens", 3, 18],
-  ["Éphésiens", 3, 19],
-  ["Éphésiens", 3, 20],
-  ["Éphésiens", 3, 21],
-  ["Éphésiens", 4, 32],
-  ["Éphésiens", 6, 10],
-  ["Philippiens", 1, 6],
-  ["Philippiens", 1, 21],
-  ["Philippiens", 2, 13],
-  ["Philippiens", 3, 13],
-  ["Philippiens", 3, 14],
-  ["Philippiens", 4, 4],
-  ["Philippiens", 4, 6],
-  ["Philippiens", 4, 7],
-  ["Philippiens", 4, 8],
-  ["Philippiens", 4, 13],
-  ["Philippiens", 4, 19],
-  ["Colossiens", 1, 13],
-  ["Colossiens", 1, 14],
-  ["Colossiens", 2, 6],
-  ["Colossiens", 2, 7],
-  ["Colossiens", 3, 1],
-  ["Colossiens", 3, 2],
-  ["Colossiens", 3, 13],
-  ["Colossiens", 3, 15],
-  ["Colossiens", 3, 23],
-  ["1 Thessaloniciens", 5, 11],
-  ["1 Thessaloniciens", 5, 16],
-  ["1 Thessaloniciens", 5, 17],
-  ["1 Thessaloniciens", 5, 18],
-  ["1 Thessaloniciens", 5, 24],
-  ["2 Thessaloniciens", 3, 3],
-  ["1 Timothée", 1, 15],
-  ["1 Timothée", 4, 12],
-  ["1 Timothée", 6, 6],
-  ["1 Timothée", 6, 12],
-  ["2 Timothée", 1, 7],
-  ["2 Timothée", 1, 9],
-  ["2 Timothée", 2, 13],
-  ["2 Timothée", 4, 7],
-  ["2 Timothée", 4, 8],
-  ["Tite", 2, 11],
-  ["Tite", 3, 5],
-  ["Hébreux", 4, 12],
-  ["Hébreux", 4, 15],
-  ["Hébreux", 4, 16],
-  ["Hébreux", 6, 19],
-  ["Hébreux", 7, 25],
-  ["Hébreux", 9, 14],
-  ["Hébreux", 10, 22],
-  ["Hébreux", 10, 23],
-  ["Hébreux", 10, 35],
-  ["Hébreux", 10, 36],
-  ["Hébreux", 11, 1],
-  ["Hébreux", 11, 6],
-  ["Hébreux", 12, 1],
-  ["Hébreux", 12, 2],
-  ["Hébreux", 12, 6],
-  ["Hébreux", 12, 11],
-  ["Hébreux", 13, 5],
-  ["Hébreux", 13, 6],
-  ["Hébreux", 13, 8],
-  ["Hébreux", 13, 16],
-  ["Jacques", 1, 2],
-  ["Jacques", 1, 3],
-  ["Jacques", 1, 4],
-  ["Jacques", 1, 5],
-  ["Jacques", 1, 6],
-  ["Jacques", 1, 12],
-  ["Jacques", 1, 17],
-  ["Jacques", 1, 19],
-  ["Jacques", 1, 22],
-  ["Jacques", 4, 6],
-  ["Jacques", 4, 7],
-  ["Jacques", 4, 8],
-  ["Jacques", 4, 10],
-  ["Jacques", 5, 7],
-  ["Jacques", 5, 16],
-  ["1 Pierre", 1, 6],
-  ["1 Pierre", 1, 7],
-  ["1 Pierre", 1, 8],
-  ["1 Pierre", 1, 25],
-  ["1 Pierre", 2, 9],
-  ["1 Pierre", 2, 24],
-  ["1 Pierre", 3, 12],
-  ["1 Pierre", 4, 8],
-  ["1 Pierre", 5, 6],
-  ["1 Pierre", 5, 7],
-  ["1 Pierre", 5, 10],
-  ["2 Pierre", 1, 3],
-  ["2 Pierre", 3, 9],
-  ["1 Jean", 1, 7],
-  ["1 Jean", 1, 9],
-  ["1 Jean", 2, 17],
-  ["1 Jean", 3, 1],
-  ["1 Jean", 3, 22],
-  ["1 Jean", 4, 4],
-  ["1 Jean", 4, 7],
-  ["1 Jean", 4, 8],
-  ["1 Jean", 4, 9],
-  ["1 Jean", 4, 10],
-  ["1 Jean", 4, 11],
-  ["1 Jean", 4, 16],
-  ["1 Jean", 4, 18],
-  ["1 Jean", 4, 19],
-  ["1 Jean", 5, 4],
-  ["1 Jean", 5, 14],
-  ["1 Jean", 5, 15],
-  ["Jude", 1, 24],
-  ["Jude", 1, 25],
-  ["Apocalypse", 3, 8],
-  ["Apocalypse", 3, 20],
-  ["Apocalypse", 21, 4],
-  ["Apocalypse", 21, 5],
-  ["Apocalypse", 21, 6],
-  ["Apocalypse", 22, 12],
-  ["Apocalypse", 22, 17]
+  [
+    "Genèse",
+    28,
+    15
+  ],
+  [
+    "Exode",
+    14,
+    14
+  ],
+  [
+    "Exode",
+    33,
+    14
+  ],
+  [
+    "Deutéronome",
+    31,
+    6
+  ],
+  [
+    "Deutéronome",
+    31,
+    8
+  ],
+  [
+    "Deutéronome",
+    33,
+    25
+  ],
+  [
+    "Deutéronome",
+    33,
+    27
+  ],
+  [
+    "Josué",
+    1,
+    5
+  ],
+  [
+    "Josué",
+    1,
+    7
+  ],
+  [
+    "Josué",
+    1,
+    9
+  ],
+  [
+    "1 Samuel",
+    12,
+    22
+  ],
+  [
+    "1 Chroniques",
+    16,
+    11
+  ],
+  [
+    "Néhémie",
+    8,
+    10
+  ],
+  [
+    "Job",
+    5,
+    17
+  ],
+  [
+    "Job",
+    8,
+    7
+  ],
+  [
+    "Job",
+    11,
+    18
+  ],
+  [
+    "Job",
+    22,
+    21
+  ],
+  [
+    "Job",
+    23,
+    10
+  ],
+  [
+    "Proverbes",
+    3,
+    5
+  ],
+  [
+    "Proverbes",
+    3,
+    6
+  ],
+  [
+    "Proverbes",
+    3,
+    9
+  ],
+  [
+    "Proverbes",
+    3,
+    10
+  ],
+  [
+    "Proverbes",
+    3,
+    24
+  ],
+  [
+    "Proverbes",
+    16,
+    3
+  ],
+  [
+    "Proverbes",
+    16,
+    7
+  ],
+  [
+    "Proverbes",
+    16,
+    9
+  ],
+  [
+    "Proverbes",
+    16,
+    20
+  ],
+  [
+    "Proverbes",
+    18,
+    10
+  ],
+  [
+    "Proverbes",
+    19,
+    21
+  ],
+  [
+    "Proverbes",
+    19,
+    23
+  ],
+  [
+    "Proverbes",
+    22,
+    4
+  ],
+  [
+    "Proverbes",
+    28,
+    13
+  ],
+  [
+    "Proverbes",
+    30,
+    5
+  ],
+  [
+    "Ecclésiaste",
+    3,
+    11
+  ],
+  [
+    "Cantique",
+    6,
+    3
+  ],
+  [
+    "Ésaïe",
+    1,
+    18
+  ],
+  [
+    "Ésaïe",
+    25,
+    1
+  ],
+  [
+    "Ésaïe",
+    26,
+    3
+  ],
+  [
+    "Ésaïe",
+    26,
+    4
+  ],
+  [
+    "Ésaïe",
+    26,
+    12
+  ],
+  [
+    "Ésaïe",
+    30,
+    15
+  ],
+  [
+    "Ésaïe",
+    30,
+    18
+  ],
+  [
+    "Ésaïe",
+    32,
+    17
+  ],
+  [
+    "Ésaïe",
+    40,
+    8
+  ],
+  [
+    "Ésaïe",
+    40,
+    11
+  ],
+  [
+    "Ésaïe",
+    40,
+    28
+  ],
+  [
+    "Ésaïe",
+    40,
+    29
+  ],
+  [
+    "Ésaïe",
+    40,
+    31
+  ],
+  [
+    "Ésaïe",
+    41,
+    10
+  ],
+  [
+    "Ésaïe",
+    41,
+    13
+  ],
+  [
+    "Ésaïe",
+    42,
+    16
+  ],
+  [
+    "Ésaïe",
+    43,
+    1
+  ],
+  [
+    "Ésaïe",
+    43,
+    2
+  ],
+  [
+    "Ésaïe",
+    43,
+    4
+  ],
+  [
+    "Ésaïe",
+    43,
+    18
+  ],
+  [
+    "Ésaïe",
+    43,
+    19
+  ],
+  [
+    "Ésaïe",
+    43,
+    25
+  ],
+  [
+    "Ésaïe",
+    44,
+    3
+  ],
+  [
+    "Ésaïe",
+    46,
+    4
+  ],
+  [
+    "Ésaïe",
+    48,
+    17
+  ],
+  [
+    "Ésaïe",
+    49,
+    15
+  ],
+  [
+    "Ésaïe",
+    49,
+    16
+  ],
+  [
+    "Ésaïe",
+    50,
+    4
+  ],
+  [
+    "Ésaïe",
+    54,
+    10
+  ],
+  [
+    "Ésaïe",
+    54,
+    17
+  ],
+  [
+    "Ésaïe",
+    55,
+    1
+  ],
+  [
+    "Ésaïe",
+    55,
+    6
+  ],
+  [
+    "Ésaïe",
+    55,
+    7
+  ],
+  [
+    "Ésaïe",
+    55,
+    8
+  ],
+  [
+    "Ésaïe",
+    55,
+    9
+  ],
+  [
+    "Ésaïe",
+    55,
+    11
+  ],
+  [
+    "Ésaïe",
+    55,
+    12
+  ],
+  [
+    "Ésaïe",
+    57,
+    15
+  ],
+  [
+    "Ésaïe",
+    58,
+    9
+  ],
+  [
+    "Ésaïe",
+    58,
+    11
+  ],
+  [
+    "Ésaïe",
+    65,
+    24
+  ],
+  [
+    "Jérémie",
+    17,
+    7
+  ],
+  [
+    "Jérémie",
+    17,
+    8
+  ],
+  [
+    "Jérémie",
+    29,
+    11
+  ],
+  [
+    "Jérémie",
+    29,
+    12
+  ],
+  [
+    "Jérémie",
+    29,
+    13
+  ],
+  [
+    "Jérémie",
+    31,
+    3
+  ],
+  [
+    "Jérémie",
+    32,
+    17
+  ],
+  [
+    "Jérémie",
+    32,
+    27
+  ],
+  [
+    "Jérémie",
+    33,
+    3
+  ],
+  [
+    "Lamentations",
+    3,
+    22
+  ],
+  [
+    "Lamentations",
+    3,
+    23
+  ],
+  [
+    "Lamentations",
+    3,
+    24
+  ],
+  [
+    "Lamentations",
+    3,
+    25
+  ],
+  [
+    "Lamentations",
+    3,
+    26
+  ],
+  [
+    "Lamentations",
+    3,
+    31
+  ],
+  [
+    "Lamentations",
+    3,
+    32
+  ],
+  [
+    "Lamentations",
+    3,
+    33
+  ],
+  [
+    "Sophonie",
+    3,
+    17
+  ],
+  [
+    "Nahum",
+    1,
+    7
+  ],
+  [
+    "Habacuc",
+    3,
+    18
+  ],
+  [
+    "Habacuc",
+    3,
+    19
+  ],
+  [
+    "Aggée",
+    2,
+    9
+  ],
+  [
+    "Malachie",
+    3,
+    6
+  ],
+  [
+    "Malachie",
+    3,
+    10
+  ],
+  [
+    "Matthieu",
+    5,
+    3
+  ],
+  [
+    "Matthieu",
+    5,
+    4
+  ],
+  [
+    "Matthieu",
+    5,
+    5
+  ],
+  [
+    "Matthieu",
+    5,
+    6
+  ],
+  [
+    "Matthieu",
+    5,
+    7
+  ],
+  [
+    "Matthieu",
+    5,
+    8
+  ],
+  [
+    "Matthieu",
+    5,
+    9
+  ],
+  [
+    "Matthieu",
+    5,
+    16
+  ],
+  [
+    "Matthieu",
+    6,
+    6
+  ],
+  [
+    "Matthieu",
+    6,
+    14
+  ],
+  [
+    "Matthieu",
+    6,
+    19
+  ],
+  [
+    "Matthieu",
+    6,
+    20
+  ],
+  [
+    "Matthieu",
+    6,
+    21
+  ],
+  [
+    "Matthieu",
+    6,
+    25
+  ],
+  [
+    "Matthieu",
+    6,
+    26
+  ],
+  [
+    "Matthieu",
+    6,
+    33
+  ],
+  [
+    "Matthieu",
+    6,
+    34
+  ],
+  [
+    "Matthieu",
+    7,
+    7
+  ],
+  [
+    "Matthieu",
+    7,
+    8
+  ],
+  [
+    "Matthieu",
+    7,
+    11
+  ],
+  [
+    "Matthieu",
+    11,
+    28
+  ],
+  [
+    "Matthieu",
+    11,
+    29
+  ],
+  [
+    "Matthieu",
+    11,
+    30
+  ],
+  [
+    "Matthieu",
+    18,
+    19
+  ],
+  [
+    "Matthieu",
+    18,
+    20
+  ],
+  [
+    "Matthieu",
+    21,
+    22
+  ],
+  [
+    "Matthieu",
+    28,
+    20
+  ],
+  [
+    "Marc",
+    9,
+    23
+  ],
+  [
+    "Marc",
+    10,
+    27
+  ],
+  [
+    "Marc",
+    11,
+    24
+  ],
+  [
+    "Luc",
+    1,
+    37
+  ],
+  [
+    "Luc",
+    6,
+    37
+  ],
+  [
+    "Luc",
+    6,
+    38
+  ],
+  [
+    "Luc",
+    11,
+    9
+  ],
+  [
+    "Luc",
+    11,
+    10
+  ],
+  [
+    "Luc",
+    11,
+    13
+  ],
+  [
+    "Luc",
+    12,
+    7
+  ],
+  [
+    "Luc",
+    12,
+    22
+  ],
+  [
+    "Luc",
+    12,
+    24
+  ],
+  [
+    "Luc",
+    12,
+    27
+  ],
+  [
+    "Luc",
+    12,
+    31
+  ],
+  [
+    "Luc",
+    12,
+    32
+  ],
+  [
+    "Luc",
+    18,
+    27
+  ],
+  [
+    "Jean",
+    3,
+    16
+  ],
+  [
+    "Jean",
+    3,
+    17
+  ],
+  [
+    "Jean",
+    4,
+    14
+  ],
+  [
+    "Jean",
+    5,
+    24
+  ],
+  [
+    "Jean",
+    6,
+    35
+  ],
+  [
+    "Jean",
+    6,
+    37
+  ],
+  [
+    "Jean",
+    6,
+    47
+  ],
+  [
+    "Jean",
+    6,
+    51
+  ],
+  [
+    "Jean",
+    7,
+    38
+  ],
+  [
+    "Jean",
+    8,
+    12
+  ],
+  [
+    "Jean",
+    8,
+    32
+  ],
+  [
+    "Jean",
+    8,
+    36
+  ],
+  [
+    "Jean",
+    10,
+    9
+  ],
+  [
+    "Jean",
+    10,
+    10
+  ],
+  [
+    "Jean",
+    10,
+    27
+  ],
+  [
+    "Jean",
+    10,
+    28
+  ],
+  [
+    "Jean",
+    10,
+    29
+  ],
+  [
+    "Jean",
+    11,
+    25
+  ],
+  [
+    "Jean",
+    11,
+    26
+  ],
+  [
+    "Jean",
+    14,
+    1
+  ],
+  [
+    "Jean",
+    14,
+    2
+  ],
+  [
+    "Jean",
+    14,
+    3
+  ],
+  [
+    "Jean",
+    14,
+    6
+  ],
+  [
+    "Jean",
+    14,
+    13
+  ],
+  [
+    "Jean",
+    14,
+    14
+  ],
+  [
+    "Jean",
+    14,
+    16
+  ],
+  [
+    "Jean",
+    14,
+    18
+  ],
+  [
+    "Jean",
+    14,
+    23
+  ],
+  [
+    "Jean",
+    14,
+    27
+  ],
+  [
+    "Jean",
+    15,
+    5
+  ],
+  [
+    "Jean",
+    15,
+    7
+  ],
+  [
+    "Jean",
+    15,
+    11
+  ],
+  [
+    "Jean",
+    16,
+    24
+  ],
+  [
+    "Jean",
+    16,
+    33
+  ],
+  [
+    "Jean",
+    17,
+    3
+  ],
+  [
+    "Jean",
+    20,
+    29
+  ],
+  [
+    "Actes",
+    1,
+    8
+  ],
+  [
+    "Actes",
+    16,
+    31
+  ],
+  [
+    "Romains",
+    5,
+    1
+  ],
+  [
+    "Romains",
+    5,
+    3
+  ],
+  [
+    "Romains",
+    5,
+    5
+  ],
+  [
+    "Romains",
+    5,
+    8
+  ],
+  [
+    "Romains",
+    6,
+    23
+  ],
+  [
+    "Romains",
+    8,
+    1
+  ],
+  [
+    "Romains",
+    8,
+    14
+  ],
+  [
+    "Romains",
+    8,
+    15
+  ],
+  [
+    "Romains",
+    8,
+    16
+  ],
+  [
+    "Romains",
+    8,
+    17
+  ],
+  [
+    "Romains",
+    8,
+    18
+  ],
+  [
+    "Romains",
+    8,
+    26
+  ],
+  [
+    "Romains",
+    8,
+    28
+  ],
+  [
+    "Romains",
+    8,
+    31
+  ],
+  [
+    "Romains",
+    8,
+    32
+  ],
+  [
+    "Romains",
+    8,
+    35
+  ],
+  [
+    "Romains",
+    8,
+    37
+  ],
+  [
+    "Romains",
+    8,
+    38,
+    39
+  ],
+  [
+    "Romains",
+    10,
+    9
+  ],
+  [
+    "Romains",
+    10,
+    10
+  ],
+  [
+    "Romains",
+    10,
+    11
+  ],
+  [
+    "Romains",
+    10,
+    13
+  ],
+  [
+    "Romains",
+    12,
+    12
+  ],
+  [
+    "Romains",
+    12,
+    21
+  ],
+  [
+    "Romains",
+    15,
+    4
+  ],
+  [
+    "Romains",
+    15,
+    13
+  ],
+  [
+    "1 Corinthiens",
+    1,
+    9
+  ],
+  [
+    "1 Corinthiens",
+    2,
+    9
+  ],
+  [
+    "1 Corinthiens",
+    10,
+    13
+  ],
+  [
+    "1 Corinthiens",
+    13,
+    4
+  ],
+  [
+    "1 Corinthiens",
+    13,
+    7
+  ],
+  [
+    "1 Corinthiens",
+    13,
+    8
+  ],
+  [
+    "1 Corinthiens",
+    13,
+    13
+  ],
+  [
+    "1 Corinthiens",
+    15,
+    57
+  ],
+  [
+    "1 Corinthiens",
+    15,
+    58
+  ],
+  [
+    "2 Corinthiens",
+    1,
+    3
+  ],
+  [
+    "2 Corinthiens",
+    1,
+    4
+  ],
+  [
+    "2 Corinthiens",
+    4,
+    8
+  ],
+  [
+    "2 Corinthiens",
+    4,
+    16
+  ],
+  [
+    "2 Corinthiens",
+    4,
+    17
+  ],
+  [
+    "2 Corinthiens",
+    4,
+    18
+  ],
+  [
+    "2 Corinthiens",
+    5,
+    7
+  ],
+  [
+    "2 Corinthiens",
+    5,
+    17
+  ],
+  [
+    "2 Corinthiens",
+    9,
+    7
+  ],
+  [
+    "2 Corinthiens",
+    9,
+    8
+  ],
+  [
+    "2 Corinthiens",
+    12,
+    9
+  ],
+  [
+    "2 Corinthiens",
+    12,
+    10
+  ],
+  [
+    "Galates",
+    2,
+    20
+  ],
+  [
+    "Galates",
+    5,
+    22
+  ],
+  [
+    "Galates",
+    6,
+    7
+  ],
+  [
+    "Galates",
+    6,
+    9
+  ],
+  [
+    "Éphésiens",
+    1,
+    3
+  ],
+  [
+    "Éphésiens",
+    1,
+    7
+  ],
+  [
+    "Éphésiens",
+    2,
+    8
+  ],
+  [
+    "Éphésiens",
+    2,
+    10
+  ],
+  [
+    "Éphésiens",
+    3,
+    16,
+    17
+  ],
+  [
+    "Éphésiens",
+    3,
+    18,
+    19
+  ],
+  [
+    "Éphésiens",
+    3,
+    20,
+    21
+  ],
+  [
+    "Éphésiens",
+    4,
+    32
+  ],
+  [
+    "Éphésiens",
+    6,
+    10
+  ],
+  [
+    "Philippiens",
+    1,
+    6
+  ],
+  [
+    "Philippiens",
+    1,
+    21
+  ],
+  [
+    "Philippiens",
+    2,
+    13
+  ],
+  [
+    "Philippiens",
+    3,
+    13,
+    14
+  ],
+  [
+    "Philippiens",
+    4,
+    4
+  ],
+  [
+    "Philippiens",
+    4,
+    6
+  ],
+  [
+    "Philippiens",
+    4,
+    7
+  ],
+  [
+    "Philippiens",
+    4,
+    8
+  ],
+  [
+    "Philippiens",
+    4,
+    13
+  ],
+  [
+    "Philippiens",
+    4,
+    19
+  ],
+  [
+    "Colossiens",
+    1,
+    13,
+    14
+  ],
+  [
+    "Colossiens",
+    2,
+    6,
+    7
+  ],
+  [
+    "Colossiens",
+    3,
+    1
+  ],
+  [
+    "Colossiens",
+    3,
+    2
+  ],
+  [
+    "Colossiens",
+    3,
+    13
+  ],
+  [
+    "Colossiens",
+    3,
+    15
+  ],
+  [
+    "Colossiens",
+    3,
+    23
+  ],
+  [
+    "1 Thessaloniciens",
+    5,
+    11
+  ],
+  [
+    "1 Thessaloniciens",
+    5,
+    16
+  ],
+  [
+    "1 Thessaloniciens",
+    5,
+    17
+  ],
+  [
+    "1 Thessaloniciens",
+    5,
+    18
+  ],
+  [
+    "1 Thessaloniciens",
+    5,
+    24
+  ],
+  [
+    "2 Thessaloniciens",
+    3,
+    3
+  ],
+  [
+    "1 Timothée",
+    1,
+    15
+  ],
+  [
+    "1 Timothée",
+    4,
+    12
+  ],
+  [
+    "1 Timothée",
+    6,
+    6
+  ],
+  [
+    "1 Timothée",
+    6,
+    12
+  ],
+  [
+    "2 Timothée",
+    1,
+    7
+  ],
+  [
+    "2 Timothée",
+    1,
+    9
+  ],
+  [
+    "2 Timothée",
+    2,
+    13
+  ],
+  [
+    "2 Timothée",
+    4,
+    7
+  ],
+  [
+    "2 Timothée",
+    4,
+    8
+  ],
+  [
+    "Tite",
+    2,
+    11
+  ],
+  [
+    "Tite",
+    3,
+    5
+  ],
+  [
+    "Hébreux",
+    4,
+    12
+  ],
+  [
+    "Hébreux",
+    4,
+    15
+  ],
+  [
+    "Hébreux",
+    4,
+    16
+  ],
+  [
+    "Hébreux",
+    6,
+    19
+  ],
+  [
+    "Hébreux",
+    7,
+    25
+  ],
+  [
+    "Hébreux",
+    9,
+    14
+  ],
+  [
+    "Hébreux",
+    10,
+    22
+  ],
+  [
+    "Hébreux",
+    10,
+    23
+  ],
+  [
+    "Hébreux",
+    10,
+    35
+  ],
+  [
+    "Hébreux",
+    10,
+    36
+  ],
+  [
+    "Hébreux",
+    11,
+    1
+  ],
+  [
+    "Hébreux",
+    11,
+    6
+  ],
+  [
+    "Hébreux",
+    12,
+    1
+  ],
+  [
+    "Hébreux",
+    12,
+    2
+  ],
+  [
+    "Hébreux",
+    12,
+    6
+  ],
+  [
+    "Hébreux",
+    12,
+    11
+  ],
+  [
+    "Hébreux",
+    13,
+    5
+  ],
+  [
+    "Hébreux",
+    13,
+    6
+  ],
+  [
+    "Hébreux",
+    13,
+    8
+  ],
+  [
+    "Hébreux",
+    13,
+    16
+  ],
+  [
+    "Jacques",
+    1,
+    2
+  ],
+  [
+    "Jacques",
+    1,
+    3
+  ],
+  [
+    "Jacques",
+    1,
+    4
+  ],
+  [
+    "Jacques",
+    1,
+    5
+  ],
+  [
+    "Jacques",
+    1,
+    6
+  ],
+  [
+    "Jacques",
+    1,
+    12
+  ],
+  [
+    "Jacques",
+    1,
+    17
+  ],
+  [
+    "Jacques",
+    1,
+    19
+  ],
+  [
+    "Jacques",
+    1,
+    22
+  ],
+  [
+    "Jacques",
+    4,
+    6
+  ],
+  [
+    "Jacques",
+    4,
+    7
+  ],
+  [
+    "Jacques",
+    4,
+    8
+  ],
+  [
+    "Jacques",
+    4,
+    10
+  ],
+  [
+    "Jacques",
+    5,
+    7
+  ],
+  [
+    "Jacques",
+    5,
+    16
+  ],
+  [
+    "1 Pierre",
+    1,
+    6,
+    8
+  ],
+  [
+    "1 Pierre",
+    1,
+    25
+  ],
+  [
+    "1 Pierre",
+    2,
+    9
+  ],
+  [
+    "1 Pierre",
+    2,
+    24
+  ],
+  [
+    "1 Pierre",
+    3,
+    12
+  ],
+  [
+    "1 Pierre",
+    4,
+    8
+  ],
+  [
+    "1 Pierre",
+    5,
+    6
+  ],
+  [
+    "1 Pierre",
+    5,
+    7
+  ],
+  [
+    "1 Pierre",
+    5,
+    10
+  ],
+  [
+    "2 Pierre",
+    1,
+    3
+  ],
+  [
+    "2 Pierre",
+    3,
+    9
+  ],
+  [
+    "1 Jean",
+    1,
+    7
+  ],
+  [
+    "1 Jean",
+    1,
+    9
+  ],
+  [
+    "1 Jean",
+    2,
+    17
+  ],
+  [
+    "1 Jean",
+    3,
+    1
+  ],
+  [
+    "1 Jean",
+    3,
+    22
+  ],
+  [
+    "1 Jean",
+    4,
+    4
+  ],
+  [
+    "1 Jean",
+    4,
+    7
+  ],
+  [
+    "1 Jean",
+    4,
+    8
+  ],
+  [
+    "1 Jean",
+    4,
+    9
+  ],
+  [
+    "1 Jean",
+    4,
+    10
+  ],
+  [
+    "1 Jean",
+    4,
+    11
+  ],
+  [
+    "1 Jean",
+    4,
+    16
+  ],
+  [
+    "1 Jean",
+    4,
+    18
+  ],
+  [
+    "1 Jean",
+    4,
+    19
+  ],
+  [
+    "1 Jean",
+    5,
+    4
+  ],
+  [
+    "1 Jean",
+    5,
+    14
+  ],
+  [
+    "1 Jean",
+    5,
+    15
+  ],
+  [
+    "Jude",
+    1,
+    24,
+    25
+  ],
+  [
+    "Apocalypse",
+    3,
+    8
+  ],
+  [
+    "Apocalypse",
+    3,
+    20
+  ],
+  [
+    "Apocalypse",
+    21,
+    4
+  ],
+  [
+    "Apocalypse",
+    21,
+    5
+  ],
+  [
+    "Apocalypse",
+    21,
+    6
+  ],
+  [
+    "Apocalypse",
+    22,
+    12
+  ],
+  [
+    "Apocalypse",
+    22,
+    17
+  ]
 ]
