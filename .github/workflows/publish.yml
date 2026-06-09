@@ -4,7 +4,7 @@ on:
   schedule:
     - cron: '3 5 * * *'
     - cron: '12 7 * * *'
-    - cron: '0 10 * * *'
+    - cron: '7 10 * * *'
     - cron: '45 13 * * *'
     - cron: '41 17 * * *'
     - cron: '8 19 * * *'
@@ -21,7 +21,7 @@ on:
           - reel
           - parabole
       category:
-        description: 'Catégorie (laisser vide pour rotation auto)'
+        description: 'CatÃ©gorie (laisser vide pour rotation auto)'
         required: false
         type: choice
         default: ''
@@ -50,8 +50,10 @@ on:
 permissions:
   contents: write
 
+# Un groupe DISTINCT par horaire : les runs ne s'annulent plus entre elles.
+# (Avec un seul groupe partagÃ©, une run du matin retardÃ©e Ã©tait annulÃ©e par la suivante.)
 concurrency:
-  group: verses-post
+  group: verses-post-${{ github.event.schedule || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -97,7 +99,7 @@ jobs:
               "12 7 * * *")
                 if [ $IS_EVEN -eq 0 ]; then echo "mode=reel" >> $GITHUB_OUTPUT; else echo "mode=image" >> $GITHUB_OUTPUT; fi
                 echo "category=promise" >> $GITHUB_OUTPUT ;;
-              "0 10 * * *")
+              "7 10 * * *")
                 if [ $IS_EVEN -eq 0 ]; then echo "mode=image" >> $GITHUB_OUTPUT; else echo "mode=reel" >> $GITHUB_OUTPUT; fi
                 echo "category=proverbe" >> $GITHUB_OUTPUT ;;
               "45 13 * * *")
@@ -160,6 +162,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash || true
           git add progress.json
           git diff --staged --quiet || git commit -m "Update progress [skip ci]"
           git push || true
