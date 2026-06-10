@@ -1,0 +1,72 @@
+name: Méditation thématique
+
+on:
+  schedule:
+    # 16h13 UTC ≈ 18h13 FR (verão). Com o atraso do GitHub Actions deve cair à noite.
+    # AJUSTA este horário depois de veres a que horas cai na realidade.
+    - cron: '13 16 * * *'
+  workflow_dispatch:
+    inputs:
+      theme:
+        description: 'Thème (protection, paix, amour, esperance, priere, promesses, sagesse, jesus, psaumes, propheties). Vide = rotation auto.'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+# Grupo próprio e único por run — nunca cancela nem é cancelado por outra run.
+concurrency:
+  group: thematic-post-${{ github.event.schedule || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  thematic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Current UTC time
+        run: date -u
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pillow requests numpy google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Run thematic meditation
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: |
+          THEME="${{ inputs.theme }}"
+          if [ -n "$THEME" ]; then
+            python thematic_meditation.py "$THEME"
+          else
+            python thematic_meditation.py
+          fi
+
+      - name: Commit progress
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash || true
+          git add progress_thematic.json
+          git diff --staged --quiet || git commit -m "Update thematic progress [skip ci]" || true
+          git push || true
