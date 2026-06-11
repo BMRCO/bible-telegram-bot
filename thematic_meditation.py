@@ -1,17 +1,17 @@
 """
 thematic_meditation.py
 ======================
-Gera vídeo horizontal 1920×1080 de meditação TEMÁTICA (7 versículos sobre um tema),
-no mesmo estilo das meditações de Salmos, mas com COR POR TEMA.
+Gera v\u00eddeo horizontal 1920\u00d71080 de medita\u00e7\u00e3o TEM\u00c1TICA (7 vers\u00edculos sobre um tema),
+no mesmo estilo das medita\u00e7\u00f5es de Salmos, mas com COR POR TEMA.
 Publica em YouTube + Facebook + Telegram.
 
-Rotação automática: a cada execução, avança um tema (protection → paix → … ) e
-puxa os 7 versículos seguintes desse tema (cicla por todos com o tempo).
+Rota\u00e7\u00e3o autom\u00e1tica: a cada execu\u00e7\u00e3o, avan\u00e7a um tema (protection \u2192 paix \u2192 \u2026 ) e
+puxa os 7 vers\u00edculos seguintes desse tema (cicla por todos com o tempo).
 
 Uso:
-    python thematic_meditation.py                 → tema seguinte (rotação automática)
-    python thematic_meditation.py protection      → tema específico (avança o seu offset)
-    python thematic_meditation.py paix 0          → tema 'paix' a começar no índice 0
+    python thematic_meditation.py                 \u2192 tema seguinte (rota\u00e7\u00e3o autom\u00e1tica)
+    python thematic_meditation.py protection      \u2192 tema espec\u00edfico (avan\u00e7a o seu offset)
+    python thematic_meditation.py paix 0          \u2192 tema 'paix' a come\u00e7ar no \u00edndice 0
 
 Estado salvo em: progress_thematic.json
 """
@@ -25,13 +25,13 @@ import shutil
 import requests
 from PIL import Image, ImageDraw, ImageFont
 
-# Reutiliza utilitários do bot
+# Reutiliza utilitarios do bot
 from bot import (
     load_json, save_json, clean_text, strip_rubric,
     BIBLE_FILE, APP_URL, WATERMARK,
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
 )
-# Reutiliza helpers de render + música das meditações de Salmos
+# Reutiliza helpers de render + musica das meditacoes de Salmos
 from psaume_meditation import (
     ease, gradient_bg, wrap, autosize_font, pick_safe_music,
     W, H, FPS, SECS_INTRO, SECS_OUTRO, FADE_DURATION,
@@ -47,65 +47,65 @@ FB_PAGE_ID       = os.environ.get("FB_PAGE_ID", "1018605031335601")
 FB_PAGE_TOKEN    = os.environ.get("FB_PAGE_TOKEN", "")
 
 PROGRESS_FILE   = "progress_thematic.json"
-THEMATIC_VERSES = 7      # versículos por vídeo
-SECS_PER_VERSE  = 11     # ritmo de meditação
+THEMATIC_VERSES = 7      # versiculos por video
+SECS_PER_VERSE  = 11     # ritmo de meditacao
 
 BOOK_NAME_MAP = {"Psaumes": "Psaume"}
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  Definição dos temas: ficheiro, título, emoji, hashtag e PALETA (cor por tema)
+# 
+#  Definicao dos temas: ficheiro, titulo, emoji, hashtag e PALETA (cor por tema)
 #  Paleta = (BG_TOP, BG_BOTTOM, ACCENT, ACCENT_BRIGHT, WHITE, SIL)
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 THEMES = {
     "protection": dict(
         file="protection_curated.json", title="La protection de Dieu",
-        lines=["La protection", "de Dieu"], emoji="🛡️", tag="Protection",
+        lines=["La protection", "de Dieu"], emoji="\U0001f6e1\ufe0f", tag="Protection",
         palette=((30, 12, 16), (16, 6, 9), (196, 112, 124), (216, 140, 150), (245, 238, 235), (150, 110, 118))),
     "paix": dict(
         file="paix_curated.json", title="La paix de Dieu",
-        lines=["La paix", "de Dieu"], emoji="🕊️", tag="Paix",
+        lines=["La paix", "de Dieu"], emoji="\U0001f54a\ufe0f", tag="Paix",
         palette=((8, 30, 28), (4, 16, 15), (116, 190, 178), (150, 215, 205), (235, 250, 248), (110, 160, 155))),
     "amour": dict(
         file="amour_curated.json", title="L'amour de Dieu",
-        lines=["L'amour", "de Dieu"], emoji="❤️", tag="Amour",
+        lines=["L'amour", "de Dieu"], emoji="\u2764\ufe0f", tag="Amour",
         palette=((32, 12, 18), (18, 6, 10), (218, 140, 156), (235, 165, 180), (250, 238, 240), (160, 115, 128))),
     "esperance": dict(
-        file="esperance_curated.json", title="L'espérance en Dieu",
-        lines=["L'espérance", "en Dieu"], emoji="🌅", tag="Espérance",
+        file="esperance_curated.json", title="L'esp\u00e9rance en Dieu",
+        lines=["L'esp\u00e9rance", "en Dieu"], emoji="\U0001f305", tag="Esp\u00e9rance",
         palette=((10, 28, 18), (5, 16, 10), (150, 200, 150), (180, 220, 175), (240, 248, 238), (120, 160, 125))),
     "priere": dict(
-        file="priere_curated.json", title="La prière",
-        lines=["La prière", ""], emoji="🙏", tag="Prière",
+        file="priere_curated.json", title="La pri\u00e8re",
+        lines=["La pri\u00e8re", ""], emoji="\U0001f64f", tag="Pri\u00e8re",
         palette=((24, 12, 40), (12, 6, 24), (178, 146, 210), (200, 175, 228), (245, 240, 250), (145, 125, 170))),
     "promesses": dict(
         file="promesses_curated.json", title="Les promesses de Dieu",
-        lines=["Les promesses", "de Dieu"], emoji="🌿", tag="Promesses",
+        lines=["Les promesses", "de Dieu"], emoji="\U0001f33f", tag="Promesses",
         palette=((8, 26, 18), (4, 14, 10), (120, 184, 142), (150, 205, 165), (238, 248, 240), (110, 150, 125))),
     "sagesse": dict(
         file="proverbes_curated.json", title="La sagesse de la Parole",
-        lines=["La sagesse", "de la Parole"], emoji="💡", tag="Sagesse",
+        lines=["La sagesse", "de la Parole"], emoji="\U0001f4a1", tag="Sagesse",
         palette=((28, 20, 8), (16, 11, 4), (212, 175, 90), (232, 196, 120), (245, 240, 228), (160, 140, 100))),
     "jesus": dict(
-        file="jesus_curated.json", title="Les paroles de Jésus",
-        lines=["Les paroles", "de Jésus"], emoji="✝️", tag="Jésus",
+        file="jesus_curated.json", title="Les paroles de J\u00e9sus",
+        lines=["Les paroles", "de J\u00e9sus"], emoji="\u271d\ufe0f", tag="J\u00e9sus",
         palette=((10, 16, 42), (5, 9, 24), (150, 180, 225), (180, 205, 240), (240, 244, 252), (130, 150, 185))),
     "psaumes": dict(
-        file="psaumes_curated.json", title="Méditation des Psaumes",
-        lines=["Méditation", "des Psaumes"], emoji="🎵", tag="Psaumes",
+        file="psaumes_curated.json", title="M\u00e9ditation des Psaumes",
+        lines=["M\u00e9ditation", "des Psaumes"], emoji="\U0001f3b5", tag="Psaumes",
         palette=((8, 14, 38), (4, 8, 24), (160, 190, 220), (185, 210, 235), (240, 245, 255), (120, 150, 180))),
     "propheties": dict(
-        file="propheties_curated.json", title="Les prophéties de la Parole",
-        lines=["Les prophéties", "de la Parole"], emoji="📯", tag="Prophéties",
+        file="propheties_curated.json", title="Les proph\u00e9ties de la Parole",
+        lines=["Les proph\u00e9ties", "de la Parole"], emoji="\U0001f4ef", tag="Proph\u00e9ties",
         palette=((20, 8, 34), (10, 4, 20), (170, 130, 200), (195, 160, 222), (244, 238, 250), (140, 115, 165))),
 }
 
-# Ordem de rotação automática (um tema por dia). Edita à vontade — "depois vou alimentando".
+# Ordem de rotacao automatica (um tema por dia). Edita a vontade  "depois vou alimentando".
 ROTATION = ["protection", "paix", "esperance", "amour", "priere", "promesses", "sagesse"]
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  Carregar versículos de um tema
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+#  Carregar versiculos de um tema
+# 
 _BIBLE_IDX = None
 
 def _bible_index():
@@ -120,11 +120,11 @@ def _bible_index():
 
 
 def _verse_text(book, ch, vs):
-    """Texto limpo de um versículo ou intervalo (junta vs)."""
+    """Texto limpo de um vers\u00edculo ou intervalo (junta vs)."""
     idx = _bible_index()
     bk = BOOK_NAME_MAP.get(book, book)
     if bk not in idx:
-        # fallback insensível à grafia
+        # fallback insensivel a grafia
         for k in idx:
             if k.lower() == bk.lower():
                 bk = k
@@ -140,7 +140,7 @@ def _ref_label(book, ch, vs):
 
 
 def load_theme_verses(theme_key, n, offset):
-    """Devolve (total_entradas, [(ref, texto), ...]) — n versículos a partir de offset, ciclando."""
+    """Devolve (total_entradas, [(ref, texto), ...]) \u2014 n vers\u00edculos a partir de offset, ciclando."""
     entries = load_json(THEMES[theme_key]["file"])
     total = len(entries)
     out = []
@@ -152,9 +152,9 @@ def load_theme_verses(theme_key, n, offset):
     return total, out
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  Render do vídeo
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+#  Render do video
+# 
 def make_thematic_video(theme_key, verses, rot):
     th = THEMES[theme_key]
     BG_TOP, BG_BOTTOM, ACCENT, ACCENT_BRIGHT, WHITE, SIL = th["palette"]
@@ -166,12 +166,12 @@ def make_thematic_video(theme_key, verses, rot):
     MAX_TW = W - BORDER * 2 - CARD_PAD * 2
     max_text_h = int((H - BORDER * 2) * 0.55)
 
-    # Pré-cálculo de layout por versículo
+    # Pre-calculo de layout por versiculo
     tmp = Image.new("RGB", (10, 10))
     d_tmp = ImageDraw.Draw(tmp)
     layouts = []
     for ref, text in verses:
-        text_q = f"« {text.rstrip('.')} »"
+        text_q = f"\u00ab {text.rstrip('.')} \u00bb"
         fv, lines, lh = autosize_font(d_tmp, text_q, MAX_TW, max_text_h)
         layouts.append((ref, fv, lines, lh))
 
@@ -214,12 +214,12 @@ def make_thematic_video(theme_key, verses, rot):
                 lw = draw.textlength(ln, font=f_title)
                 draw.text(((W - lw) / 2, ty), ln, font=f_title, fill=lerp(BG_TOP, ACCENT_BRIGHT, a))
                 ty += 118
-            sub = "Versets bibliques · LSG 1910"
+            sub = "Versets bibliques \u00b7 LSG 1910"
             sw = draw.textlength(sub, font=f_sub)
             draw.line([((W - 460) // 2, ty + 20), ((W + 460) // 2, ty + 20)], fill=lerp(BG_TOP, SIL, a, 0.8), width=1)
             draw.text(((W - sw) / 2, ty + 40), sub, font=f_sub, fill=lerp(BG_TOP, SIL, a, 0.85))
 
-        # ---------- VERSÍCULOS ----------
+        # ---------- VERSICULOS ----------
         elif s < SECS_INTRO + n * SECS_PER_VERSE:
             vs_s = s - SECS_INTRO
             vi = min(int(vs_s / SECS_PER_VERSE), n - 1)
@@ -243,7 +243,7 @@ def make_thematic_video(theme_key, verses, rot):
                 draw.text((x, ty), line, font=fv, fill=col_text)
                 ty += lh
 
-            # Rodapé: divisória + referência + LSG (esq.) · marca (dir.)
+            # Rodape: divisoria + referencia + LSG (esq.)  marca (dir.)
             col_acc = lerp(BG_TOP, ACCENT, a, 0.95)
             lx = BORDER + CARD_PAD
             draw.line([lx, H - BORDER - 150, lx + 230, H - BORDER - 150], fill=col_acc, width=2)
@@ -256,14 +256,14 @@ def make_thematic_video(theme_key, verses, rot):
         else:
             o_s = s - SECS_INTRO - n * SECS_PER_VERSE
             a = ease(o_s / 1.0) if o_s < 1.0 else 1.0
-            msg = "Lisez la Bible complète gratuitement"
+            msg = "Lisez la Bible compl\u00e8te gratuitement"
             mw = draw.textlength(msg, font=f_sub)
             draw.text(((W - mw) / 2, H // 2 - 130), msg, font=f_sub, fill=lerp(BG_TOP, SIL, a, 0.85))
             app = "LaBible.app"
             aw = draw.textlength(app, font=f_outro)
             draw.text(((W - aw) / 2 + 3, H // 2 - 30 + 3), app, font=f_outro, fill=(0, 0, 0))
             draw.text(((W - aw) / 2, H // 2 - 30), app, font=f_outro, fill=lerp(BG_TOP, ACCENT_BRIGHT, a))
-            sub2 = "Gratuit · Sans publicité · LSG 1910"
+            sub2 = "Gratuit \u00b7 Sans publicit\u00e9 \u00b7 LSG 1910"
             s2w = draw.textlength(sub2, font=f_outrosub)
             draw.text(((W - s2w) / 2, H // 2 + 110), sub2, font=f_outrosub, fill=lerp(BG_TOP, SIL, a, 0.8))
 
@@ -271,9 +271,9 @@ def make_thematic_video(theme_key, verses, rot):
 
     out_path = f"meditation_thematique_{theme_key}.mp4"
     dur = SECS_INTRO + n * SECS_PER_VERSE + SECS_OUTRO
-    print(f"⏱️  Duração: {dur}s ({dur/60:.1f} min)")
+    print(f"\u23f1\ufe0f  Dura\u00e7\u00e3o: {dur}s ({dur/60:.1f} min)")
 
-    music = pick_safe_music(rot + 1)   # rotação de música (reaproveita lógica anti-Content-ID)
+    music = pick_safe_music(rot + 1)   # rotacao de musica (reaproveita logica anti-Content-ID)
     if music:
         subprocess.run([
             'ffmpeg', '-framerate', str(FPS), '-i', 'frames/frame_%04d.png',
@@ -289,32 +289,32 @@ def make_thematic_video(theme_key, verses, rot):
         ], capture_output=True)
 
     shutil.rmtree("frames", ignore_errors=True)
-    print(f"✅ Vídeo: {out_path}")
+    print(f"\u2705 V\u00eddeo: {out_path}")
     return out_path
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  Publicação
-# ─────────────────────────────────────────────────────────────────────────────
+# 
+#  Publicacao
+# 
 def _refs_line(verses):
-    return " · ".join(ref for ref, _ in verses)
+    return " \u00b7 ".join(ref for ref, _ in verses)
 
 
 def post_to_telegram(video_path, theme_key, verses):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHANNEL:
-        print("⚠️  Telegram credentials ausentes.")
+        print("\u26a0\ufe0f  Telegram credentials ausentes.")
         return
     th = THEMES[theme_key]
     caption = (
         f"{th['emoji']} <b>{th['title']}</b>\n"
         f"Bible Louis Segond 1910\n\n"
         f"{_refs_line(verses)}\n\n"
-        f"Prenez un moment pour méditer la Parole. 🙏\n\n"
-        f"📖 labible.app\n\n"
-        f"#LaBible #{th['tag']} #Méditation #LSG1910"
+        f"Prenez un moment pour m\u00e9diter la Parole. \U0001f64f\n\n"
+        f"\U0001f4d6 labible.app\n\n"
+        f"#LaBible #{th['tag']} #M\u00e9ditation #LSG1910"
     )
     reply_markup = json.dumps({"inline_keyboard": [[
-        {"text": "📖 Lire dans LaBible.app", "url": "https://t.me/BIBLE_APP_BOT/labible"}
+        {"text": "\U0001f4d6 Lire dans LaBible.app", "url": "https://t.me/BIBLE_APP_BOT/labible"}
     ]]})
     try:
         with open(video_path, "rb") as f:
@@ -324,23 +324,23 @@ def post_to_telegram(video_path, theme_key, verses):
                       "parse_mode": "HTML", "disable_web_page_preview": True,
                       "reply_markup": reply_markup},
                 files={"video": f}, timeout=180)
-        print("✅ Telegram publié" if r.status_code == 200 else f"❌ Telegram ({r.status_code}): {r.text[:200]}")
+        print("\u2705 Telegram publi\u00e9" if r.status_code == 200 else f"\u274c Telegram ({r.status_code}): {r.text[:200]}")
     except Exception as e:
-        print(f"❌ Telegram: {e}")
+        print(f"\u274c Telegram: {e}")
 
 
 def post_to_facebook(video_path, theme_key, verses):
     if not FB_PAGE_TOKEN:
-        print("⚠️  FB_PAGE_TOKEN ausente.")
+        print("\u26a0\ufe0f  FB_PAGE_TOKEN ausente.")
         return
     th = THEMES[theme_key]
     desc = (
         f"{th['emoji']} {th['title']}\n"
         f"Bible Louis Segond 1910\n\n"
         f"{_refs_line(verses)}\n\n"
-        f"Prenez un moment pour méditer la Parole de Dieu. 🙏\n\n"
-        f"📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n"
-        f"#Bible #{th['tag']} #Méditation #LSG1910 #ParoleDeDieu #Foi"
+        f"Prenez un moment pour m\u00e9diter la Parole de Dieu. \U0001f64f\n\n"
+        f"\U0001f4d6 Lisez la Bible compl\u00e8te gratuitement \u2192 {APP_URL}\n\n"
+        f"#Bible #{th['tag']} #M\u00e9ditation #LSG1910 #ParoleDeDieu #Foi"
     )
     try:
         with open(video_path, "rb") as f:
@@ -349,14 +349,14 @@ def post_to_facebook(video_path, theme_key, verses):
                 data={"title": f"{th['title']} | LSG1910",
                       "description": desc, "access_token": FB_PAGE_TOKEN},
                 files={"source": f}, timeout=300)
-        print(f"✅ Facebook publié — {r.json().get('id')}" if r.status_code == 200 else f"❌ Facebook ({r.status_code}): {r.text[:200]}")
+        print(f"\u2705 Facebook publi\u00e9 \u2014 {r.json().get('id')}" if r.status_code == 200 else f"\u274c Facebook ({r.status_code}): {r.text[:200]}")
     except Exception as e:
-        print(f"❌ Facebook: {e}")
+        print(f"\u274c Facebook: {e}")
 
 
 def upload_to_youtube(video_path, theme_key, verses):
     if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
-        print("⚠️  Credentials YouTube ausentes.")
+        print("\u26a0\ufe0f  Credentials YouTube ausentes.")
         return None
     from google.oauth2.credentials import Credentials
     from googleapiclient.discovery import build
@@ -371,21 +371,21 @@ def upload_to_youtube(video_path, theme_key, verses):
     youtube = build("youtube", "v3", credentials=creds)
 
     th = THEMES[theme_key]
-    title = f"{th['emoji']} {th['title']} — Versets bibliques (LSG 1910)"
+    title = f"{th['emoji']} {th['title']} \u2014 Versets bibliques (LSG 1910)"
     if len(title) > 100:
         title = title[:97] + "..."
 
-    verses_text = "\n".join(f"{ref} — {text.rstrip('.')}." for ref, text in verses)
+    verses_text = "\n".join(f"{ref} \u2014 {text.rstrip('.')}." for ref, text in verses)
     description = (
-        f"{th['emoji']} {th['title']} — méditée à travers la Parole.\n"
+        f"{th['emoji']} {th['title']} \u2014 m\u00e9dit\u00e9e \u00e0 travers la Parole.\n"
         f"Bible Louis Segond 1910\n\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
         f"{verses_text}\n\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"📖 Lisez la Bible complète gratuitement → {APP_URL}\n"
-        f"🔔 Abonnez-vous pour une méditation chaque jour 🙏\n\n"
-        f"#Bible #{th['tag']} #Méditation #LSG1910 #ParoleDeDieu "
-        f"#Foi #Prière #Chrétien #BibleFrancaise"
+        f"\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
+        f"\U0001f4d6 Lisez la Bible compl\u00e8te gratuitement \u2192 {APP_URL}\n"
+        f"\U0001f514 Abonnez-vous pour une m\u00e9ditation chaque jour \U0001f64f\n\n"
+        f"#Bible #{th['tag']} #M\u00e9ditation #LSG1910 #ParoleDeDieu "
+        f"#Foi #Pri\u00e8re #Chr\u00e9tien #BibleFrancaise"
     )
     if len(description) > 5000:
         description = description[:4997] + "..."
@@ -393,8 +393,8 @@ def upload_to_youtube(video_path, theme_key, verses):
     body = {
         "snippet": {
             "title": title, "description": description,
-            "tags": ["Bible", th["tag"], "Méditation", "LSG1910", "ParoleDeDieu",
-                     "Foi", "Prière", "Chrétien", "BibleFrancaise"],
+            "tags": ["Bible", th["tag"], "M\u00e9ditation", "LSG1910", "ParoleDeDieu",
+                     "Foi", "Pri\u00e8re", "Chr\u00e9tien", "BibleFrancaise"],
             "categoryId": "22",
         },
         "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False},
@@ -405,15 +405,15 @@ def upload_to_youtube(video_path, theme_key, verses):
     while response is None:
         status, response = request.next_chunk()
         if status:
-            print(f"  ⏳ Upload: {int(status.progress() * 100)}%")
+            print(f"  \u23f3 Upload: {int(status.progress() * 100)}%")
     vid = response.get("id")
-    print(f"✅ YouTube: https://youtube.com/watch?v={vid}")
+    print(f"\u2705 YouTube: https://youtube.com/watch?v={vid}")
     return vid
 
 
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 #  Main
-# ─────────────────────────────────────────────────────────────────────────────
+# 
 def main():
     args = sys.argv[1:]
     progress = load_json(PROGRESS_FILE) if os.path.exists(PROGRESS_FILE) else {}
@@ -426,16 +426,16 @@ def main():
         theme_key = args[0]
         offset = int(args[1]) if len(args) >= 2 and args[1].isdigit() else offsets.get(theme_key, 0)
     else:
-        # Modo automático: rotação de temas
+        # Modo automatico: rotacao de temas
         theme_key = ROTATION[theme_index % len(ROTATION)]
         offset = offsets.get(theme_key, 0)
         theme_index = (theme_index + 1) % len(ROTATION)
 
-    print(f"🎬 Méditation thématique — {THEMES[theme_key]['title']} (offset {offset})")
+    print(f"\U0001f3ac M\u00e9ditation th\u00e9matique \u2014 {THEMES[theme_key]['title']} (offset {offset})")
 
     total, verses = load_theme_verses(theme_key, THEMATIC_VERSES, offset)
     for ref, _ in verses:
-        print(f"  • {ref}")
+        print(f"  \u2022 {ref}")
 
     video_path = make_thematic_video(theme_key, verses, rot)
 
@@ -450,7 +450,7 @@ def main():
     progress["rot"] = rot + 1
     save_json(PROGRESS_FILE, progress)
 
-    print("✅ Terminé (méditation thématique).")
+    print("\u2705 Termin\u00e9 (m\u00e9ditation th\u00e9matique).")
 
 
 if __name__ == "__main__":
