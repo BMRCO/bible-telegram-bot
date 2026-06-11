@@ -2,12 +2,12 @@ name: Publication automatique
 
 on:
   schedule:
-    - cron: '7 3 * * *'     # 03h07 UTC â€” Protection (reel)
-    - cron: '9 5 * * *'     # 05h09 UTC â€” Promesses
-    - cron: '7 8 * * *'     # 08h07 UTC â€” Proverbes
-    - cron: '45 11 * * *'   # 11h45 UTC â€” JÃ©sus
-    - cron: '41 15 * * *'   # 15h41 UTC â€” ProphÃ©ties
-    - cron: '8 17 * * *'    # 17h08 UTC â€” Psaumes (reel)
+    - cron: '7 3 * * *'     # 03h07 UTC - Protection (reel)
+    - cron: '9 5 * * *'     # 05h09 UTC - Promesses
+    - cron: '7 8 * * *'     # 08h07 UTC - Proverbes
+    - cron: '45 11 * * *'   # 11h45 UTC - Jesus
+    - cron: '41 15 * * *'   # 15h41 UTC - Propheties
+    - cron: '8 17 * * *'    # 17h08 UTC - Psaumes (reel)
   workflow_dispatch:
     inputs:
       mode:
@@ -21,7 +21,7 @@ on:
           - reel
           - parabole
       category:
-        description: 'CatÃ©gorie (laisser vide pour rotation auto)'
+        description: 'Categorie (laisser vide pour rotation auto)'
         required: false
         type: choice
         default: ''
@@ -51,7 +51,7 @@ permissions:
   contents: write
 
 # Un groupe DISTINCT par horaire : les runs ne s'annulent plus entre elles.
-# (Avec un seul groupe partagÃ©, une run du matin retardÃ©e Ã©tait annulÃ©e par la suivante.)
+# (Avec un seul groupe partage, une run du matin retardee etait annulee par la suivante.)
 concurrency:
   group: verses-post-${{ github.event.schedule || github.run_id }}
   cancel-in-progress: false
@@ -86,8 +86,8 @@ jobs:
           MANUAL_MODE="${{ inputs.mode }}"
           CAT="${{ inputs.category }}"
 
-          # Categoria a partir do cron AGENDADO (fiÃ¡vel apesar do atraso do GitHub:
-          # usa o horÃ¡rio agendado, nÃ£o a hora de execuÃ§Ã£o).
+          # Categoria a partir do cron AGENDADO (fiavel apesar do atraso do GitHub:
+          # usa o horario agendado, nao a hora de execucao).
           if [ -n "$SCHEDULE" ]; then
             case "$SCHEDULE" in
               "7 3 * * *")   CAT="protection" ;;
