@@ -1,13 +1,12 @@
-name: Méditation Psaume YouTube
+name: Meditation Psaume YouTube
 
 on:
   schedule:
-    # 6h UTC = 8h FR (verão) — uma vez por dia
-    - cron: '0 6 * * *'
+    - cron: '11 4 * * *'   # 04h11 UTC - Meditation Psaume (manha cedo)
   workflow_dispatch:
     inputs:
       psaume:
-        description: 'Numéro du Psaume (vide = automatique)'
+        description: 'Numero du Psaume (vide = automatique)'
         required: false
         type: string
         default: ''
@@ -20,8 +19,9 @@ on:
 permissions:
   contents: write
 
+# Grupo proprio e unico por run - nunca cancela nem e cancelado por outra run.
 concurrency:
-  group: meditation-post
+  group: meditation-post-${{ github.event.schedule || github.run_id }}
   cancel-in-progress: false
 
 jobs:
@@ -72,6 +72,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash || true
           git add progress_meditation.json
           git diff --staged --quiet || git commit -m "Update meditation progress [skip ci]"
           git push || true
