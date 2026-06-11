@@ -2,12 +2,12 @@ name: Publication automatique
 
 on:
   schedule:
-    - cron: '3 5 * * *'
-    - cron: '12 7 * * *'
-    - cron: '7 10 * * *'
-    - cron: '45 13 * * *'
-    - cron: '41 17 * * *'
-    - cron: '8 19 * * *'
+    - cron: '7 3 * * *'     # 03h07 UTC â€” Protection (reel)
+    - cron: '9 5 * * *'     # 05h09 UTC â€” Promesses
+    - cron: '7 8 * * *'     # 08h07 UTC â€” Proverbes
+    - cron: '45 11 * * *'   # 11h45 UTC â€” JÃ©sus
+    - cron: '41 15 * * *'   # 15h41 UTC â€” ProphÃ©ties
+    - cron: '8 17 * * *'    # 17h08 UTC â€” Psaumes (reel)
   workflow_dispatch:
     inputs:
       mode:
@@ -84,50 +84,42 @@ jobs:
         run: |
           SCHEDULE="${{ github.event.schedule }}"
           MANUAL_MODE="${{ inputs.mode }}"
-          MANUAL_CAT="${{ inputs.category }}"
+          CAT="${{ inputs.category }}"
 
-          # Calendrier hybride : toujours 4 reels / 2 images par jour.
-          # Fixes en reel : 05h protection, 19h psaume.
-          # Alternance jour pair/impair sur les 4 autres (2 reels + 2 images chaque jour).
-          DAY=$(date +%j)
-          IS_EVEN=$((10#$DAY % 2))   # 0 = jour pair, 1 = jour impair
+          # Categoria a partir do cron AGENDADO (fiÃ¡vel apesar do atraso do GitHub:
+          # usa o horÃ¡rio agendado, nÃ£o a hora de execuÃ§Ã£o).
           if [ -n "$SCHEDULE" ]; then
             case "$SCHEDULE" in
-              "3 5 * * *")
-                echo "mode=reel" >> $GITHUB_OUTPUT
-                echo "category=protection" >> $GITHUB_OUTPUT ;;
-              "12 7 * * *")
-                if [ $IS_EVEN -eq 0 ]; then echo "mode=reel" >> $GITHUB_OUTPUT; else echo "mode=image" >> $GITHUB_OUTPUT; fi
-                echo "category=promise" >> $GITHUB_OUTPUT ;;
-              "7 10 * * *")
-                if [ $IS_EVEN -eq 0 ]; then echo "mode=image" >> $GITHUB_OUTPUT; else echo "mode=reel" >> $GITHUB_OUTPUT; fi
-                echo "category=proverbe" >> $GITHUB_OUTPUT ;;
-              "45 13 * * *")
-                if [ $IS_EVEN -eq 0 ]; then echo "mode=reel" >> $GITHUB_OUTPUT; else echo "mode=image" >> $GITHUB_OUTPUT; fi
-                echo "category=jesus" >> $GITHUB_OUTPUT ;;
-              "41 17 * * *")
-                if [ $IS_EVEN -eq 0 ]; then echo "mode=image" >> $GITHUB_OUTPUT; else echo "mode=reel" >> $GITHUB_OUTPUT; fi
-                echo "category=prophetie" >> $GITHUB_OUTPUT ;;
-              "8 19 * * *")
-                echo "mode=reel" >> $GITHUB_OUTPUT
-                echo "category=psaume" >> $GITHUB_OUTPUT ;;
-              *)
-                echo "mode=image" >> $GITHUB_OUTPUT
-                echo "category=" >> $GITHUB_OUTPUT ;;
+              "7 3 * * *")   CAT="protection" ;;
+              "9 5 * * *")   CAT="promise" ;;
+              "7 8 * * *")   CAT="proverbe" ;;
+              "45 11 * * *") CAT="jesus" ;;
+              "41 15 * * *") CAT="prophetie" ;;
+              "8 17 * * *")  CAT="psaume" ;;
             esac
-          else
-            if [ "$MANUAL_MODE" = "auto" ]; then
-              HOUR=$(date -u +%H)
-              if [ "$HOUR" = "07" ] || [ "$HOUR" = "13" ] || [ "$HOUR" = "19" ]; then
-                echo "mode=reel" >> $GITHUB_OUTPUT
-              else
-                echo "mode=image" >> $GITHUB_OUTPUT
-              fi
-            else
-              echo "mode=$MANUAL_MODE" >> $GITHUB_OUTPUT
-            fi
-            echo "category=$MANUAL_CAT" >> $GITHUB_OUTPUT
           fi
+
+          # Calendrier hybride : toujours 4 reels / 2 images par jour.
+          # Fixes en reel : protection (matin), psaume (soir).
+          # Alternance jour pair/impair sur les 4 autres.
+          DAY=$(date +%j)
+          IS_EVEN=$((10#$DAY % 2))   # 0 = jour pair, 1 = jour impair
+
+          if [ -n "$MANUAL_MODE" ] && [ "$MANUAL_MODE" != "auto" ]; then
+            MODE="$MANUAL_MODE"
+          else
+            case "$CAT" in
+              protection|psaume) MODE="reel" ;;
+              promise|jesus)
+                if [ $IS_EVEN -eq 0 ]; then MODE="reel"; else MODE="image"; fi ;;
+              proverbe|prophetie)
+                if [ $IS_EVEN -eq 0 ]; then MODE="image"; else MODE="reel"; fi ;;
+              *) MODE="image" ;;
+            esac
+          fi
+
+          echo "mode=$MODE" >> $GITHUB_OUTPUT
+          echo "category=$CAT" >> $GITHUB_OUTPUT
 
       - name: Run bot
         env:
