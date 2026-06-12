@@ -10,6 +10,7 @@ Uso:
     python psaume_meditation.py 119 1-22   → Salmo 119 versos 1-22 (para divisão)
 
 Estado salvo em: progress_meditation.json
+Títulos dos Salmos: psaumes_titres.json (opcional — fallback p/ "Psaume N")
 """
 
 import os
@@ -41,6 +42,7 @@ FB_PAGE_ID       = os.environ.get("FB_PAGE_ID", "1018605031335601")
 FB_PAGE_TOKEN    = os.environ.get("FB_PAGE_TOKEN", "")
 
 PROGRESS_FILE = "progress_meditation.json"
+TITLES_FILE   = "psaumes_titres.json"
 
 # Configuração
 W, H = 1920, 1080
@@ -49,6 +51,26 @@ SECS_PER_VERSE = 10        # 10s por versículo (meditação lenta)
 SECS_INTRO     = 5
 SECS_OUTRO     = 5
 FADE_DURATION  = 1.0        # 1s de fade in/out por versículo
+
+# CTA partilhado da série (vouvoiement, sem clickbait)
+PSAUME_CTA = "Que ce Psaume vous accompagne aujourd'hui. Partagez-le 🙏"
+
+# ─── Títulos dos Salmos (frase tirada do próprio Salmo) ───
+def _load_titres():
+    try:
+        if os.path.exists(TITLES_FILE):
+            return load_json(TITLES_FILE)
+    except Exception as e:
+        print(f"⚠️  {TITLES_FILE} indisponível: {e}")
+    return {}
+
+PSAUME_TITRES = _load_titres()
+
+
+def get_psaume_titre(num):
+    """Frase-título do Salmo, ou None se ainda não estiver definida."""
+    return PSAUME_TITRES.get(str(num)) or None
+
 
 # Divisão do Salmo 119
 PSAUME_119_PARTS = [
@@ -205,6 +227,7 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
         verse_layouts.append((vnum, fv, lines, lh))
 
     f_title = ImageFont.truetype(FONT_SERIF_BOLD, 90)
+    f_titre = ImageFont.truetype(FONT_SERIF, 50)      # frase-título na intro
     f_sub = ImageFont.truetype(FONT_SERIF, 42)
     f_vnum = ImageFont.truetype(FONT_SERIF_BOLD, 48)
     f_wm = ImageFont.truetype(FONT_SANS, 32)
@@ -216,6 +239,10 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     title_text = f"Psaume {num}"
     if part_label:
         title_text += f" — {part_label}"
+
+    # Frase-título do Salmo (1-2 linhas, centrada na intro)
+    titre = get_psaume_titre(num)
+    titre_lines = wrap(d_tmp, titre, f_titre, W - BORDER * 2 - 240) if titre else []
 
     for f in range(TOTAL):
         s = f / FPS
@@ -232,22 +259,40 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
         if s < SECS_INTRO:
             a = ease(s / 1.0) if s < 1.0 else (ease((SECS_INTRO - s) / 1.0) if s > SECS_INTRO - 1.0 else 1.0)
             color_title = tuple(int(BG_TOP[i] + (GOLD_BRIGHT[i] - BG_TOP[i]) * a) for i in range(3))
+            color_titre = tuple(int(BG_TOP[i] + (WHITE[i] - BG_TOP[i]) * a) for i in range(3))
             color_sub = tuple(int(BG_TOP[i] + (SIL[i] - BG_TOP[i]) * a * 0.8) for i in range(3))
 
-            # Title centrado
-            bb = draw.textbbox((0, 0), title_text, font=f_title)
-            tw = bb[2] - bb[0]
-            draw.text(((W - tw) // 2, H // 2 - 80), title_text, font=f_title, fill=color_title)
-
-            # Subtitle
             sub = "Bible Louis Segond 1910 · Méditation"
+
+            # Altura do bloco (título + frase + divisória + subtítulo) para centrar
+            title_h = draw.textbbox((0, 0), title_text, font=f_title)[3]
+            sub_h = draw.textbbox((0, 0), sub, font=f_sub)[3]
+            titre_lh = 64
+            titre_h = titre_lh * len(titre_lines)
+            gap_titre = 30 if titre_lines else 0
+            gap_div = 50
+            block_h = title_h + gap_titre + titre_h + gap_div + sub_h
+            y = (H - block_h) // 2
+
+            # Título "Psaume N"
+            bb = draw.textbbox((0, 0), title_text, font=f_title)
+            draw.text(((W - (bb[2] - bb[0])) // 2, y), title_text, font=f_title, fill=color_title)
+            y += title_h + gap_titre
+
+            # Frase-título do Salmo
+            for tl in titre_lines:
+                bbt = draw.textbbox((0, 0), tl, font=f_titre)
+                draw.text(((W - (bbt[2] - bbt[0])) // 2, y), tl, font=f_titre, fill=color_titre)
+                y += titre_lh
+            y += gap_div // 2
+
+            # Divisória
+            draw.line([((W - 400) // 2, y), ((W + 400) // 2, y)], fill=color_sub, width=1)
+            y += gap_div // 2
+
+            # Subtítulo
             bb2 = draw.textbbox((0, 0), sub, font=f_sub)
-            sw = bb2[2] - bb2[0]
-            draw.line(
-                [((W - 400) // 2, H // 2 + 20), ((W + 400) // 2, H // 2 + 20)],
-                fill=color_sub, width=1,
-            )
-            draw.text(((W - sw) // 2, H // 2 + 40), sub, font=f_sub, fill=color_sub)
+            draw.text(((W - (bb2[2] - bb2[0])) // 2, y), sub, font=f_sub, fill=color_sub)
 
         # ---------- VERSÍCULOS ----------
         elif s < SECS_INTRO + n_verses * SECS_PER_VERSE:
@@ -355,16 +400,25 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     return output_path
 
 
+def _meditation_head(num, part_label=None):
+    """Cabeçalho legível: 'Psaume N — Titre (part)' com fallback limpo."""
+    titre = get_psaume_titre(num)
+    head = f"Psaume {num}" + (f" — {titre}" if titre else "")
+    if part_label:
+        head += f" ({part_label})"
+    return head
+
+
 def post_to_telegram(video_path, num, part_label=None):
     """Publica a meditação no canal Telegram."""
     if not TELEGRAM_TOKEN or not TELEGRAM_CHANNEL:
         print("⚠️  Telegram credentials ausentes.")
         return
-    label = f"Psaume {num}" + (f" ({part_label})" if part_label else "")
+    head = _meditation_head(num, part_label)
     caption = (
-        f"🎵 <b>Méditation — {label}</b>\n"
+        f"🎵 <b>{head}</b>\n"
         f"Bible Louis Segond 1910\n\n"
-        f"Prenez un moment pour méditer la Parole. 🙏\n\n"
+        f"{PSAUME_CTA}\n\n"
         f"📖 labible.app\n\n"
         f"#LaBible #Psaumes #Méditation #LSG1910"
     )
@@ -393,11 +447,11 @@ def post_to_facebook(video_path, num, part_label=None):
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN ausente.")
         return
-    label = f"Psaume {num}" + (f" ({part_label})" if part_label else "")
+    head = _meditation_head(num, part_label)
     desc = (
-        f"🎵 Méditation — {label}\n"
+        f"🎵 {head}\n"
         f"Bible Louis Segond 1910\n\n"
-        f"Prenez un moment pour méditer la Parole de Dieu. 🙏\n\n"
+        f"{PSAUME_CTA}\n\n"
         f"📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n"
         f"#Bible #Psaumes #Méditation #LSG1910 #ParoleDeDieu #Foi"
     )
@@ -405,7 +459,7 @@ def post_to_facebook(video_path, num, part_label=None):
         with open(video_path, "rb") as f:
             r = requests.post(
                 f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
-                data={"title": f"Méditation — {label} | LSG1910",
+                data={"title": f"Méditation — {head} | LSG1910",
                       "description": desc, "access_token": FB_PAGE_TOKEN},
                 files={"source": f}, timeout=300,
             )
@@ -436,7 +490,8 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
     creds.refresh(Request())
     youtube = build("youtube", "v3", credentials=creds)
 
-    title = f"Psaume {num}"
+    titre = get_psaume_titre(num)
+    title = f"Psaume {num}" + (f" — {titre}" if titre else "")
     if part_label:
         title += f" ({part_label})"
     title += " | LSG1910"
@@ -449,12 +504,14 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
         for vnum, vtext in verses_with_idx
     )
 
+    head = f"Psaume {num}" + (f" — {titre}" if titre else "")
     description = (
-        f"🎵 Méditation du Psaume {num}{' (' + part_label + ')' if part_label else ''}\n"
+        f"🎵 Méditation — {head}{' (' + part_label + ')' if part_label else ''}\n"
         f"Bible Louis Segond 1910\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{verses_text}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"{PSAUME_CTA}\n\n"
         f"📖 Lisez la Bible complète gratuitement → {APP_URL}\n"
         f"🔔 Abonnez-vous pour plus de méditations 🙏\n\n"
         f"#Bible #Psaumes #Méditation #LSG1910 #ParoleDeDieu "
@@ -540,7 +597,7 @@ def main():
 
         save_json(PROGRESS_FILE, progress)
 
-    print(f"🎵 Méditation — Psaume {num}{' (' + part_label + ')' if part_label else ''}")
+    print(f"🎵 Méditation — {_meditation_head(num, part_label)}")
 
     # ─── Carregar versículos ───
     verses = fetch_psaume_verses(num, vfrom, vto)
