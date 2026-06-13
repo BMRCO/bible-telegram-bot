@@ -172,24 +172,15 @@ def build_hashtags_fb(cat_name):
 
 
 def strip_rubric(text: str) -> str:
-    text = text.replace("\u00b6", "").strip()
-    # Supprime les indications liminaires (titres / dedicaces des Psaumes)
-    # UNIQUEMENT en tete, segment par segment. Une rubrique est toujours au debut.
+    text = text.replace("¶", "").strip()
+    # Supprimer une chaîne d'indications liminaires, segment par segment
+    # ex. "Au chef des chantres. De David. Psaume. Eternel! tu me sondes..."
     lead_rubric = re.compile(
         r'^\s*(?:'
         r'au chef des chantres[^.]*|pour le chef des chantres[^.]*|au chef[^.]*|'
-        r'psaume de [^.]*|psaume d[^.]*|psaume\b[^.]*|'
-        r'cantique des cantiques[^.]*|cantique des degr\u00e9s[^.]*|'
-        r'cantique de [^.]*|cantique d[^.]*|cantique\b[^.]*|'
-        r'pri\u00e8re de [^.]*|pri\u00e8re d[^.]*|'
-        r'maschil[^.]*|michtam[^.]*|hymne[^.]*|'
-        r'de david\b|d.asaph[^.]*|des fils de kor\u00e9[^.]*|fils de kor\u00e9[^.]*|'
-        r'avec instruments[^.]*|avec les instruments[^.]*|'
-        r'instruments \u00e0 cordes[^.]*|instruments \u00e0 vent[^.]*|'
-        r'sur alamoth[^.]*|sur biche[^.]*|sur colombe[^.]*|sur meurs[^.]*|'
-        r'sur instruments[^.]*|sur la fl\u00fbte[^.]*|sur la guitthith[^.]*|'
-        r'sur la harpe[^.]*|sur le lis[^.]*|sur les lis[^.]*|'
-        r'a jeduthun[^.]*|au jeduthun[^.]*|d.apr\u00e8s jeduthun[^.]*|jeduthun[^.]*|selon la mort[^.]*'
+        r'psaume de david[^.]*|psaume|cantique des degrés[^.]*|cantique|de david|'
+        r'des fils de koré[^.]*|fils de koré[^.]*|sur alamoth[^.]*|sur la[^.]*|'
+        r'prière de[^.]*|maschil[^.]*|michtam[^.]*|hymne[^.]*'
         r')\s*\.\s*',
         flags=re.IGNORECASE,
     )
@@ -197,6 +188,21 @@ def strip_rubric(text: str) -> str:
     while prev != text:
         prev = text
         text = lead_rubric.sub('', text, count=1).strip()
+
+    rubric_keywords = [
+        "chef des chantres", "maschil", "michtam", "cantique",
+        "psaume de david", "prière de", "fils de koré", "sur alamoth",
+        "sur les", "au chef", "à jouer", "pour les", "jeduthun",
+        "higgaion", "sheminith", "nehiloth", "neginoth", "gittith",
+        "instruments à cordes", "instruments à vent",
+    ]
+    t = text.lower()
+    for kw in rubric_keywords:
+        if kw in t:
+            sentences = text.split(". ")
+            real_sentences = [s for s in sentences if not any(kw in s.lower() for kw in rubric_keywords)]
+            if real_sentences:
+                return ". ".join(real_sentences).strip()
     return text
 
 
@@ -222,7 +228,6 @@ def clean_text(text: str) -> str:
     text = re.sub(r'\s*Sélah\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s*Selah\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s+', ' ', text).strip()
-    text = re.sub(r'\s*[-\u2014]\s*$', '', text).strip()
     text = re.sub(r'\s*([?!])', r' \1', text)
     text = text.replace("'", "\u2019").replace("'", "\u2019")
     text = text.replace("Eternel", "Éternel")
@@ -1217,7 +1222,19 @@ def main():
     caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partage ce verset avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBible #LSG1910 #versetdujour {cat['tag']}"
     send_photo(img, caption)
     post_to_facebook(img, ref, text, cat, cat_name)
-    post_to_instagram(img, ref, text, cat, cat_name)
+    # Instagram : toujours un reel — les images fixes n'ont quasiment aucune portée sur IG,
+    # alors que les reels sont distribués bien plus largement.
+    if should_post("instagram"):
+        if not os.path.exists("logo.png"):
+            try:
+                r = requests.get("https://labible.app/icons/icon-512x512.png", timeout=10)
+                if r.status_code == 200:
+                    with open("logo.png", "wb") as f:
+                        f.write(r.content)
+            except Exception as e:
+                print(f"⚠️ Logo : {e}")
+        video_ig = make_reel_video(text, ref, progress, cat_name)
+        post_reel_to_instagram(video_ig, ref, text, cat, cat_name)
     post_to_pinterest(img, ref, text, cat, cat_name)
     post_to_threads(img, ref, text, cat, cat_name)
     save_json(PROGRESS_FILE, progress)
