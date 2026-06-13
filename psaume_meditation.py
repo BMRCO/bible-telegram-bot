@@ -10,7 +10,9 @@ Uso:
     python psaume_meditation.py 119 1-22   → Salmo 119 versos 1-22 (para divisão)
 
 Estado salvo em: progress_meditation.json
-Títulos dos Salmos: psaumes_titres.json (opcional — fallback p/ "Psaume N")
+Temas dos Salmos:  psaumes_themes.json   (tema editorial -> título/caption)
+Frase da Parola:   psaumes_titres.json   (frase da LSG -> cartão de abertura)
+Ambos opcionais: fallback limpo para "Psaume N" se faltarem.
 """
 
 import os
@@ -42,7 +44,8 @@ FB_PAGE_ID       = os.environ.get("FB_PAGE_ID", "1018605031335601")
 FB_PAGE_TOKEN    = os.environ.get("FB_PAGE_TOKEN", "")
 
 PROGRESS_FILE = "progress_meditation.json"
-TITLES_FILE   = "psaumes_titres.json"
+THEMES_FILE   = "psaumes_themes.json"   # tema editorial (título/caption)
+TITLES_FILE   = "psaumes_titres.json"   # frase da Parola (cartão)
 
 # Configuração
 W, H = 1920, 1080
@@ -52,23 +55,33 @@ SECS_INTRO     = 5
 SECS_OUTRO     = 5
 FADE_DURATION  = 1.0        # 1s de fade in/out por versículo
 
+# Sufixo padronizado do título (igual aos vídeos já publicados)
+TITLE_SUFFIX = "Lecture Complète | Bible LSG1910"
+
 # CTA partilhado da série (vouvoiement, sem clickbait)
 PSAUME_CTA = "Que ce Psaume vous accompagne aujourd'hui. Partagez-le 🙏"
 
-# ─── Títulos dos Salmos (frase tirada do próprio Salmo) ───
-def _load_titres():
+
+# ─── Mapas de títulos (tema + frase da Parola) ───
+def _load_map(path):
     try:
-        if os.path.exists(TITLES_FILE):
-            return load_json(TITLES_FILE)
+        if os.path.exists(path):
+            return load_json(path)
     except Exception as e:
-        print(f"⚠️  {TITLES_FILE} indisponível: {e}")
+        print(f"⚠️  {path} indisponível: {e}")
     return {}
 
-PSAUME_TITRES = _load_titres()
+PSAUME_THEMES = _load_map(THEMES_FILE)   # {"1": "La Voie des Justes", ...}
+PSAUME_TITRES = _load_map(TITLES_FILE)   # {"1": "Heureux l'homme", ...}
+
+
+def get_psaume_theme(num):
+    """Tema editorial do Salmo (título/caption), ou None."""
+    return PSAUME_THEMES.get(str(num)) or None
 
 
 def get_psaume_titre(num):
-    """Frase-título do Salmo, ou None se ainda não estiver definida."""
+    """Frase da Parola (cartão de abertura), ou None."""
     return PSAUME_TITRES.get(str(num)) or None
 
 
@@ -136,6 +149,11 @@ def pick_safe_music(num):
 def ease(t):
     t = max(0, min(1, t))
     return t * t * (3 - 2 * t)
+
+
+def lerp_color(bg, target, a):
+    """Interpola bg -> target por alpha a (para fades)."""
+    return tuple(int(bg[i] + (target[i] - bg[i]) * a) for i in range(3))
 
 
 def gradient_bg(W, H, top, bot):
@@ -226,23 +244,28 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
         fv, lines, lh = autosize_font(d_tmp, text_q, MAX_TW, max_text_h)
         verse_layouts.append((vnum, fv, lines, lh))
 
-    f_title = ImageFont.truetype(FONT_SERIF_BOLD, 90)
-    f_titre = ImageFont.truetype(FONT_SERIF, 50)      # frase-título na intro
-    f_sub = ImageFont.truetype(FONT_SERIF, 42)
-    f_vnum = ImageFont.truetype(FONT_SERIF_BOLD, 48)
-    f_wm = ImageFont.truetype(FONT_SANS, 32)
-    f_outro = ImageFont.truetype(FONT_SERIF_BOLD, 110)
+    f_title     = ImageFont.truetype(FONT_SERIF_BOLD, 88)
+    f_theme     = ImageFont.truetype(FONT_SERIF, 50)   # tema editorial (intro)
+    f_phrase    = ImageFont.truetype(FONT_SERIF, 40)   # frase da Parola (intro)
+    f_sub       = ImageFont.truetype(FONT_SERIF, 42)
+    f_subsmall  = ImageFont.truetype(FONT_SERIF, 34)
+    f_vnum      = ImageFont.truetype(FONT_SERIF_BOLD, 48)
+    f_wm        = ImageFont.truetype(FONT_SANS, 32)
+    f_outro     = ImageFont.truetype(FONT_SERIF_BOLD, 110)
     f_outro_sub = ImageFont.truetype(FONT_SERIF, 38)
 
     os.makedirs("frames", exist_ok=True)
 
-    title_text = f"Psaume {num}"
+    # ─── Conteúdo do cartão de abertura: número + tema + frase ───
+    card_number = f"Psaume {num}"
+    theme = get_psaume_theme(num)
+    card_theme = theme or ""
     if part_label:
-        title_text += f" — {part_label}"
+        card_theme = (f"{theme} ({part_label})" if theme else f"({part_label})")
+    theme_lines = wrap(d_tmp, card_theme, f_theme, W - BORDER * 2 - 220) if card_theme else []
 
-    # Frase-título do Salmo (1-2 linhas, centrada na intro)
-    titre = get_psaume_titre(num)
-    titre_lines = wrap(d_tmp, titre, f_titre, W - BORDER * 2 - 240) if titre else []
+    phrase = get_psaume_titre(num)
+    phrase_lines = wrap(d_tmp, f"« {phrase} »", f_phrase, W - BORDER * 2 - 260) if phrase else []
 
     for f in range(TOTAL):
         s = f / FPS
@@ -258,41 +281,52 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
         # ---------- INTRO ----------
         if s < SECS_INTRO:
             a = ease(s / 1.0) if s < 1.0 else (ease((SECS_INTRO - s) / 1.0) if s > SECS_INTRO - 1.0 else 1.0)
-            color_title = tuple(int(BG_TOP[i] + (GOLD_BRIGHT[i] - BG_TOP[i]) * a) for i in range(3))
-            color_titre = tuple(int(BG_TOP[i] + (WHITE[i] - BG_TOP[i]) * a) for i in range(3))
-            color_sub = tuple(int(BG_TOP[i] + (SIL[i] - BG_TOP[i]) * a * 0.8) for i in range(3))
+            c_title  = lerp_color(BG_TOP, GOLD_BRIGHT, a)
+            c_theme  = lerp_color(BG_TOP, GOLD, a)
+            c_phrase = lerp_color(BG_TOP, WHITE, a)
+            c_sub    = lerp_color(BG_TOP, SIL, a * 0.8)
 
-            sub = "Bible Louis Segond 1910 · Méditation"
+            sub = "Bible Louis Segond 1910"
+            th_lh, ph_lh = 60, 52
 
-            # Altura do bloco (título + frase + divisória + subtítulo) para centrar
-            title_h = draw.textbbox((0, 0), title_text, font=f_title)[3]
-            sub_h = draw.textbbox((0, 0), sub, font=f_sub)[3]
-            titre_lh = 64
-            titre_h = titre_lh * len(titre_lines)
-            gap_titre = 30 if titre_lines else 0
-            gap_div = 50
-            block_h = title_h + gap_titre + titre_h + gap_div + sub_h
+            title_h = draw.textbbox((0, 0), card_number, font=f_title)[3]
+            sub_h = draw.textbbox((0, 0), sub, font=f_subsmall)[3]
+
+            block_h = title_h
+            if theme_lines:
+                block_h += 26 + th_lh * len(theme_lines)
+            if phrase_lines:
+                block_h += 22 + ph_lh * len(phrase_lines)
+            block_h += 46 + sub_h
             y = (H - block_h) // 2
 
-            # Título "Psaume N"
-            bb = draw.textbbox((0, 0), title_text, font=f_title)
-            draw.text(((W - (bb[2] - bb[0])) // 2, y), title_text, font=f_title, fill=color_title)
-            y += title_h + gap_titre
+            # Número "Psaume N"
+            bb = draw.textbbox((0, 0), card_number, font=f_title)
+            draw.text(((W - (bb[2] - bb[0])) // 2, y), card_number, font=f_title, fill=c_title)
+            y += title_h
 
-            # Frase-título do Salmo
-            for tl in titre_lines:
-                bbt = draw.textbbox((0, 0), tl, font=f_titre)
-                draw.text(((W - (bbt[2] - bbt[0])) // 2, y), tl, font=f_titre, fill=color_titre)
-                y += titre_lh
-            y += gap_div // 2
+            # Tema editorial (dourado)
+            if theme_lines:
+                y += 26
+                for tl in theme_lines:
+                    bbt = draw.textbbox((0, 0), tl, font=f_theme)
+                    draw.text(((W - (bbt[2] - bbt[0])) // 2, y), tl, font=f_theme, fill=c_theme)
+                    y += th_lh
 
-            # Divisória
-            draw.line([((W - 400) // 2, y), ((W + 400) // 2, y)], fill=color_sub, width=1)
-            y += gap_div // 2
+            # Frase da Parola (branco)
+            if phrase_lines:
+                y += 22
+                for pl in phrase_lines:
+                    bbp = draw.textbbox((0, 0), pl, font=f_phrase)
+                    draw.text(((W - (bbp[2] - bbp[0])) // 2, y), pl, font=f_phrase, fill=c_phrase)
+                    y += ph_lh
 
-            # Subtítulo
-            bb2 = draw.textbbox((0, 0), sub, font=f_sub)
-            draw.text(((W - (bb2[2] - bb2[0])) // 2, y), sub, font=f_sub, fill=color_sub)
+            # Divisória + assinatura
+            y += 22
+            draw.line([((W - 360) // 2, y), ((W + 360) // 2, y)], fill=c_sub, width=1)
+            y += 24
+            bb2 = draw.textbbox((0, 0), sub, font=f_subsmall)
+            draw.text(((W - (bb2[2] - bb2[0])) // 2, y), sub, font=f_subsmall, fill=c_sub)
 
         # ---------- VERSÍCULOS ----------
         elif s < SECS_INTRO + n_verses * SECS_PER_VERSE:
@@ -313,14 +347,14 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
 
             # Versículo número no canto
             vnum_text = str(vnum)
-            color_vnum = tuple(int(BG_TOP[i] + (GOLD[i] - BG_TOP[i]) * a * 0.85) for i in range(3))
+            color_vnum = lerp_color(BG_TOP, GOLD, a * 0.85)
             draw.text((BORDER + 60, BORDER + 50), vnum_text, font=f_vnum, fill=color_vnum)
 
             # Texto do versículo centrado
             total_h = lh * len(lines)
             ty = BORDER + (H - BORDER * 2) // 2 - total_h // 2
 
-            color_text = tuple(int(BG_TOP[i] + (WHITE[i] - BG_TOP[i]) * a) for i in range(3))
+            color_text = lerp_color(BG_TOP, WHITE, a)
             color_shadow = tuple(int(BG_TOP[i] * (1 - a * 0.5)) for i in range(3))
 
             for line in lines:
@@ -332,7 +366,7 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
                 ty += lh
 
             # Rodapé: referência + watermark
-            color_ref = tuple(int(BG_TOP[i] + (GOLD[i] - BG_TOP[i]) * a * 0.7) for i in range(3))
+            color_ref = lerp_color(BG_TOP, GOLD, a * 0.7)
             ref_text = f"Psaume {num}:{vnum}"
             draw.text((BORDER + CARD_PAD, H - BORDER - 70), ref_text, font=f_sub, fill=color_ref)
             wm_bb = draw.textbbox((0, 0), WATERMARK, font=f_wm)
@@ -345,8 +379,8 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
         else:
             outro_s = s - SECS_INTRO - n_verses * SECS_PER_VERSE
             a = ease(outro_s / 1.0) if outro_s < 1.0 else 1.0
-            color_app = tuple(int(BG_TOP[i] + (GOLD_BRIGHT[i] - BG_TOP[i]) * a) for i in range(3))
-            color_sub = tuple(int(BG_TOP[i] + (SIL[i] - BG_TOP[i]) * a * 0.7) for i in range(3))
+            color_app = lerp_color(BG_TOP, GOLD_BRIGHT, a)
+            color_sub = lerp_color(BG_TOP, SIL, a * 0.7)
 
             msg = "Méditez la Parole chaque jour"
             bb = draw.textbbox((0, 0), msg, font=f_sub)
@@ -401,12 +435,24 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
 
 
 def _meditation_head(num, part_label=None):
-    """Cabeçalho legível: 'Psaume N — Titre (part)' com fallback limpo."""
-    titre = get_psaume_titre(num)
-    head = f"Psaume {num}" + (f" — {titre}" if titre else "")
+    """Cabeçalho legível p/ captions: 'Psaume N — Thème (part)' com fallback."""
+    theme = get_psaume_theme(num)
+    head = f"Psaume {num}" + (f" — {theme}" if theme else "")
     if part_label:
         head += f" ({part_label})"
     return head
+
+
+def _video_title(num, part_label=None):
+    """Título YouTube/Facebook: 'Psaume N — Thème (part) | Lecture Complète | Bible LSG1910'."""
+    theme = get_psaume_theme(num)
+    title = f"Psaume {num}" + (f" — {theme}" if theme else "")
+    if part_label:
+        title += f" ({part_label})"
+    title += f" | {TITLE_SUFFIX}"
+    if len(title) > 100:
+        title = title[:97] + "..."
+    return title
 
 
 def post_to_telegram(video_path, num, part_label=None):
@@ -459,7 +505,7 @@ def post_to_facebook(video_path, num, part_label=None):
         with open(video_path, "rb") as f:
             r = requests.post(
                 f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
-                data={"title": f"Méditation — {head} | LSG1910",
+                data={"title": _video_title(num, part_label),
                       "description": desc, "access_token": FB_PAGE_TOKEN},
                 files={"source": f}, timeout=300,
             )
@@ -490,13 +536,7 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
     creds.refresh(Request())
     youtube = build("youtube", "v3", credentials=creds)
 
-    titre = get_psaume_titre(num)
-    title = f"Psaume {num}" + (f" — {titre}" if titre else "")
-    if part_label:
-        title += f" ({part_label})"
-    title += " | LSG1910"
-    if len(title) > 100:
-        title = title[:97] + "..."
+    title = _video_title(num, part_label)
 
     # Lista de versículos para descrição
     verses_text = "\n".join(
@@ -504,9 +544,9 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
         for vnum, vtext in verses_with_idx
     )
 
-    head = f"Psaume {num}" + (f" — {titre}" if titre else "")
+    head = _meditation_head(num, part_label)
     description = (
-        f"🎵 Méditation — {head}{' (' + part_label + ')' if part_label else ''}\n"
+        f"🎵 Méditation — {head}\n"
         f"Bible Louis Segond 1910\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{verses_text}\n\n"
