@@ -726,6 +726,33 @@ def wrap_text_with_quotes(draw, text, font, max_w):
     return lines
 
 
+def list_music(folder="music"):
+    """Lista todas as faixas de áudio da pasta, insensível a maiúsculas na extensão."""
+    if not os.path.isdir(folder):
+        return []
+    return sorted(
+        os.path.join(folder, f)
+        for f in os.listdir(folder)
+        if f.lower().endswith((".mp3", ".m4a", ".ogg", ".wav"))
+    )
+
+
+def pick_music(progress):
+    """Escolhe uma faixa ao acaso, evitando as últimas usadas (mais variedade)."""
+    tracks = list_music("music")
+    if not tracks:
+        return None
+    recent = (progress.get("recent_music", []) if progress else []) or []
+    pool = [t for t in tracks if t not in recent] or tracks
+    choice = random.choice(pool)
+    if progress is not None:
+        keep = max(1, min(len(tracks) - 1, 5))
+        progress["recent_music"] = (recent + [choice])[-keep:]
+        progress["last_music"] = choice
+    print(f"\U0001F3B5 {choice}  ({len(tracks)} faixas)")
+    return choice
+
+
 def make_reel_video(text, ref, progress=None, cat_name=None):
     W, H = 1080, 1920
     FPS, TOTAL = 30, 30 * 15
@@ -825,14 +852,7 @@ def make_reel_video(text, ref, progress=None, cat_name=None):
         img.save(f"frames/frame_{f:04d}.png")
     output_path = "reel.mp4"
     import glob, shutil
-    music_files = glob.glob("music/*.mp3") + glob.glob("music/*.m4a") + glob.glob("music/*.ogg")
-    music_file = None
-    if music_files:
-        last_music = progress.get("last_music", "") if progress else ""
-        available = [m for m in music_files if m != last_music] or music_files
-        music_file = random.choice(available)
-        if progress is not None:
-            progress["last_music"] = music_file
+    music_file = pick_music(progress)
     if music_file:
         print(f"🎵 {music_file}")
         subprocess.run(['ffmpeg', '-framerate', '30', '-i', 'frames/frame_%04d.png', '-ss', '2', '-i', music_file,
@@ -1120,14 +1140,7 @@ def make_parabole_video(title, verses, progress=None):
 
     output_path = "parabole.mp4"
     import glob, shutil
-    music_files = glob.glob("music/*.mp3") + glob.glob("music/*.m4a") + glob.glob("music/*.ogg")
-    music_file = None
-    if music_files:
-        last_music = progress.get("last_music", "") if progress else ""
-        available = [m for m in music_files if m != last_music] or music_files
-        music_file = random.choice(available)
-        if progress is not None:
-            progress["last_music"] = music_file
+    music_file = pick_music(progress)
     if music_file:
         print(f"🎵 {music_file}")
         subprocess.run(['ffmpeg', '-framerate', '30', '-i', 'frames/frame_%04d.png',
