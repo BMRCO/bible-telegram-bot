@@ -113,37 +113,38 @@ def get_palette(num):
 
 def is_safe_music(path):
     """
-    Filtro anti-Content-ID. Aceita só faixas com aspeto de download Pixabay
-    (minúsculas, sem espaços nem parênteses), tipo 'artista-titulo-12345.mp3'.
-    Rejeita ficheiros com aspeto de título de vídeo do YouTube
-    ('Christian Background Music (Heavens...)'), que costumam apanhar reclamação.
+    Filtro anti-Content-ID leve. Rejeita apenas nomes com aspeto de
+    'título de vídeo YouTube' (espaços ou parênteses), p.ex.
+    'Christian Background Music (Heavens...).mp3', que costumam apanhar
+    reclamação. As maiúsculas são permitidas — muitos ficheiros Pixabay
+    legítimos têm maiúsculas no nome.
     """
     stem = os.path.splitext(os.path.basename(path))[0]
-    if " " in stem or "(" in stem or ")" in stem:
-        return False
-    if any(c.isupper() for c in stem):
-        return False
-    return True
+    return not (" " in stem or "(" in stem or ")" in stem)
 
 
 def pick_safe_music(num):
-    """Devolve a faixa a usar (rotação por nº do Salmo), só entre as 'seguras'."""
+    """Devolve a faixa a usar (rotação por nº do Salmo), juntando TODAS as
+    faixas das duas pastas de música e descartando só os nomes suspeitos."""
     import glob
-    for folder in ("music_meditation", "music"):
-        all_tracks = sorted(
+    all_tracks = []
+    for folder in ("music", "music_meditation"):
+        all_tracks += (
             glob.glob(f"{folder}/*.mp3")
             + glob.glob(f"{folder}/*.m4a")
             + glob.glob(f"{folder}/*.ogg")
         )
-        safe = [t for t in all_tracks if is_safe_music(t)]
-        if safe:
-            idx = (num - 1) % len(safe)
-            print(f"🎵 Música: {safe[idx]} ({idx + 1}/{len(safe)} seguras em {folder}/)")
-            return safe[idx]
-        if all_tracks:
-            print(f"⚠️  {folder}/ só tem faixas suspeitas (possível Content ID) — ignoradas.")
-    print("⚠️  Nenhuma faixa segura encontrada — vídeo sem música.")
-    return None
+    all_tracks = sorted(set(all_tracks))
+    if not all_tracks:
+        print("⚠️  Nenhuma faixa de música encontrada — vídeo sem música.")
+        return None
+    safe = [t for t in all_tracks if is_safe_music(t)]
+    if not safe:
+        print("⚠️  Só faixas suspeitas (espaços/parênteses) — uso todas mesmo assim.")
+        safe = all_tracks
+    idx = (num - 1) % len(safe)
+    print(f"🎵 Música: {safe[idx]} ({idx + 1}/{len(safe)} faixas)")
+    return safe[idx]
 
 
 def ease(t):
