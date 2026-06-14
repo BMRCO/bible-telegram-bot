@@ -124,16 +124,18 @@ def is_safe_music(path):
 
 
 def pick_safe_music(num):
-    """Devolve a faixa a usar (rotação por nº do Salmo), juntando TODAS as
-    faixas das duas pastas de música e descartando só os nomes suspeitos."""
-    import glob
+    """Devolve a faixa a usar (rotação por nº), juntando TODAS as faixas das
+    duas pastas de música (insensível a maiúsculas na extensão) e descartando
+    só os nomes suspeitos."""
     all_tracks = []
     for folder in ("music", "music_meditation"):
-        all_tracks += (
-            glob.glob(f"{folder}/*.mp3")
-            + glob.glob(f"{folder}/*.m4a")
-            + glob.glob(f"{folder}/*.ogg")
-        )
+        if not os.path.isdir(folder):
+            continue
+        all_tracks += [
+            os.path.join(folder, f)
+            for f in os.listdir(folder)
+            if f.lower().endswith((".mp3", ".m4a", ".ogg", ".wav"))
+        ]
     all_tracks = sorted(set(all_tracks))
     if not all_tracks:
         print("⚠️  Nenhuma faixa de música encontrada — vídeo sem música.")
