@@ -100,7 +100,7 @@ THEMES = {
 }
 
 # Ordem de rotacao automatica (um tema por dia). Edita a vontade  "depois vou alimentando".
-ROTATION = ["protection", "paix", "esperance", "amour", "priere", "promesses", "sagesse"]
+ROTATION = ["protection", "paix", "esperance", "amour", "priere", "promesses", "sagesse", "jesus", "psaumes", "propheties"]
 
 
 # 
