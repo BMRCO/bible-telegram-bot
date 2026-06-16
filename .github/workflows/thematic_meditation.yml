@@ -1,5 +1,4 @@
 name: Meditation thematique
-
 on:
   schedule:
     # 16h13 UTC  18h13 FR (verao). Com o atraso do GitHub Actions deve cair a noite.
@@ -8,19 +7,16 @@ on:
   workflow_dispatch:
     inputs:
       theme:
-        description: 'Theme (protection, paix, amour, esperance, priere, promesses, sagesse, jesus, psaumes, propheties). Vide = rotation auto.'
+        description: 'Theme: protection, paix, peur, esperance, confiance, amour, pardon, guerison, deuil, solitude, priere, gratitude, force, combat, promesses, famille, sagesse, jesus, psaumes, propheties. Vide = rotation auto.'
         required: false
         type: string
         default: ''
-
 permissions:
   contents: write
-
 # Grupo proprio e unico por run - nunca cancela nem e cancelado por outra run.
 concurrency:
   group: thematic-post-${{ github.event.schedule || github.run_id }}
   cancel-in-progress: false
-
 jobs:
   thematic:
     runs-on: ubuntu-latest
@@ -28,23 +24,18 @@ jobs:
     steps:
       - name: Current UTC time
         run: date -u
-
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pillow requests numpy google-api-python-client google-auth-httplib2 google-auth-oauthlib
-
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
-
       - name: Run thematic meditation
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -61,7 +52,6 @@ jobs:
           else
             python thematic_meditation.py
           fi
-
       - name: Commit progress
         run: |
           git config user.name "github-actions[bot]"
