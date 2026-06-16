@@ -97,10 +97,50 @@ THEMES = {
         file="propheties_curated.json", title="Les proph\u00e9ties de la Parole",
         lines=["Les proph\u00e9ties", "de la Parole"], emoji="\U0001f4ef", tag="Proph\u00e9ties",
         palette=((20, 8, 34), (10, 4, 20), (170, 130, 200), (195, 160, 222), (244, 238, 250), (140, 115, 165))),
+    "guerison": dict(
+        file="guerison_curated.json", title="La gu\u00e9rison de Dieu",
+        lines=["La gu\u00e9rison", "de Dieu"], emoji="\U0001f49a", tag="Gu\u00e9rison",
+        palette=((6, 26, 30), (3, 14, 17), (120, 195, 200), (155, 222, 225), (236, 249, 250), (110, 158, 162))),
+    "peur": dict(
+        file="peur_curated.json", title="Face \u00e0 la peur et l'angoisse",
+        lines=["Face \u00e0 la peur", "et l'angoisse"], emoji="\U0001f499", tag="Encouragement",
+        palette=((14, 20, 30), (7, 11, 17), (140, 175, 200), (170, 205, 225), (236, 242, 248), (115, 145, 170))),
+    "pardon": dict(
+        file="pardon_curated.json", title="Le pardon de Dieu",
+        lines=["Le pardon", "de Dieu"], emoji="\U0001f90d", tag="Pardon",
+        palette=((26, 20, 30), (14, 10, 17), (200, 170, 200), (225, 200, 225), (248, 242, 248), (155, 130, 155))),
+    "deuil": dict(
+        file="deuil_curated.json", title="Le r\u00e9confort dans le deuil",
+        lines=["Le r\u00e9confort", "dans le deuil"], emoji="\U0001f56f\ufe0f", tag="R\u00e9confort",
+        palette=((18, 18, 28), (9, 9, 15), (150, 160, 195), (180, 190, 215), (238, 240, 248), (118, 128, 160))),
+    "confiance": dict(
+        file="confiance_curated.json", title="La confiance en Dieu",
+        lines=["La confiance", "en Dieu"], emoji="\u2693", tag="Confiance",
+        palette=((12, 16, 32), (6, 9, 18), (140, 160, 210), (170, 190, 228), (236, 240, 250), (115, 135, 180))),
+    "force": dict(
+        file="force_curated.json", title="La force et le courage",
+        lines=["La force", "et le courage"], emoji="\U0001f981", tag="Force",
+        palette=((30, 18, 8), (17, 10, 4), (214, 150, 90), (234, 178, 120), (246, 238, 228), (165, 130, 95))),
+    "gratitude": dict(
+        file="gratitude_curated.json", title="La gratitude",
+        lines=["La gratitude", ""], emoji="\U0001f64c", tag="Louange",
+        palette=((28, 22, 6), (16, 12, 3), (220, 190, 100), (238, 210, 135), (248, 244, 228), (168, 148, 105))),
+    "combat": dict(
+        file="combat_curated.json", title="Le combat spirituel",
+        lines=["Le combat", "spirituel"], emoji="\u2694\ufe0f", tag="CombatSpirituel",
+        palette=((28, 10, 12), (15, 5, 6), (200, 90, 90), (225, 120, 120), (245, 232, 232), (160, 95, 98))),
+    "solitude": dict(
+        file="solitude_curated.json", title="La pr\u00e9sence de Dieu",
+        lines=["La pr\u00e9sence", "de Dieu"], emoji="\U0001f463", tag="Pr\u00e9sence",
+        palette=((26, 22, 16), (14, 12, 8), (200, 180, 150), (222, 205, 178), (246, 242, 234), (160, 148, 125))),
+    "famille": dict(
+        file="famille_curated.json", title="La famille selon Dieu",
+        lines=["La famille", "selon Dieu"], emoji="\U0001f3e1", tag="Famille",
+        palette=((28, 20, 12), (16, 11, 6), (210, 165, 120), (230, 190, 150), (246, 240, 230), (165, 135, 108))),
 }
 
 # Ordem de rotacao automatica (um tema por dia). Edita a vontade  "depois vou alimentando".
-ROTATION = ["protection", "paix", "esperance", "amour", "priere", "promesses", "sagesse", "jesus", "psaumes", "propheties"]
+ROTATION = ["protection", "paix", "peur", "esperance", "confiance", "amour", "pardon", "guerison", "deuil", "solitude", "priere", "gratitude", "force", "combat", "promesses", "famille", "sagesse", "jesus", "psaumes", "propheties"]
 
 
 # 
