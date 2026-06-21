@@ -120,7 +120,7 @@ def is_safe_music(path):
     legítimos têm maiúsculas no nome.
     """
     stem = os.path.splitext(os.path.basename(path))[0]
-    return not (" " in stem or "(" in stem or ")" in stem)
+    return True  # filtro por nome desativado: todas as faixas royalty-free sao aceites
 
 
 def pick_safe_music(num):
@@ -136,7 +136,20 @@ def pick_safe_music(num):
             for f in os.listdir(folder)
             if f.lower().endswith((".mp3", ".m4a", ".ogg", ".wav"))
         ]
-    all_tracks = sorted(set(all_tracks))
+    # dedup por CONTEUDO (apanha copias exatas: 'x', 'x_1', 'x_2'... mesmo com nomes diferentes)
+    import hashlib
+    _seen, _uniq = set(), []
+    for _p in sorted(set(all_tracks)):
+        try:
+            with open(_p, "rb") as _fh:
+                _h = hashlib.md5(_fh.read()).hexdigest()
+        except Exception:
+            _h = _p
+        if _h in _seen:
+            continue
+        _seen.add(_h)
+        _uniq.append(_p)
+    all_tracks = _uniq
     if not all_tracks:
         print("⚠️  Nenhuma faixa de música encontrada — vídeo sem música.")
         return None
