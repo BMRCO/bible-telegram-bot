@@ -727,18 +727,33 @@ def wrap_text_with_quotes(draw, text, font, max_w):
 
 
 def list_music(folder="music"):
-    """Lista todas as faixas de áudio da pasta, insensível a maiúsculas na extensão."""
+    """Lista as faixas de áudio da pasta (extensão insensível a maiúsculas),
+    removendo duplicados EXATOS pelo conteúdo do ficheiro — mesmo com nomes
+    diferentes (ex.: 'x.mp3', 'x_1.mp3', 'x_2.mp3') — para não inflar a rotação
+    com a mesma música e dar sempre a sensação de repetição."""
+    import hashlib
     if not os.path.isdir(folder):
         return []
-    return sorted(
-        os.path.join(folder, f)
-        for f in os.listdir(folder)
-        if f.lower().endswith((".mp3", ".m4a", ".ogg", ".wav"))
-    )
+    seen = set()
+    out = []
+    for f in sorted(os.listdir(folder)):
+        if not f.lower().endswith((".mp3", ".m4a", ".ogg", ".wav")):
+            continue
+        p = os.path.join(folder, f)
+        try:
+            with open(p, "rb") as fh:
+                h = hashlib.md5(fh.read()).hexdigest()
+        except Exception:
+            h = p  # se não conseguir ler, trata como faixa única
+        if h in seen:
+            continue  # duplicado exato -> ignora
+        seen.add(h)
+        out.append(p)
+    return out
 
 
 def pick_music(progress):
-    """Escolhe uma faixa ao acaso, evitando as últimas usadas (mais variedade)."""
+    """Escolhe uma faixa ao acaso, evitando ~metade das últimas usadas (mais variedade)."""
     tracks = list_music("music")
     if not tracks:
         return None
@@ -746,10 +761,10 @@ def pick_music(progress):
     pool = [t for t in tracks if t not in recent] or tracks
     choice = random.choice(pool)
     if progress is not None:
-        keep = max(1, min(len(tracks) - 1, 5))
+        keep = max(1, min(len(tracks) - 1, (len(tracks) + 1) // 2))
         progress["recent_music"] = (recent + [choice])[-keep:]
         progress["last_music"] = choice
-    print(f"\U0001F3B5 {choice}  ({len(tracks)} faixas)")
+    print(f"\U0001F3B5 {choice}  ({len(tracks)} faixas distintas)")
     return choice
 
 
