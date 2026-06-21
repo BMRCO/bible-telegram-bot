@@ -1,60 +1,230 @@
 [
-  ["Deutéronome", 31, 6],
-  ["Deutéronome", 31, 8],
-  ["Josué", 1, 9],
-  ["Ésaïe", 26, 3],
-  ["Ésaïe", 40, 29],
-  ["Ésaïe", 40, 31],
-  ["Ésaïe", 41, 10],
-  ["Ésaïe", 41, 13],
-  ["Ésaïe", 43, 1],
-  ["Ésaïe", 43, 2],
-  ["Ésaïe", 46, 4],
-  ["Ésaïe", 54, 10],
-  ["Ésaïe", 55, 11],
-  ["Ésaïe", 58, 11],
-  ["Jérémie", 29, 11],
-  ["Jérémie", 29, 12],
-  ["Jérémie", 29, 13],
-  ["Jérémie", 33, 3],
-  ["Lamentations", 3, 22, 23],
-  ["Ézéchiel", 36, 26],
-  ["Michée", 7, 19],
-  ["Nahum", 1, 7],
-  ["Sophonie", 3, 17],
-  ["Matthieu", 6, 33],
-  ["Matthieu", 7, 7],
-  ["Matthieu", 11, 28],
-  ["Jean", 3, 16],
-  ["Jean", 5, 24],
-  ["Jean", 6, 37],
-  ["Jean", 10, 28],
-  ["Jean", 11, 25],
-  ["Jean", 14, 27],
-  ["Jean", 16, 33],
-  ["Actes", 16, 31],
-  ["Romains", 6, 23],
-  ["Romains", 8, 1],
-  ["Romains", 8, 28],
-  ["Romains", 10, 9],
-  ["Romains", 10, 13],
-  ["1 Corinthiens", 2, 9],
-  ["1 Corinthiens", 10, 13],
-  ["2 Corinthiens", 5, 17],
-  ["2 Corinthiens", 9, 8],
-  ["2 Corinthiens", 12, 9],
-  ["Galates", 6, 9],
-  ["Philippiens", 4, 6, 7],
-  ["Philippiens", 4, 13],
-  ["Philippiens", 4, 19],
-  ["2 Thessaloniciens", 3, 3],
-  ["Hébreux", 13, 5],
-  ["Jacques", 1, 12],
-  ["1 Pierre", 5, 7],
-  ["1 Pierre", 5, 10],
-  ["1 Jean", 1, 9],
-  ["1 Jean", 4, 4],
-  ["1 Jean", 5, 14, 15],
-  ["Apocalypse", 3, 20],
-  ["Apocalypse", 21, 4]
+  [
+    "Philippiens",
+    4,
+    19
+  ],
+  [
+    "Psaumes",
+    23,
+    1
+  ],
+  [
+    "Psaumes",
+    34,
+    10
+  ],
+  [
+    "Psaumes",
+    37,
+    25
+  ],
+  [
+    "Matthieu",
+    6,
+    26
+  ],
+  [
+    "2 Corinthiens",
+    9,
+    8
+  ],
+  [
+    "Psaumes",
+    84,
+    11
+  ],
+  [
+    "Psaumes",
+    32,
+    8
+  ],
+  [
+    "Ésaïe",
+    30,
+    21
+  ],
+  [
+    "Psaumes",
+    37,
+    23
+  ],
+  [
+    "Proverbes",
+    16,
+    9
+  ],
+  [
+    "Psaumes",
+    31,
+    3
+  ],
+  [
+    "Matthieu",
+    7,
+    7
+  ],
+  [
+    "Jérémie",
+    33,
+    3
+  ],
+  [
+    "Psaumes",
+    50,
+    15
+  ],
+  [
+    "1 Jean",
+    5,
+    14
+  ],
+  [
+    "Matthieu",
+    21,
+    22
+  ],
+  [
+    "Lamentations",
+    3,
+    22,
+    23
+  ],
+  [
+    "Deutéronome",
+    7,
+    9
+  ],
+  [
+    "Romains",
+    8,
+    28
+  ],
+  [
+    "Romains",
+    8,
+    38,
+    39
+  ],
+  [
+    "Jérémie",
+    31,
+    3
+  ],
+  [
+    "Psaumes",
+    103,
+    8
+  ],
+  [
+    "Psaumes",
+    100,
+    5
+  ],
+  [
+    "Nombres",
+    23,
+    19
+  ],
+  [
+    "Jérémie",
+    29,
+    11
+  ],
+  [
+    "Proverbes",
+    23,
+    18
+  ],
+  [
+    "Jean",
+    3,
+    16
+  ],
+  [
+    "Jean",
+    10,
+    28
+  ],
+  [
+    "Jean",
+    6,
+    37
+  ],
+  [
+    "Romains",
+    10,
+    13
+  ],
+  [
+    "Apocalypse",
+    3,
+    20
+  ],
+  [
+    "Psaumes",
+    55,
+    22
+  ],
+  [
+    "Romains",
+    8,
+    32
+  ],
+  [
+    "Jacques",
+    1,
+    5
+  ],
+  [
+    "2 Corinthiens",
+    5,
+    17
+  ],
+  [
+    "Psaumes",
+    16,
+    11
+  ],
+  [
+    "Galates",
+    6,
+    9
+  ],
+  [
+    "1 Corinthiens",
+    15,
+    58
+  ],
+  [
+    "Psaumes",
+    91,
+    11
+  ],
+  [
+    "Psaumes",
+    121,
+    7,
+    8
+  ],
+  [
+    "Ésaïe",
+    32,
+    17
+  ],
+  [
+    "Philippiens",
+    4,
+    13
+  ],
+  [
+    "Ésaïe",
+    40,
+    31
+  ],
+  [
+    "Ésaïe",
+    41,
+    10
+  ]
 ]
