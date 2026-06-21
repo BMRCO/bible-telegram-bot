@@ -34,8 +34,11 @@ from bot import (
 # Reutiliza helpers de render + musica das meditacoes de Salmos
 from psaume_meditation import (
     ease, gradient_bg, wrap, autosize_font, pick_safe_music,
-    W, H, FPS, SECS_INTRO, SECS_OUTRO, FADE_DURATION,
+    FPS, SECS_INTRO, SECS_OUTRO, FADE_DURATION,
 )
+
+# Tematicas em VERTICAL 9:16 (1080x1920) -> caem nos Shorts do YouTube (duracao < 3 min)
+W, H = 1080, 1920
 
 # Credenciais (mesmas secrets do meditation.yml)
 YT_CLIENT_ID     = os.environ.get("YOUTUBE_CLIENT_ID", "")
