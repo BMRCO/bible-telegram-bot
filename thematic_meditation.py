@@ -28,6 +28,7 @@ from PIL import Image, ImageDraw, ImageFont
 # Reutiliza utilitarios do bot
 from bot import (
     load_json, save_json, clean_text, strip_rubric,
+    post_reel_to_instagram, post_reel_to_threads,
     BIBLE_FILE, APP_URL, WATERMARK,
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
 )
@@ -485,6 +486,21 @@ def main():
     upload_to_youtube(video_path, theme_key, verses)
     post_to_telegram(video_path, theme_key, verses)
     post_to_facebook(video_path, theme_key, verses)
+    # Instagram (Reel) - agora que e vertical 9:16, encaixa perfeitamente
+    post_reel_to_instagram(
+        video_path,
+        THEMES[theme_key]["title"],
+        verses[0][1] if verses else "",
+        THEMES[theme_key],
+        theme_key,
+    )
+    post_reel_to_threads(
+        video_path,
+        THEMES[theme_key]["title"],
+        verses[0][1] if verses else "",
+        THEMES[theme_key],
+        theme_key,
+    )
 
     # Atualiza progresso
     offsets[theme_key] = (offset + THEMATIC_VERSES) % max(total, 1)
