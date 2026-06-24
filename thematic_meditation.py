@@ -28,14 +28,18 @@ from PIL import Image, ImageDraw, ImageFont
 # Reutiliza utilitarios do bot
 from bot import (
     load_json, save_json, clean_text, strip_rubric,
+    post_reel_to_instagram, post_reel_to_threads,
     BIBLE_FILE, APP_URL, WATERMARK,
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
 )
 # Reutiliza helpers de render + musica das meditacoes de Salmos
 from psaume_meditation import (
     ease, gradient_bg, wrap, autosize_font, pick_safe_music,
-    W, H, FPS, SECS_INTRO, SECS_OUTRO, FADE_DURATION,
+    FPS, SECS_INTRO, SECS_OUTRO, FADE_DURATION,
 )
+
+# Tematicas em VERTICAL 9:16 (1080x1920) -> caem nos Shorts do YouTube (duracao < 3 min)
+W, H = 1080, 1920
 
 # Credenciais (mesmas secrets do meditation.yml)
 YT_CLIENT_ID     = os.environ.get("YOUTUBE_CLIENT_ID", "")
@@ -482,6 +486,21 @@ def main():
     upload_to_youtube(video_path, theme_key, verses)
     post_to_telegram(video_path, theme_key, verses)
     post_to_facebook(video_path, theme_key, verses)
+    # Instagram (Reel) - agora que e vertical 9:16, encaixa perfeitamente
+    post_reel_to_instagram(
+        video_path,
+        THEMES[theme_key]["title"],
+        verses[0][1] if verses else "",
+        THEMES[theme_key],
+        theme_key,
+    )
+    post_reel_to_threads(
+        video_path,
+        THEMES[theme_key]["title"],
+        verses[0][1] if verses else "",
+        THEMES[theme_key],
+        theme_key,
+    )
 
     # Atualiza progresso
     offsets[theme_key] = (offset + THEMATIC_VERSES) % max(total, 1)
