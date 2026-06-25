@@ -5,7 +5,7 @@
     "esperance": 7,
     "amour": 7,
     "priere": 14,
-    "promesses": 7,
+    "promesses": 14,
     "pardon": 7,
     "guerison": 7,
     "deuil": 7,
@@ -14,6 +14,6 @@
     "force": 7,
     "combat": 7
   },
-  "theme_index": 14,
-  "rot": 14
+  "theme_index": 15,
+  "rot": 15
 }
