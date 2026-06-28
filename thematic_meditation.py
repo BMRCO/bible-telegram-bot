@@ -53,8 +53,11 @@ FB_PAGE_ID       = os.environ.get("FB_PAGE_ID", "1018605031335601")
 FB_PAGE_TOKEN    = os.environ.get("FB_PAGE_TOKEN", "")
 
 PROGRESS_FILE   = "progress_thematic.json"
-THEMATIC_VERSES = 7      # versiculos por video
-SECS_PER_VERSE  = 11     # ritmo de meditacao
+THEMATIC_VERSES = 5      # versiculos por video (para o Short ficar < 60s)
+SECS_PER_VERSE  = 9      # ritmo de meditacao
+# intro/outro mais curtos SO nos tematicos (sombreia o import; nao afeta os Salmos)
+SECS_INTRO = 3
+SECS_OUTRO = 3           # total = 3 + 5*9 + 3 = 51s  (< 60s -> regra de Short mais leve)
 
 BOOK_NAME_MAP = {"Psaumes": "Psaume"}
 
@@ -225,21 +228,31 @@ def _distinct_safe_tracks():
 
 
 def pick_music_varied(progress):
-    """Toca TODAS as faixas distintas antes de repetir (saco baralhado, guardado no progresso)."""
+    """Toca TODAS as faixas distintas antes de repetir (saco baralhado).
+    Faixas apagadas sao ignoradas; faixas novas entram JA no ciclo atual."""
     pool = _distinct_safe_tracks()
     if not pool:
         print("\u26a0\ufe0f  Nenhuma faixa de musica encontrada \u2014 video sem musica.")
         return None
     pset = set(pool)
+    played = [t for t in progress.get("music_played", []) if t in pset]
     bag = [t for t in progress.get("music_bag", []) if t in pset]
+    known = set(played) | set(bag)
+    new = [t for t in pool if t not in known]
+    if new:
+        bag += new
+        random.shuffle(bag)
     if not bag:
         bag = pool[:]
         random.shuffle(bag)
+        played = []
         last = progress.get("last_music")
         if last and len(bag) > 1 and bag[0] == last:
             bag.append(bag.pop(0))
     choice = bag.pop(0)
+    played.append(choice)
     progress["music_bag"] = bag
+    progress["music_played"] = played
     progress["last_music"] = choice
     print(f"\U0001f3b5 Musica (tematico): {choice}  [{len(pool)} distintas; restam {len(bag)} no ciclo]")
     return choice
