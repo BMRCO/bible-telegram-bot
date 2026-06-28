@@ -224,16 +224,24 @@ def _distinct_safe_tracks():
     return uniq
 
 
-def pick_music_varied(recent):
-    """Escolhe uma faixa ALEATORIA, evitando as ultimas usadas (recent = lista de caminhos).
-    Independente de qualquer contador: varia sempre, mesmo que o progresso se perca."""
+def pick_music_varied(progress):
+    """Toca TODAS as faixas distintas antes de repetir (saco baralhado, guardado no progresso)."""
     pool = _distinct_safe_tracks()
     if not pool:
         print("\u26a0\ufe0f  Nenhuma faixa de musica encontrada \u2014 video sem musica.")
         return None
-    candidates = [t for t in pool if t not in set(recent)] or pool
-    choice = random.choice(candidates)
-    print(f"\U0001f3b5 Musica (tematico): {choice}  [{len(pool)} distintas; evitou {len(set(recent) & set(pool))}]")
+    pset = set(pool)
+    bag = [t for t in progress.get("music_bag", []) if t in pset]
+    if not bag:
+        bag = pool[:]
+        random.shuffle(bag)
+        last = progress.get("last_music")
+        if last and len(bag) > 1 and bag[0] == last:
+            bag.append(bag.pop(0))
+    choice = bag.pop(0)
+    progress["music_bag"] = bag
+    progress["last_music"] = choice
+    print(f"\U0001f3b5 Musica (tematico): {choice}  [{len(pool)} distintas; restam {len(bag)} no ciclo]")
     return choice
 
 
@@ -501,7 +509,6 @@ def main():
     progress = load_json(PROGRESS_FILE) if os.path.exists(PROGRESS_FILE) else {}
     offsets = progress.get("offsets", {})
     theme_index = progress.get("theme_index", 0)
-    recent_music = progress.get("recent_music", [])
 
     if args and args[0] in THEMES:
         # Modo manual: tema indicado (e offset opcional)
@@ -519,7 +526,7 @@ def main():
     for ref, _ in verses:
         print(f"  \u2022 {ref}")
 
-    music = pick_music_varied(recent_music)
+    music = pick_music_varied(progress)
     video_path = make_thematic_video(theme_key, verses, music)
 
     upload_to_youtube(video_path, theme_key, verses)
@@ -545,10 +552,6 @@ def main():
     offsets[theme_key] = (offset + THEMATIC_VERSES) % max(total, 1)
     progress["offsets"] = offsets
     progress["theme_index"] = theme_index
-    if music:
-        recent_music = [music] + [r for r in recent_music if r != music]
-        keep = max(1, len(_distinct_safe_tracks()) // 2)   # evita repetir ~metade do catalogo
-        progress["recent_music"] = recent_music[:keep]
     save_json(PROGRESS_FILE, progress)
 
     print("\u2705 Termin\u00e9 (m\u00e9ditation th\u00e9matique).")
