@@ -21,6 +21,8 @@ import sys
 import json
 import subprocess
 import shutil
+import random
+import hashlib
 
 import requests
 from PIL import Image, ImageDraw, ImageFont
@@ -199,7 +201,43 @@ def load_theme_verses(theme_key, n, offset):
 # 
 #  Render do video
 # 
-def make_thematic_video(theme_key, verses, rot):
+def _distinct_safe_tracks():
+    """Junta as faixas das duas pastas e remove duplicados por CONTEUDO (md5),
+    para que copias com nomes diferentes (x, x_1, x_2...) contem como uma so."""
+    tracks = []
+    for folder in ("music", "music_meditation"):
+        if not os.path.isdir(folder):
+            continue
+        tracks += [os.path.join(folder, f) for f in os.listdir(folder)
+                   if f.lower().endswith((".mp3", ".m4a", ".ogg", ".wav"))]
+    seen, uniq = set(), []
+    for p in sorted(set(tracks)):
+        try:
+            with open(p, "rb") as fh:
+                h = hashlib.md5(fh.read()).hexdigest()
+        except Exception:
+            h = p
+        if h in seen:
+            continue
+        seen.add(h)
+        uniq.append(p)
+    return uniq
+
+
+def pick_music_varied(recent):
+    """Escolhe uma faixa ALEATORIA, evitando as ultimas usadas (recent = lista de caminhos).
+    Independente de qualquer contador: varia sempre, mesmo que o progresso se perca."""
+    pool = _distinct_safe_tracks()
+    if not pool:
+        print("\u26a0\ufe0f  Nenhuma faixa de musica encontrada \u2014 video sem musica.")
+        return None
+    candidates = [t for t in pool if t not in set(recent)] or pool
+    choice = random.choice(candidates)
+    print(f"\U0001f3b5 Musica (tematico): {choice}  [{len(pool)} distintas; evitou {len(set(recent) & set(pool))}]")
+    return choice
+
+
+def make_thematic_video(theme_key, verses, music):
     th = THEMES[theme_key]
     BG_TOP, BG_BOTTOM, ACCENT, ACCENT_BRIGHT, WHITE, SIL = th["palette"]
     n = len(verses)
@@ -317,7 +355,7 @@ def make_thematic_video(theme_key, verses, rot):
     dur = SECS_INTRO + n * SECS_PER_VERSE + SECS_OUTRO
     print(f"\u23f1\ufe0f  Dura\u00e7\u00e3o: {dur}s ({dur/60:.1f} min)")
 
-    music = pick_safe_music(rot + 1)   # rotacao de musica (reaproveita logica anti-Content-ID)
+    music = music   # faixa escolhida em main() (aleatoria, evita repeticoes)
     if music:
         subprocess.run([
             'ffmpeg', '-framerate', str(FPS), '-i', 'frames/frame_%04d.png',
@@ -463,7 +501,7 @@ def main():
     progress = load_json(PROGRESS_FILE) if os.path.exists(PROGRESS_FILE) else {}
     offsets = progress.get("offsets", {})
     theme_index = progress.get("theme_index", 0)
-    rot = progress.get("rot", 0)
+    recent_music = progress.get("recent_music", [])
 
     if args and args[0] in THEMES:
         # Modo manual: tema indicado (e offset opcional)
@@ -481,7 +519,8 @@ def main():
     for ref, _ in verses:
         print(f"  \u2022 {ref}")
 
-    video_path = make_thematic_video(theme_key, verses, rot)
+    music = pick_music_varied(recent_music)
+    video_path = make_thematic_video(theme_key, verses, music)
 
     upload_to_youtube(video_path, theme_key, verses)
     post_to_telegram(video_path, theme_key, verses)
@@ -506,7 +545,10 @@ def main():
     offsets[theme_key] = (offset + THEMATIC_VERSES) % max(total, 1)
     progress["offsets"] = offsets
     progress["theme_index"] = theme_index
-    progress["rot"] = rot + 1
+    if music:
+        recent_music = [music] + [r for r in recent_music if r != music]
+        keep = max(1, len(_distinct_safe_tracks()) // 2)   # evita repetir ~metade do catalogo
+        progress["recent_music"] = recent_music[:keep]
     save_json(PROGRESS_FILE, progress)
 
     print("\u2705 Termin\u00e9 (m\u00e9ditation th\u00e9matique).")
