@@ -205,7 +205,7 @@ def _distinct_safe_tracks():
     """Junta as faixas das duas pastas e remove duplicados por CONTEUDO (md5),
     para que copias com nomes diferentes (x, x_1, x_2...) contem como uma so."""
     tracks = []
-    for folder in ("music", "music_meditation"):
+    for folder in ("music_meditation",):
         if not os.path.isdir(folder):
             continue
         tracks += [os.path.join(folder, f) for f in os.listdir(folder)
