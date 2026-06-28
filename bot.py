@@ -231,8 +231,8 @@ def clean_text(text: str) -> str:
     text = re.sub(r'\s*([?!])', r' \1', text)
     text = text.replace("'", "\u2019").replace("'", "\u2019")
     text = text.replace("Eternel", "Éternel")
-    text = text.replace("coeur", "cœur")
-    text = text.replace("Coeur", "Cœur")
+    # œ (oeu -> œu): cœur, sœur, œuvre, œuf, bœuf, vœu, nœud, mœurs, chœur, manœuvre, rancœur…
+    text = re.sub(r'[Oo][Ee]([Uu])', lambda m: ('Œ' if m.group(0)[0].isupper() else 'œ') + m.group(1), text)
     text = text.rstrip(';').rstrip(':').rstrip(',').strip()
     if not text.endswith(('.', '!', '?')):
         text += '.'
@@ -753,18 +753,24 @@ def list_music(folder="music"):
 
 
 def pick_music(progress):
-    """Escolhe uma faixa ao acaso, evitando ~metade das últimas usadas (mais variedade)."""
+    """Toca TODAS as faixas distintas antes de repetir qualquer uma (saco baralhado).
+    O 'saco' fica guardado no progresso e vai-se esvaziando; quando acaba, baralha de novo."""
     tracks = list_music("music")
     if not tracks:
         return None
-    recent = (progress.get("recent_music", []) if progress else []) or []
-    pool = [t for t in tracks if t not in recent] or tracks
-    choice = random.choice(pool)
+    tset = set(tracks)
+    bag = [t for t in (progress.get("music_bag", []) if progress else []) if t in tset]
+    if not bag:
+        bag = tracks[:]
+        random.shuffle(bag)
+        last = progress.get("last_music") if progress else None
+        if last and len(bag) > 1 and bag[0] == last:
+            bag.append(bag.pop(0))   # evita repetir na junção de dois ciclos
+    choice = bag.pop(0)
     if progress is not None:
-        keep = max(1, min(len(tracks) - 1, (len(tracks) + 1) // 2))
-        progress["recent_music"] = (recent + [choice])[-keep:]
+        progress["music_bag"] = bag
         progress["last_music"] = choice
-    print(f"\U0001F3B5 {choice}  ({len(tracks)} faixas distintas)")
+    print(f"\U0001F3B5 {choice}  ({len(tracks)} faixas distintas; restam {len(bag)} no ciclo)")
     return choice
 
 
