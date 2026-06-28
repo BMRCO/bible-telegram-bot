@@ -128,7 +128,7 @@ def pick_safe_music(num):
     duas pastas de música (insensível a maiúsculas na extensão) e descartando
     só os nomes suspeitos."""
     all_tracks = []
-    for folder in ("music", "music_meditation"):
+    for folder in ("music_meditation",):
         if not os.path.isdir(folder):
             continue
         all_tracks += [
