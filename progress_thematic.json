@@ -16,12 +16,12 @@
     "famille": 7,
     "sagesse": 7,
     "jesus": 7,
-    "psaumes": 5
+    "psaumes": 5,
+    "propheties": 5
   },
-  "theme_index": 19,
+  "theme_index": 0,
   "rot": 17,
   "music_bag": [
-    "music_meditation/onetent-flute-meditation-music-8-230805.mp3",
     "music_meditation/Christian Instrumental Piano Worship Calm Emotional Soaking Prayer - Royalty-free Music.mp3",
     "music_meditation/Christian instrumental music for prayer (God Is Making a Way) - Royalty-free Music.mp3",
     "music_meditation/Christian instrumental music (God Will Make a Way) - Royalty-free Music.mp3",
@@ -46,8 +46,9 @@
     "music_meditation/Christian instrumental music for prayer (Awakening Light) - Royalty-free Music.mp3",
     "music_meditation/nickpanekaiassets-peaceful-piano-background-music-218762.mp3"
   ],
-  "last_music": "music_meditation/jessequinnmedia-beautiful-christian-worship-background-instrumental-piano-peaceful-joy-395073.mp3",
+  "last_music": "music_meditation/onetent-flute-meditation-music-8-230805.mp3",
   "music_played": [
-    "music_meditation/jessequinnmedia-beautiful-christian-worship-background-instrumental-piano-peaceful-joy-395073.mp3"
+    "music_meditation/jessequinnmedia-beautiful-christian-worship-background-instrumental-piano-peaceful-joy-395073.mp3",
+    "music_meditation/onetent-flute-meditation-music-8-230805.mp3"
   ]
 }
