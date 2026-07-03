@@ -228,7 +228,7 @@ def clean_text(text: str) -> str:
     text = re.sub(r'\s*Sélah\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s*Selah\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s+', ' ', text).strip()
-    text = re.sub(r'\s*([?!])', r' \1', text)
+    text = re.sub(r'\s*([;:!?])', '\u00a0\\1', text)
     text = text.replace("'", "\u2019").replace("'", "\u2019")
     text = text.replace("Eternel", "Éternel")
     # œ (oeu -> œu): cœur, sœur, œuvre, œuf, bœuf, vœu, nœud, mœurs, chœur, manœuvre, rancœur…
@@ -631,8 +631,8 @@ def wrap_text(draw, text, font, max_w):
         return [""]
     lines, current = [], words[0]
     for w in words[1:]:
-        # Ne pas couper avant ? et ! — les garder avec le mot précédent
-        if w.startswith('?') or w.startswith('!'):
+        # Ne pas couper avant ? ! : ; — les garder avec le mot précédent
+        if w and w[0] in '?!:;':
             current = current + '\u00a0' + w
             continue
         test = current + " " + w
@@ -700,6 +700,10 @@ def wrap_text_with_quotes(draw, text, font, max_w):
     q_open = draw.textlength("« ", font=font)
     lines, current = [], words[0]
     for w in words[1:]:
+        # Ne pas couper avant ? ! : ; — les garder avec le mot précédent
+        if w and w[0] in '?!:;':
+            current = current + '\u00a0' + w
+            continue
         test = current + " " + w
         margin = q_open if not lines else 0
         if draw.textlength(test, font=font) + margin <= max_w:
@@ -713,6 +717,9 @@ def wrap_text_with_quotes(draw, text, font, max_w):
         words_last = last.split()
         new_last = words_last[0]
         for w in words_last[1:]:
+            if w and w[0] in '?!:;':
+                new_last = new_last + '\u00a0' + w
+                continue
             if draw.textlength(new_last + " " + w + " »", font=font) <= max_w:
                 new_last += " " + w
             else:
@@ -753,22 +760,34 @@ def list_music(folder="music"):
 
 
 def pick_music(progress):
-    """Toca TODAS as faixas distintas antes de repetir qualquer uma (saco baralhado).
-    O 'saco' fica guardado no progresso e vai-se esvaziando; quando acaba, baralha de novo."""
+    """Toca TODAS as faixas distintas antes de repetir (saco baralhado).
+    Lida com mudancas na pasta: faixas apagadas sao ignoradas; faixas novas
+    entram JA no ciclo atual, sem repetir as ja tocadas."""
     tracks = list_music("music")
     if not tracks:
         return None
     tset = set(tracks)
+    played = [t for t in (progress.get("music_played", []) if progress else []) if t in tset]
     bag = [t for t in (progress.get("music_bag", []) if progress else []) if t in tset]
+    # faixas novas (nem tocadas neste ciclo nem ja no saco) entram agora
+    known = set(played) | set(bag)
+    new = [t for t in tracks if t not in known]
+    if new:
+        bag += new
+        random.shuffle(bag)
     if not bag:
+        # ciclo completo -> baralha tudo de novo
         bag = tracks[:]
         random.shuffle(bag)
+        played = []
         last = progress.get("last_music") if progress else None
         if last and len(bag) > 1 and bag[0] == last:
             bag.append(bag.pop(0))   # evita repetir na junção de dois ciclos
     choice = bag.pop(0)
+    played.append(choice)
     if progress is not None:
         progress["music_bag"] = bag
+        progress["music_played"] = played
         progress["last_music"] = choice
     print(f"\U0001F3B5 {choice}  ({len(tracks)} faixas distintas; restam {len(bag)} no ciclo)")
     return choice
@@ -1037,7 +1056,7 @@ def make_parabole_video(title, verses, progress=None):
         if not words: return [""]
         lines, current = [], words[0]
         for w in words[1:]:
-            if w.startswith('?') or w.startswith('!') or w == '»':
+            if w == '»' or (w and w[0] in '?!:;'):
                 current += '\u00a0' + w
                 continue
             test = current + " " + w
