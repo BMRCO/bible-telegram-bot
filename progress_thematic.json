@@ -2,7 +2,7 @@
   "offsets": {
     "protection": 12,
     "paix": 12,
-    "esperance": 7,
+    "esperance": 12,
     "amour": 7,
     "priere": 14,
     "promesses": 14,
@@ -20,10 +20,9 @@
     "propheties": 5,
     "peur": 5
   },
-  "theme_index": 3,
+  "theme_index": 4,
   "rot": 17,
   "music_bag": [
-    "music_meditation/Fundo Musical Relaxante Para Meditação - Royalty-free Music.mp3",
     "music_meditation/Flute Meditation Music 15 - Royalty-free Music.mp3",
     "music_meditation/Christian Instrumental Background Music (God Is Always Faithful) - Royalty-free Music.mp3",
     "music_meditation/onetent-relaxing-meditation-music-2-225173.mp3",
@@ -44,12 +43,13 @@
     "music_meditation/Christian instrumental music for prayer (Awakening Light) - Royalty-free Music.mp3",
     "music_meditation/nickpanekaiassets-peaceful-piano-background-music-218762.mp3"
   ],
-  "last_music": "music_meditation/Christian instrumental music (God Will Make a Way) - Royalty-free Music.mp3",
+  "last_music": "music_meditation/Fundo Musical Relaxante Para Meditação - Royalty-free Music.mp3",
   "music_played": [
     "music_meditation/jessequinnmedia-beautiful-christian-worship-background-instrumental-piano-peaceful-joy-395073.mp3",
     "music_meditation/onetent-flute-meditation-music-8-230805.mp3",
     "music_meditation/Christian Instrumental Piano Worship Calm Emotional Soaking Prayer - Royalty-free Music.mp3",
     "music_meditation/Christian instrumental music for prayer (God Is Making a Way) - Royalty-free Music.mp3",
-    "music_meditation/Christian instrumental music (God Will Make a Way) - Royalty-free Music.mp3"
+    "music_meditation/Christian instrumental music (God Will Make a Way) - Royalty-free Music.mp3",
+    "music_meditation/Fundo Musical Relaxante Para Meditação - Royalty-free Music.mp3"
   ]
 }
