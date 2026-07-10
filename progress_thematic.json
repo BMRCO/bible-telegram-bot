@@ -9,7 +9,7 @@
     "pardon": 12,
     "guerison": 12,
     "deuil": 12,
-    "solitude": 7,
+    "solitude": 0,
     "gratitude": 7,
     "force": 7,
     "combat": 7,
@@ -21,10 +21,9 @@
     "peur": 5,
     "confiance": 5
   },
-  "theme_index": 9,
+  "theme_index": 10,
   "rot": 17,
   "music_bag": [
-    "music_meditation/Christian instrumental music for prayer (7-42) - Royalty-free Music.mp3",
     "music_meditation/jessequinn-christian-worship-instrumental-calm-emotional-piano-by-jesse-quinn-164626.mp3",
     "music_meditation/Fundo musical relaxante para oração e meditação - Royalty-free Music.mp3",
     "music_meditation/Instrumental Christian music for prayer (12-56) - Royalty-free Music.mp3",
@@ -39,7 +38,7 @@
     "music_meditation/Christian instrumental music for prayer (Awakening Light) - Royalty-free Music.mp3",
     "music_meditation/nickpanekaiassets-peaceful-piano-background-music-218762.mp3"
   ],
-  "last_music": "music_meditation/Christian instrumental music for prayer (FAITH) - Royalty-free Music.mp3",
+  "last_music": "music_meditation/Christian instrumental music for prayer (7-42) - Royalty-free Music.mp3",
   "music_played": [
     "music_meditation/jessequinnmedia-beautiful-christian-worship-background-instrumental-piano-peaceful-joy-395073.mp3",
     "music_meditation/onetent-flute-meditation-music-8-230805.mp3",
@@ -51,6 +50,7 @@
     "music_meditation/Christian Instrumental Background Music (God Is Always Faithful) - Royalty-free Music.mp3",
     "music_meditation/onetent-relaxing-meditation-music-2-225173.mp3",
     "music_meditation/Christian instrumental music for prayer (God Is My Strength) - Royalty-free Music.mp3",
-    "music_meditation/Christian instrumental music for prayer (FAITH) - Royalty-free Music.mp3"
+    "music_meditation/Christian instrumental music for prayer (FAITH) - Royalty-free Music.mp3",
+    "music_meditation/Christian instrumental music for prayer (7-42) - Royalty-free Music.mp3"
   ]
 }
