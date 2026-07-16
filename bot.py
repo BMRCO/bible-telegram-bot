@@ -990,11 +990,11 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
         youtube = build("youtube", "v3", credentials=creds)
         title = build_yt_title(cat_name, cat, ref, hour_utc)
         description = (f"« {text} »\n"
-            f"— {ref} (LSG1910)\n\n"
-            f"📖 Lisez la Bible complète gratuitement → {APP_URL}\n"
-            f"🔔 Abonnez-vous pour plus de versets 🙏\n\n"
-            f"#Shorts #Bible #BibleFrancaise #VersetDuJour #Jésus #JésusChrist #Dieu #Foi #Évangile "
-            f"#Chrétien #ParoleDeDieu #Espérance #LSG1910 #Louange #GrâceDeDieu #Prière #Bénédiction #{cat['tag'].lstrip('#')}")
+            f"— {ref} (LSG 1910)\n\n"
+            f"📖 Lire la Bible gratuitement : {APP_URL}\n"
+            f"🔔 Abonnez-vous pour un verset chaque jour 🙏\n\n"
+            f"🔗 {APP_URL}/liens\n\n"
+            f"#Shorts #Bible #VersetDuJour #ParoleDeDieu #LSG1910 #{cat['tag'].lstrip('#')}")
         body = {"snippet": {"title": title, "description": description,
             "tags": ["Bible", "LaBible", "VersetDuJour", "LSG1910", "Shorts", "BibleFrancaise"], "categoryId": "22"},
             "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}}
@@ -1243,9 +1243,10 @@ def main_parabole():
             yt_title = f"✝️ {title} — {ref_range} | Bible LSG1910"[:100]
             description = (f"✝️ {title}\n\n"
                 + "\n".join([f"{r} — {t}" for r, t in verses])
-                + f"\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n"
-                + f"🔔 Abonnez-vous pour plus de versets 🙏\n\n"
-                + f"#Bible #ParaboleDeJésus #LSG1910 #BibleFrancaise #Jésus #Foi")
+                + f"\n\n📖 Lire la Bible gratuitement : {APP_URL}\n"
+                + f"🔔 Abonnez-vous pour plus de paraboles 🙏\n\n"
+                + f"🔗 {APP_URL}/liens\n\n"
+                + f"#Bible #ParaboleDeJésus #Jésus #LSG1910")
             body = {"snippet": {"title": yt_title, "description": description,
                 "tags": ["Bible", "Parabole", "Jésus", "LSG1910", "BibleFrancaise"], "categoryId": "22"},
                 "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}}
