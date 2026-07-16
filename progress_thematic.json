@@ -13,7 +13,7 @@
     "gratitude": 12,
     "force": 12,
     "combat": 12,
-    "famille": 7,
+    "famille": 12,
     "sagesse": 7,
     "jesus": 7,
     "psaumes": 5,
@@ -21,10 +21,9 @@
     "peur": 5,
     "confiance": 5
   },
-  "theme_index": 15,
+  "theme_index": 16,
   "rot": 17,
   "music_bag": [
-    "music_meditation/Christian instrumental music for prayer (God Is My Peace) - Royalty-free Music.mp3",
     "music_meditation/Christian instrumental music for prayer (Heaven’s Whisper) - Royalty-free Music.mp3",
     "music_meditation/Christian instrumental music for prayer (God Is My Calm) (13-42) - Royalty-free Music.mp3",
     "music_meditation/Meditation - Royalty-free Music.mp3",
@@ -33,7 +32,7 @@
     "music_meditation/Christian instrumental music for prayer (Awakening Light) - Royalty-free Music.mp3",
     "music_meditation/nickpanekaiassets-peaceful-piano-background-music-218762.mp3"
   ],
-  "last_music": "music_meditation/Christian Live Streaming music (Light of Faith) - Royalty-free Music.mp3",
+  "last_music": "music_meditation/Christian instrumental music for prayer (God Is My Peace) - Royalty-free Music.mp3",
   "music_played": [
     "music_meditation/jessequinnmedia-beautiful-christian-worship-background-instrumental-piano-peaceful-joy-395073.mp3",
     "music_meditation/onetent-flute-meditation-music-8-230805.mp3",
@@ -51,6 +50,7 @@
     "music_meditation/Fundo musical relaxante para oração e meditação - Royalty-free Music.mp3",
     "music_meditation/Instrumental Christian music for prayer (12-56) - Royalty-free Music.mp3",
     "music_meditation/Christian Background Music (Heavens Whisper Short Version 3-36) - Royalty-free Music.mp3",
-    "music_meditation/Christian Live Streaming music (Light of Faith) - Royalty-free Music.mp3"
+    "music_meditation/Christian Live Streaming music (Light of Faith) - Royalty-free Music.mp3",
+    "music_meditation/Christian instrumental music for prayer (God Is My Peace) - Royalty-free Music.mp3"
   ]
 }
