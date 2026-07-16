@@ -568,10 +568,10 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
         f"{verses_text}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{PSAUME_CTA}\n\n"
-        f"📖 Lisez la Bible complète gratuitement → {APP_URL}\n"
-        f"🔔 Abonnez-vous pour plus de méditations 🙏\n\n"
-        f"#Bible #Psaumes #Méditation #LSG1910 #ParoleDeDieu "
-        f"#Foi #Prière #Chrétien #BibleFrancaise #Adoration"
+        f"📖 Lire la Bible gratuitement : {APP_URL}\n"
+        f"🔔 Abonnez-vous pour une méditation chaque jour 🙏\n\n"
+        f"🔗 {APP_URL}/liens\n\n"
+        f"#Psaumes #Méditation #Bible #ParoleDeDieu #LSG1910"
     )
     # YouTube limita descrição a 5000 chars
     if len(description) > 5000:
