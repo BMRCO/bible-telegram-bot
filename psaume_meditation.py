@@ -482,7 +482,7 @@ def post_to_telegram(video_path, num, part_label=None):
         f"Bible Louis Segond 1910\n\n"
         f"{PSAUME_CTA}\n\n"
         f"📖 labible.app\n\n"
-        f"#LaBible #Psaumes #Méditation #LSG1910"
+        f"#LaBibleApp #Psaumes #Méditation #LSG1910"
     )
     reply_markup = json.dumps({"inline_keyboard": [[
         {"text": "📖 Lire dans LaBible.app", "url": "https://t.me/BIBLE_APP_BOT/labible"}
@@ -515,7 +515,7 @@ def post_to_facebook(video_path, num, part_label=None):
         f"Bible Louis Segond 1910\n\n"
         f"{PSAUME_CTA}\n\n"
         f"📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n"
-        f"#Bible #Psaumes #Méditation #LSG1910 #ParoleDeDieu #Foi"
+        f"#LaBibleApp #Psaumes #Méditation #Bible #LSG1910 #ParoleDeDieu"
     )
     try:
         with open(video_path, "rb") as f:
@@ -571,7 +571,7 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
         f"📖 Lire la Bible gratuitement : {APP_URL}\n"
         f"🔔 Abonnez-vous pour une méditation chaque jour 🙏\n\n"
         f"🔗 {APP_URL}/liens\n\n"
-        f"#Psaumes #Méditation #Bible #ParoleDeDieu #LSG1910"
+        f"#LaBibleApp #Psaumes #Méditation #Bible #ParoleDeDieu #LSG1910"
     )
     # YouTube limita descrição a 5000 chars
     if len(description) > 5000:
