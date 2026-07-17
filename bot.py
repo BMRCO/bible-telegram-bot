@@ -1,194 +1,638 @@
-"""
-psaume_meditation.py
-====================
-Gera vídeo horizontal 1920×1080 de meditação completa de um Salmo.
-Versículo a versículo com fade lento, música suave de fundo.
-
-Uso:
-    python psaume_meditation.py            → Salmo seguinte (progresso automático)
-    python psaume_meditation.py 23         → Salmo 23 específico
-    python psaume_meditation.py 119 1-22   → Salmo 119 versos 1-22 (para divisão)
-
-Estado salvo em: progress_meditation.json
-Temas dos Salmos:  psaumes_themes.json   (tema editorial -> título/caption)
-Frase da Parola:   psaumes_titres.json   (frase da LSG -> cartão de abertura)
-Ambos opcionais: fallback limpo para "Psaume N" se faltarem.
-"""
-
 import os
-import sys
 import json
-import math
 import random
+import re
+import datetime
+import math
 import subprocess
-import glob
-import shutil
-
 import requests
-from PIL import Image, ImageDraw, ImageFont
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
-# Reutiliza utilitários do bot
-from bot import (
-    load_json, save_json, load_verse, clean_text, strip_rubric, is_rubric,
-    BIBLE_FILE, APP_URL, WATERMARK,
-    FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
-)
+TOKEN         = os.environ["TELEGRAM_BOT_TOKEN"]
+CHANNEL       = os.environ["TELEGRAM_CHANNEL"]
 
+FB_PAGE_ID    = os.environ.get("FB_PAGE_ID", "1018605031335601")
+FB_PAGE_TOKEN = os.environ.get("FB_PAGE_TOKEN", "")
+IG_ACCOUNT_ID = os.environ.get("IG_ACCOUNT_ID", "17841447648424267")
+IMGBB_API_KEY = os.environ.get("IMGBB_API_KEY", "")
 YT_CLIENT_ID      = os.environ.get("YOUTUBE_CLIENT_ID", "")
 YT_CLIENT_SECRET  = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
 YT_REFRESH_TOKEN  = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
+CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
+CLOUDINARY_API_KEY    = os.environ.get("CLOUDINARY_API_KEY", "")
+CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET", "")
+THREADS_ACCESS_TOKEN = os.environ.get("THREADS_ACCESS_TOKEN", "")
+PINTEREST_ACCESS_TOKEN = os.environ.get("PINTEREST_ACCESS_TOKEN", "")
+PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "1092404522055080754")
 
-TELEGRAM_TOKEN   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHANNEL = os.environ.get("TELEGRAM_CHANNEL", "")
-FB_PAGE_ID       = os.environ.get("FB_PAGE_ID", "1018605031335601")
-FB_PAGE_TOKEN    = os.environ.get("FB_PAGE_TOKEN", "")
+# ----- Filtro de plataforma (para testes manuais) -----
+# Definido pela variável de ambiente ONLY_PLATFORM (passada pelo publish.yml).
+# Valores: all | telegram | facebook | instagram | youtube | pinterest | threads
+ONLY_PLATFORM = os.environ.get("ONLY_PLATFORM", "all").strip().lower()
+if ONLY_PLATFORM in ("", "all"):
+    ONLY_PLATFORM = "all"
 
-PROGRESS_FILE = "progress_meditation.json"
-THEMES_FILE   = "psaumes_themes.json"   # tema editorial (título/caption)
-TITLES_FILE   = "psaumes_titres.json"   # frase da Parola (cartão)
+def should_post(platform: str) -> bool:
+    """True se a plataforma deve publicar neste run. 'all' = publica em todas."""
+    if ONLY_PLATFORM == "all":
+        return True
+    return platform == ONLY_PLATFORM
+# -------------------------------------------------------
 
-# Configuração
-W, H = 1920, 1080
-FPS = 30
-SECS_PER_VERSE = 10        # 10s por versículo (meditação lenta)
-SECS_INTRO     = 5
-SECS_OUTRO     = 5
-FADE_DURATION  = 1.0        # 1s de fade in/out por versículo
+PROGRESS_FILE = "progress.json"
+BIBLE_FILE    = "bible/lsg1910.json"
 
-# Sufixo padronizado do título (igual aos vídeos já publicados)
-TITLE_SUFFIX = "Lecture Complète | Bible LSG1910"
+FONT_SERIF      = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
+FONT_SERIF_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
+FONT_SANS       = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
-# CTA partilhado da série (vouvoiement, sem clickbait)
-PSAUME_CTA = "Que ce Psaume vous accompagne aujourd'hui. Partagez-le 🙏"
+WATERMARK    = "LaBible.app"
+MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
+APP_URL      = "https://labible.app"
 
-
-# ─── Mapas de títulos (tema + frase da Parola) ───
-def _load_map(path):
-    try:
-        if os.path.exists(path):
-            return load_json(path)
-    except Exception as e:
-        print(f"⚠️  {path} indisponível: {e}")
-    return {}
-
-PSAUME_THEMES = _load_map(THEMES_FILE)   # {"1": "La Voie des Justes", ...}
-PSAUME_TITRES = _load_map(TITLES_FILE)   # {"1": "Heureux l'homme", ...}
-
-
-def get_psaume_theme(num):
-    """Tema editorial do Salmo (título/caption), ou None."""
-    return PSAUME_THEMES.get(str(num)) or None
-
-
-def get_psaume_titre(num):
-    """Frase da Parola (cartão de abertura), ou None."""
-    return PSAUME_TITRES.get(str(num)) or None
-
-
-# Divisão do Salmo 119
-PSAUME_119_PARTS = [
-    (1, 22), (23, 44), (45, 66), (67, 88),
-    (89, 110), (111, 132), (133, 154), (155, 176),
+HASHTAGS_BASE_IG = [
+    "#LaBibleApp", "#Bible", "#VersetDuJour", "#BibleFrancaise",
+    "#Chrétien", "#Foi", "#Évangile", "#Jésus",
+    "#ParoleDeDieu", "#LSG1910",
 ]
 
-# Leque de 4 paletas serenas para Salmos — rotação por número (nunca 2 seguidas iguais)
-# Cada uma: (BG_TOP, BG_BOTTOM, GOLD/accent, GOLD_BRIGHT, WHITE, SIL)
-PSAUME_PALETTES = [
-    # Bleu nuit
-    ((8,14,38),  (4,8,24),   (160,190,220), (185,210,235), (240,245,255), (120,150,180)),
-    # Navy + or
-    ((10,16,42), (5,9,24),   (212,175,55),  (232,196,88),  (240,238,230), (150,160,180)),
-    # Pourpre
-    ((24,10,40), (14,5,26),  (190,160,210), (210,180,228), (245,240,250), (150,135,175)),
-    # Teal
-    ((6,28,30),  (3,16,18),  (130,200,195), (155,215,210), (235,250,248), (110,165,160)),
+HASHTAGS_BASE_FB = [
+    "#LaBibleApp", "#Bible", "#VersetDuJour", "#Foi", "#BibleFrancaise", "#LSG1910",
 ]
 
+HASHTAGS_CAT_IG = {
+    "promise":   ["#Promesse", "#Espérance", "#PromesseDeDieu", "#Bénédiction", "#Confiance"],
+    "jesus":     ["#JésusChrist", "#ParoleDeJésus", "#GrâceDeDieu", "#Rédemption", "#Amour"],
+    "psaume":    ["#Psaumes", "#Louange", "#Adoration", "#Prière", "#Cantique"],
+    "proverbe":  ["#Sagesse", "#Proverbes", "#SagesseDeJésus", "#Discernement", "#Conseil"],
+    "prophetie": ["#Prophétie", "#EspoirEnDieu", "#Révélation", "#Accomplissement", "#GloireDeDieu"],
+    "protection": ["#Protection", "#ProtectionDivine", "#Refuge", "#Sécurité", "#Confiance"],
+}
 
-def get_palette(num):
-    """Rotação por número do Salmo — garante variedade."""
-    idx = (num - 1) % len(PSAUME_PALETTES)
-    return PSAUME_PALETTES[idx]
+HASHTAGS_CAT_FB = {
+    "promise":   ["#Promesse", "#Bénédiction"],
+    "jesus":     ["#JésusChrist", "#GrâceDeDieu"],
+    "psaume":    ["#Louange", "#Adoration"],
+    "proverbe":  ["#Sagesse", "#Discernement"],
+    "prophetie": ["#Prophétie", "#EspoirEnDieu"],
+    "protection": ["#Protection", "#Refuge"],
+}
+
+CATEGORIES = {
+    "promise":   {"key": "i_promise",   "file": "promesses_curated.json",  "emoji": "🌿", "tag": "#Promesse"},
+    "jesus":     {"key": "i_jesus",     "file": "jesus_curated.json",       "emoji": "✝️", "tag": "#ParoleDeJésus"},
+    "psaume":    {"key": "i_psaume",    "file": "psaumes_curated.json",     "emoji": "🎵", "tag": "#Psaumes"},
+    "proverbe":  {"key": "i_proverbe",  "file": "proverbes_curated.json",   "emoji": "💡", "tag": "#Sagesse"},
+    "prophetie": {"key": "i_prophetie", "file": "propheties_curated.json",  "emoji": "📯", "tag": "#Prophétie"},
+    "protection": {"key": "i_protection", "file": "protection_curated.json", "emoji": "🛡️", "tag": "#Protection"},
+}
+
+# ---------------------------------------------------
+# ROTATION PAR HEURE UTC — alignée avec publish.yml
+# 05h UTC → 07h France — image → psaume  (Matin)
+# 06h UTC → 08h France — reel  → promise
+# 11h UTC → 13h France — image → proverbe
+# 13h UTC → 15h France — reel  → jesus
+# 17h UTC → 19h France — image → prophetie
+# 19h UTC → 21h France — reel  → psaume  (Soir)
+# ---------------------------------------------------
+HOUR_SCHEDULE = {
+    5:  "psaume",
+    6:  "promise",
+    7:  "promise",
+    11: "proverbe",
+    12: "proverbe",
+    13: "jesus",
+    14: "jesus",
+    17: "prophetie",
+    18: "prophetie",
+    19: "psaume",
+    20: "psaume",
+}
+
+# Fallback par heure approximative — évite la répétition du même thème
+HOUR_FALLBACK = {
+    0:  "promise",
+    1:  "psaume",
+    2:  "proverbe",
+    3:  "jesus",
+    4:  "prophetie",
+    5:  "psaume",
+    6:  "promise",
+    7:  "proverbe",
+    8:  "jesus",
+    9:  "prophetie",
+    10: "promise",
+    11: "proverbe",
+    12: "jesus",
+    13: "jesus",
+    14: "prophetie",
+    15: "promise",
+    16: "proverbe",
+    17: "prophetie",
+    18: "promise",
+    19: "psaume",
+    20: "proverbe",
+    21: "jesus",
+    22: "promise",
+    23: "psaume",
+}
 
 
-def is_safe_music(path):
-    """
-    Filtro anti-Content-ID leve. Rejeita apenas nomes com aspeto de
-    'título de vídeo YouTube' (espaços ou parênteses), p.ex.
-    'Christian Background Music (Heavens...).mp3', que costumam apanhar
-    reclamação. As maiúsculas são permitidas — muitos ficheiros Pixabay
-    legítimos têm maiúsculas no nome.
-    """
-    stem = os.path.splitext(os.path.basename(path))[0]
-    return True  # filtro por nome desativado: todas as faixas royalty-free sao aceites
+def build_yt_title(cat_name, cat, ref, hour_utc):
+    if cat_name == "psaume":
+        label = "Psaume du Matin" if hour_utc == 5 else "Psaume du Soir"
+    elif cat_name == "promise":
+        label = "Promesses de Dieu"
+    elif cat_name == "jesus":
+        label = "Paroles de Jésus"
+    elif cat_name == "proverbe":
+        label = "Sagesse Biblique"
+    elif cat_name == "prophetie":
+        label = "Prophéties Bibliques"
+    elif cat_name == "protection":
+        label = "Protection Divine"
+    else:
+        label = "Verset Biblique"
+    title = f"{cat['emoji']} {label} — {ref} | Bible LSG1910"
+    if len(title) > 100:
+        title = title[:97] + "..."
+    return title
 
 
-def pick_safe_music(num):
-    """Devolve a faixa a usar (rotação por nº), juntando TODAS as faixas das
-    duas pastas de música (insensível a maiúsculas na extensão) e descartando
-    só os nomes suspeitos."""
-    all_tracks = []
-    for folder in ("music_meditation",):
-        if not os.path.isdir(folder):
-            continue
-        all_tracks += [
-            os.path.join(folder, f)
-            for f in os.listdir(folder)
-            if f.lower().endswith((".mp3", ".m4a", ".ogg", ".wav"))
-        ]
-    # dedup por CONTEUDO (apanha copias exatas: 'x', 'x_1', 'x_2'... mesmo com nomes diferentes)
-    import hashlib
-    _seen, _uniq = set(), []
-    for _p in sorted(set(all_tracks)):
-        try:
-            with open(_p, "rb") as _fh:
-                _h = hashlib.md5(_fh.read()).hexdigest()
-        except Exception:
-            _h = _p
-        if _h in _seen:
-            continue
-        _seen.add(_h)
-        _uniq.append(_p)
-    all_tracks = _uniq
-    if not all_tracks:
-        print("⚠️  Nenhuma faixa de música encontrada — vídeo sem música.")
+def build_hashtags_ig(cat_name):
+    specific = HASHTAGS_CAT_IG.get(cat_name, [])
+    return " ".join((HASHTAGS_BASE_IG + specific)[:15])
+
+
+def build_hashtags_fb(cat_name):
+    specific = HASHTAGS_CAT_FB.get(cat_name, [])
+    return " ".join((HASHTAGS_BASE_FB + specific)[:7])
+
+
+def strip_rubric(text: str) -> str:
+    text = text.replace("¶", "").strip()
+    # Supprimer une chaîne d'indications liminaires, segment par segment
+    # ex. "Au chef des chantres. De David. Psaume. Eternel! tu me sondes..."
+    lead_rubric = re.compile(
+        r'^\s*(?:'
+        r'au chef des chantres[^.]*|pour le chef des chantres[^.]*|au chef[^.]*|'
+        r'psaume de david[^.]*|psaume|cantique des degrés[^.]*|cantique|de david|'
+        r'des fils de koré[^.]*|fils de koré[^.]*|sur alamoth[^.]*|sur la[^.]*|'
+        r'prière de[^.]*|maschil[^.]*|michtam[^.]*|hymne[^.]*'
+        r')\s*\.\s*',
+        flags=re.IGNORECASE,
+    )
+    prev = None
+    while prev != text:
+        prev = text
+        text = lead_rubric.sub('', text, count=1).strip()
+
+    rubric_keywords = [
+        "chef des chantres", "maschil", "michtam", "cantique",
+        "psaume de david", "prière de", "fils de koré", "sur alamoth",
+        "sur les", "au chef", "à jouer", "pour les", "jeduthun",
+        "higgaion", "sheminith", "nehiloth", "neginoth", "gittith",
+        "instruments à cordes", "instruments à vent",
+    ]
+    t = text.lower()
+    for kw in rubric_keywords:
+        if kw in t:
+            sentences = text.split(". ")
+            real_sentences = [s for s in sentences if not any(kw in s.lower() for kw in rubric_keywords)]
+            if real_sentences:
+                return ". ".join(real_sentences).strip()
+    return text
+
+
+def is_rubric(text: str) -> bool:
+    rubric_keywords = [
+        "chef des chantres", "maschil", "michtam",
+        "fils de koré", "sur alamoth", "au chef",
+        "jeduthun", "higgaion", "sheminith", "nehiloth", "neginoth", "gittith",
+    ]
+    t = text.lower()
+    if len(t.split()) < 18:
+        for kw in rubric_keywords:
+            if kw in t:
+                return True
+    return False
+
+
+def clean_text(text: str) -> str:
+    if not text:
+        return ""
+    text = text.replace("¶", "").strip()
+    text = re.sub(r'\s*[-—]\s*Pause\.?', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\s*Sélah\.?', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\s*Selah\.?', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\s+', ' ', text).strip()
+    text = re.sub(r'\s*([;:!?])', '\u00a0\\1', text)
+    text = text.replace("'", "\u2019").replace("'", "\u2019")
+    text = text.replace("Eternel", "Éternel")
+    # œ (oeu -> œu): cœur, sœur, œuvre, œuf, bœuf, vœu, nœud, mœurs, chœur, manœuvre, rancœur…
+    text = re.sub(r'[Oo][Ee]([Uu])', lambda m: ('Œ' if m.group(0)[0].isupper() else 'œ') + m.group(1), text)
+    text = text.rstrip(';').rstrip(':').rstrip(',').strip()
+    if not text.endswith(('.', '!', '?')):
+        text += '.'
+    return text
+
+
+def load_json(path):
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_json(path, data):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+_bible_index = None
+
+def get_bible_index():
+    global _bible_index
+    if _bible_index is None:
+        data = load_json(BIBLE_FILE)
+        _bible_index = {}
+        for v in data["verses"]:
+            bn, ch, vs = v["book_name"], str(v["chapter"]), str(v["verse"])
+            if bn not in _bible_index:
+                _bible_index[bn] = {}
+            if ch not in _bible_index[bn]:
+                _bible_index[bn][ch] = {}
+            _bible_index[bn][ch][vs] = v["text"]
+    return _bible_index
+
+
+BOOK_NAME_MAP = {
+    "Psaumes": "Psaume", "Cantique des Cantiques": "Cantique des cantiques",
+    "1 Rois": "1 Rois", "2 Rois": "2 Rois",
+    "1 Samuel": "1 Samuel", "2 Samuel": "2 Samuel",
+    "1 Chroniques": "1 Chroniques", "2 Chroniques": "2 Chroniques",
+}
+
+def load_verse(book_name, chapter, verse):
+    index = get_bible_index()
+    real_name = BOOK_NAME_MAP.get(book_name, book_name)
+    if real_name not in index:
+        for key in index:
+            if key.lower() == real_name.lower():
+                real_name = key
+                break
+    return index[real_name][str(chapter)][str(verse)]
+
+
+# ---------------------------------------------------
+# TELEGRAM
+# ---------------------------------------------------
+def send_photo(path, caption):
+    if not should_post("telegram"):
+        print("⏭️  Telegram skip (filtro)")
+        return
+    reply_markup = json.dumps({"inline_keyboard": [[{"text": "📖 Lire dans LaBible.app", "url": MINI_APP_URL}]]})
+    with open(path, "rb") as f:
+        r = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendPhoto",
+            data={"chat_id": CHANNEL, "caption": caption, "parse_mode": "HTML", "disable_web_page_preview": True, "reply_markup": reply_markup},
+            files={"photo": f}, timeout=30)
+    r.raise_for_status()
+    print("✅ Telegram publié")
+
+
+def send_video(path, caption):
+    if not should_post("telegram"):
+        print("⏭️  Telegram skip (filtro)")
+        return
+    reply_markup = json.dumps({"inline_keyboard": [[{"text": "📖 Lire dans LaBible.app", "url": MINI_APP_URL}]]})
+    with open(path, "rb") as f:
+        r = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendVideo",
+            data={"chat_id": CHANNEL, "caption": caption, "parse_mode": "HTML", "disable_web_page_preview": True, "reply_markup": reply_markup},
+            files={"video": f}, timeout=60)
+    r.raise_for_status()
+    print("✅ Telegram vidéo publié")
+
+
+# ---------------------------------------------------
+# FACEBOOK
+# ---------------------------------------------------
+def post_to_facebook(image_path, ref, text, cat, cat_name):
+    if not should_post("facebook"):
+        print("⏭️  Facebook skip (filtro)")
+        return
+    if not FB_PAGE_TOKEN:
+        print("⚠️  FB_PAGE_TOKEN non défini.")
+        return
+    msg = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
+    with open(image_path, "rb") as f:
+        r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/photos",
+            data={"message": msg, "access_token": FB_PAGE_TOKEN}, files={"source": f}, timeout=60)
+    if r.status_code == 200:
+        print(f"✅ Facebook publié — {r.json().get('post_id') or r.json().get('id')}")
+    else:
+        print(f"❌ Erreur Facebook ({r.status_code}): {r.text}")
+
+
+def post_reel_to_facebook(video_path, ref, text, cat, cat_name):
+    if not should_post("facebook"):
+        print("⏭️  Facebook reel skip (filtro)")
+        return
+    if not FB_PAGE_TOKEN:
+        print("⚠️  FB_PAGE_TOKEN non défini.")
+        return
+    desc = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n🔔 Abonnez-vous pour plus de versets 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
+    with open(video_path, "rb") as f:
+        r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
+            data={"description": desc, "access_token": FB_PAGE_TOKEN}, files={"source": f}, timeout=120)
+    if r.status_code == 200:
+        print(f"✅ Facebook reel publié — {r.json().get('id')}")
+    else:
+        print(f"❌ Erreur Facebook reel ({r.status_code}): {r.text}")
+
+
+# ---------------------------------------------------
+# IMGBB / CLOUDINARY
+# ---------------------------------------------------
+def upload_to_imgbb(image_path):
+    if not IMGBB_API_KEY:
         return None
-    safe = [t for t in all_tracks if is_safe_music(t)]
-    if not safe:
-        print("⚠️  Só faixas suspeitas (espaços/parênteses) — uso todas mesmo assim.")
-        safe = all_tracks
-    idx = (num - 1) % len(safe)
-    print(f"🎵 Música: {safe[idx]} ({idx + 1}/{len(safe)} faixas)")
-    return safe[idx]
+    with open(image_path, "rb") as f:
+        r = requests.post("https://api.imgbb.com/1/upload", params={"key": IMGBB_API_KEY}, files={"image": f}, timeout=60)
+    if r.status_code == 200:
+        url = r.json()["data"]["url"]
+        print(f"✅ ImgBB : {url}")
+        import time; time.sleep(5)
+        return url
+    print(f"❌ ImgBB ({r.status_code}): {r.text}")
+    return None
 
 
-def ease(t):
-    t = max(0, min(1, t))
-    return t * t * (3 - 2 * t)
+def upload_to_cloudinary(image_path):
+    if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
+        return upload_to_imgbb(image_path)
+    import hashlib, time as _time
+    ts = str(int(_time.time()))
+    sig = hashlib.sha1(f"timestamp={ts}{CLOUDINARY_API_SECRET.strip()}".encode()).hexdigest()
+    with open(image_path, "rb") as f:
+        r = requests.post(f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/image/upload",
+            data={"api_key": CLOUDINARY_API_KEY, "timestamp": ts, "signature": sig}, files={"file": f}, timeout=60)
+    if r.status_code == 200:
+        url = r.json()["secure_url"]
+        print(f"✅ Cloudinary : {url}")
+        _time.sleep(3)
+        return url
+    print(f"❌ Cloudinary ({r.status_code}): {r.text}")
+    return upload_to_imgbb(image_path)
 
 
-def lerp_color(bg, target, a):
-    """Interpola bg -> target por alpha a (para fades)."""
-    return tuple(int(bg[i] + (target[i] - bg[i]) * a) for i in range(3))
+def upload_video_public(video_path):
+    if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
+        return None
+    import hashlib, time as _time
+    print("⏳ Upload vidéo Cloudinary...")
+    ts = str(int(_time.time()))
+    sig = hashlib.sha1(f"timestamp={ts}{CLOUDINARY_API_SECRET.strip()}".encode()).hexdigest()
+    with open(video_path, "rb") as f:
+        r = requests.post(f"https://api.cloudinary.com/v1_1/{CLOUDINARY_CLOUD_NAME}/video/upload",
+            data={"api_key": CLOUDINARY_API_KEY, "timestamp": ts, "signature": sig, "resource_type": "video"},
+            files={"file": f}, timeout=180)
+    if r.status_code == 200:
+        url = r.json()["secure_url"]
+        print(f"✅ Cloudinary vidéo : {url}")
+        _time.sleep(5)
+        return url
+    print(f"❌ Cloudinary vidéo ({r.status_code}): {r.text}")
+    return None
 
 
-def gradient_bg(W, H, top, bot):
-    img = Image.new("RGB", (W, H), top)
+# ---------------------------------------------------
+# INSTAGRAM
+# ---------------------------------------------------
+def post_to_instagram(image_path, ref, text, cat, cat_name):
+    if not should_post("instagram"):
+        print("⏭️  Instagram skip (filtro)")
+        return
+    if not FB_PAGE_TOKEN:
+        return
+    image_url = upload_to_cloudinary(image_path)
+    if not image_url:
+        return
+    if "cloudinary.com" in image_url:
+        image_url = image_url.replace("/upload/", "/upload/f_jpg/")
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n🔔 Suivez @labible.app pour un verset chaque jour 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
+        data={"image_url": image_url, "caption": caption, "access_token": FB_PAGE_TOKEN}, timeout=60)
+    if r.status_code != 200:
+        print(f"❌ Instagram container ({r.status_code}): {r.text}")
+        return
+    container_id = r.json().get("id")
+    print(f"✅ Container Instagram : {container_id}")
+    import time
+    for attempt in range(8):
+        time.sleep(8)
+        rs = requests.get(f"https://graph.facebook.com/v25.0/{container_id}",
+            params={"fields": "status_code", "access_token": FB_PAGE_TOKEN}, timeout=30)
+        status = rs.json().get("status_code", "")
+        print(f"  ⏳ {status} (tentative {attempt+1})")
+        if status == "FINISHED":
+            break
+        if status == "ERROR":
+            print("❌ Erreur Instagram.")
+            return
+    r2 = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish",
+        data={"creation_id": container_id, "access_token": FB_PAGE_TOKEN}, timeout=60)
+    if r2.status_code == 200:
+        print(f"✅ Instagram publié — {r2.json().get('id')}")
+    else:
+        print(f"❌ Instagram publication ({r2.status_code}): {r2.text}")
+
+
+def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
+    if not should_post("instagram"):
+        print("⏭️  Instagram reel skip (filtro)")
+        return
+    if not FB_PAGE_TOKEN:
+        return
+    video_url = upload_video_public(video_path)
+    if not video_url:
+        return
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n🔔 Suivez @labible.app pour un verset chaque jour 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
+        data={"media_type": "REELS", "video_url": video_url, "caption": caption, "access_token": FB_PAGE_TOKEN, "thumb_offset": "7500"}, timeout=60)
+    if r.status_code != 200:
+        print(f"❌ Reel Instagram container ({r.status_code}): {r.text}")
+        return
+    container_id = r.json().get("id")
+    print(f"✅ Container reel : {container_id}")
+    import time
+    for attempt in range(10):
+        time.sleep(15)
+        rs = requests.get(f"https://graph.facebook.com/v25.0/{container_id}",
+            params={"fields": "status_code", "access_token": FB_PAGE_TOKEN}, timeout=30)
+        status = rs.json().get("status_code", "")
+        print(f"  ⏳ {status} (tentative {attempt+1})")
+        if status == "FINISHED":
+            break
+        if status == "ERROR":
+            print("❌ Erreur reel Instagram.")
+            return
+    r2 = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish",
+        data={"creation_id": container_id, "access_token": FB_PAGE_TOKEN}, timeout=60)
+    if r2.status_code == 200:
+        print(f"✅ Instagram reel publié — {r2.json().get('id')}")
+    else:
+        print(f"❌ Instagram reel publication ({r2.status_code}): {r2.text}")
+
+
+# ---------------------------------------------------
+# PINTEREST
+# ---------------------------------------------------
+def post_to_pinterest(image_path, ref, text, cat, cat_name):
+    if not should_post("pinterest"):
+        print("⏭️  Pinterest skip (filtro)")
+        return
+    if not PINTEREST_ACCESS_TOKEN:
+        return
+    image_url = upload_to_imgbb(image_path)
+    if not image_url:
+        return
+    pin_keywords = {"promise": "Promesses de Dieu", "jesus": "Paroles de Jésus",
+                    "psaume": "Psaumes Bibliques", "proverbe": "Sagesse Biblique", "prophetie": "Prophéties Bibliques",
+                    "protection": "Protection Divine"}
+    payload = {
+        "board_id": PINTEREST_BOARD_ID,
+        "title": f"{cat['emoji']} {pin_keywords.get(cat_name, 'Verset Biblique')} — {ref} | LaBible.app",
+        "description": f"{cat['emoji']} « {text} »\n\n— {ref} (LSG 1910)\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n#Bible #VersetDuJour #LaBibleApp #LSG1910 #Foi",
+        "link": f"{APP_URL}/#{ref.replace(' ', '-')}",
+        "media_source": {"source_type": "image_url", "url": image_url}
+    }
+    r = requests.post("https://api.pinterest.com/v5/pins",
+        headers={"Authorization": f"Bearer {PINTEREST_ACCESS_TOKEN}", "Content-Type": "application/json"},
+        json=payload, timeout=60)
+    if r.status_code in (200, 201):
+        print(f"✅ Pinterest publié — {r.json().get('id')}")
+    else:
+        print(f"❌ Pinterest ({r.status_code}): {r.text}")
+
+
+# ---------------------------------------------------
+# THREADS
+# ---------------------------------------------------
+def _threads_publish(container_id):
+    import time; time.sleep(5)
+    r2 = requests.post("https://graph.threads.net/v1.0/me/threads_publish",
+        data={"creation_id": container_id, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
+    if r2.status_code == 200:
+        print(f"✅ Threads publié — {r2.json().get('id')}")
+    else:
+        print(f"❌ Threads publication ({r2.status_code}): {r2.text}")
+
+
+def post_to_threads(image_path, ref, text, cat, cat_name):
+    if not should_post("threads"):
+        print("⏭️  Threads skip (filtro)")
+        return
+    if not THREADS_ACCESS_TOKEN:
+        return
+    image_url = upload_to_cloudinary(image_path)
+    if not image_url:
+        return
+    if "cloudinary.com" in image_url:
+        image_url = image_url.replace("/upload/", "/upload/f_jpg/")
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    r = requests.post("https://graph.threads.net/v1.0/me/threads",
+        data={"media_type": "IMAGE", "image_url": image_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
+    if r.status_code != 200:
+        print(f"❌ Threads container ({r.status_code}): {r.text}")
+        return
+    _threads_publish(r.json().get("id"))
+
+
+def post_reel_to_threads(video_path, ref, text, cat, cat_name):
+    if not should_post("threads"):
+        print("⏭️  Threads reel skip (filtro)")
+        return
+    if not THREADS_ACCESS_TOKEN:
+        return
+    print("📤 Upload vidéo Threads...")
+    video_url = upload_video_public(video_path)
+    if not video_url:
+        print("❌ Threads — upload vidéo échoué")
+        return
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n🔔 Abonnez-vous pour plus de versets 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    r = requests.post("https://graph.threads.net/v1.0/me/threads",
+        data={"media_type": "VIDEO", "video_url": video_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
+    if r.status_code != 200:
+        print(f"❌ Threads reel container ({r.status_code}): {r.text}")
+        return
+    container_id = r.json().get("id")
+    # Attendre que le container soit prêt
+    import time
+    for _ in range(10):
+        time.sleep(6)
+        rs = requests.get(f"https://graph.threads.net/v1.0/{container_id}",
+            params={"fields": "status,error_message", "access_token": THREADS_ACCESS_TOKEN}, timeout=30)
+        status = rs.json().get("status", "")
+        print(f"⏳ Threads status: {status}")
+        if status == "FINISHED":
+            break
+        if status == "ERROR":
+            print(f"❌ Threads container error: {rs.json().get('error_message')}")
+            return
+    _threads_publish(container_id)
+
+
+# ---------------------------------------------------
+# IMAGE
+# ---------------------------------------------------
+PALETTES = [
+    ((10, 14, 30),  (6,  10, 22),  (195, 165,  90), (195, 165,  90), (130, 120, 80)),
+    ((8,  18, 38),  (5,  12, 28),  (160, 190, 220), (160, 190, 220), (100, 130, 160)),
+    ((10, 22, 14),  (6,  15, 10),  (140, 195, 120), (140, 195, 120), (90,  140,  80)),
+    ((28, 10, 14),  (18,  6,  9),  (210, 160, 120), (210, 160, 120), (150, 110,  80)),
+    ((10, 10, 10),  (4,   4,  4),  (200, 180, 120), (200, 180, 120), (120, 110,  70)),
+    ((10, 20, 50),  (6,  14, 36),  (200, 165,  80), (200, 165,  80), (130, 110,  55)),
+]
+
+# Paleta de imagem por tema (bg_top, bg_bot, border, ref, watermark)
+# 🌿 Promesses=vert · 🎵 Psaumes=bleu nuit · ✝️ Jésus=noir&or · 💡 Sagesse=ambre · 📯 Prophéties=pourpre
+IMAGE_PALETTE_BY_CAT = {
+    "promise":   ((10, 24, 16), (5,  14,  9),  (150, 200, 130), (150, 200, 130), (95,  140,  85)),
+    "psaume":    (( 8, 16, 40), (4,   9, 24),  (150, 185, 220), (150, 185, 220), (100, 130, 165)),
+    "jesus":     ((12, 12, 12), (4,   4,  4),  (205, 180, 120), (205, 180, 120), (125, 112,  72)),
+    "proverbe":  ((26, 18,  8), (15, 10,  4),  (214, 170,  90), (214, 170,  90), (150, 120,  70)),
+    "prophetie": ((22, 10, 38), (13,  5, 24),  (190, 160, 210), (190, 160, 210), (140, 120, 165)),
+    "protection": (( 8, 22, 28), (4,  13, 17),  (130, 195, 200), (130, 195, 200), (90,  140, 150)),
+}
+
+# Paleta de reel por tema (BG, GOLD/accent, GR/ref, WHITE/texto, SIL/secundário)
+REEL_PALETTE_BY_CAT = {
+    "promise":   (( 8, 24, 16), (140, 195, 115), (155, 205, 125), (236, 252, 238), (115, 160, 105)),
+    "psaume":    (( 8, 14, 40), (150, 185, 220), (170, 200, 228), (235, 242, 252), (135, 160, 190)),
+    "jesus":     ((10, 10, 10), (200, 176, 100), (214, 190, 112), (250, 248, 236), (150, 140, 100)),
+    "proverbe":  ((24, 16,  6), (216, 168,  80), (226, 182,  96), (252, 244, 226), (168, 142,  98)),
+    "prophetie": ((22,  8, 40), (190, 158, 210), (206, 176, 224), (248, 242, 252), (150, 132, 178)),
+    "protection": (( 6, 26, 30), (130, 200, 195), (150, 210, 205), (235, 250, 248), (110, 165, 160)),
+}
+
+
+def _gradient(W, H, top, bot):
+    img = Image.new("RGB", (W, H))
     draw = ImageDraw.Draw(img)
     for y in range(H):
         t = y / H
-        c = tuple(int(top[i] + (bot[i] - top[i]) * t) for i in range(3))
-        draw.line([(0, y), (W, y)], fill=c)
+        draw.line([(0, y), (W, y)], fill=tuple(int(top[i] + t * (bot[i] - top[i])) for i in range(3)))
     return img
 
 
-def wrap(draw, text, font, max_w):
+def wrap_text(draw, text, font, max_w):
     words = text.split()
     if not words:
         return [""]
     lines, current = [], words[0]
     for w in words[1:]:
-        if w.startswith('?') or w.startswith('!') or w == '»':
+        # Ne pas couper avant ? ! : ; — les garder avec le mot précédent
+        if w and w[0] in '?!:;':
             current = current + '\u00a0' + w
             continue
         test = current + " " + w
@@ -198,488 +642,687 @@ def wrap(draw, text, font, max_w):
             lines.append(current)
             current = w
     lines.append(current)
-    if len(lines) > 1 and lines[-1].strip() == '»':
-        lines[-2] = lines[-2] + '\u00a0»'
-        lines.pop()
     return lines
 
 
-def autosize_font(draw, text, max_w, max_h):
-    """Tamanho de fonte que cabe no espaço."""
-    for size in range(78, 36, -2):
-        fv = ImageFont.truetype(FONT_SERIF, size)
-        lines = wrap(draw, text, fv, max_w)
-        lh = size + 24
-        max_line_w = max(draw.textbbox((0, 0), l, font=fv)[2] for l in lines)
-        if max_line_w <= max_w and lh * len(lines) <= max_h:
-            return fv, lines, lh
-    fv = ImageFont.truetype(FONT_SERIF, 36)
-    lines = wrap(draw, text, fv, max_w)
-    return fv, lines, 60
+def make_image(text, ref, cat_name=None):
+    palette = IMAGE_PALETTE_BY_CAT.get(cat_name) or random.choice(PALETTES)
+    bg_top, bg_bot, color_border, color_ref, color_wm = palette
+    W, H = 1080, 1080
+    img = _gradient(W, H, bg_top, bg_bot)
+    draw = ImageDraw.Draw(img)
+    m = 60
+    draw.rounded_rectangle([m, m, W-m, H-m], radius=30, outline=color_border, width=6)
+    draw.rounded_rectangle([m+16, m+16, W-m-16, H-m-16], radius=24, outline=color_border, width=1)
+    pad_x, top, bottom = 140, 180, 330
+    max_w, max_h = W - 2*pad_x, H - top - bottom
+    chosen_font = chosen_lines = chosen_lh = None
+    for size in range(76, 38, -2):
+        font = ImageFont.truetype(FONT_SERIF, size)
+        lines = wrap_text(draw, text, font, max_w)
+        lh = int(size * 1.38)
+        if lh * len(lines) <= max_h:
+            chosen_font, chosen_lines, chosen_lh = font, lines, lh
+            break
+    if chosen_font is None:
+        chosen_font = ImageFont.truetype(FONT_SERIF, 34)
+        chosen_lines = wrap_text(draw, text, chosen_font, max_w)
+        chosen_lh = int(34 * 1.38)
+    if chosen_lines:
+        chosen_lines[0] = "« " + chosen_lines[0]
+        chosen_lines[-1] = chosen_lines[-1] + " »"
+    y = top + max(0, (max_h - chosen_lh * len(chosen_lines)) // 2)
+    for line in chosen_lines:
+        lw = draw.textlength(line, font=chosen_font)
+        x = (W - lw) // 2
+        draw.text((x+2, y+2), line, font=chosen_font, fill=(0, 0, 0))
+        draw.text((x, y), line, font=chosen_font, fill=(245, 245, 245))
+        y += chosen_lh
+    draw.line([(pad_x, H-260), (W-pad_x, H-260)], fill=color_border, width=2)
+    small = ImageFont.truetype(FONT_SANS, 36)
+    tiny = ImageFont.truetype(FONT_SANS, 28)
+    draw.text((pad_x, H-230), ref, font=small, fill=color_ref)
+    draw.text((pad_x, H-185), "LSG 1910", font=tiny, fill=color_wm)
+    ww = draw.textlength(WATERMARK, font=tiny)
+    draw.text((W-pad_x-ww, H-185), WATERMARK, font=tiny, fill=color_wm)
+    out = "verse.png"
+    img.save(out, "PNG")
+    return out
 
 
-def fetch_psaume_verses(num, vfrom=None, vto=None):
-    """Carrega todos os versículos de um Salmo (ou um intervalo)."""
-    data = load_json(BIBLE_FILE)
-    verses = []
-    for v in data["verses"]:
-        if v["book_name"] == "Psaume" and int(v["chapter"]) == num:
-            if vfrom is not None and int(v["verse"]) < vfrom:
+# ---------------------------------------------------
+# REEL
+# ---------------------------------------------------
+def wrap_text_with_quotes(draw, text, font, max_w):
+    words = text.split()
+    if not words:
+        return [""]
+    q_open = draw.textlength("« ", font=font)
+    lines, current = [], words[0]
+    for w in words[1:]:
+        # Ne pas couper avant ? ! : ; — les garder avec le mot précédent
+        if w and w[0] in '?!:;':
+            current = current + '\u00a0' + w
+            continue
+        test = current + " " + w
+        margin = q_open if not lines else 0
+        if draw.textlength(test, font=font) + margin <= max_w:
+            current = test
+        else:
+            lines.append(current)
+            current = w
+    lines.append(current)
+    last = lines[-1]
+    if draw.textlength(last + " »", font=font) > max_w:
+        words_last = last.split()
+        new_last = words_last[0]
+        for w in words_last[1:]:
+            if w and w[0] in '?!:;':
+                new_last = new_last + '\u00a0' + w
                 continue
-            if vto is not None and int(v["verse"]) > vto:
-                continue
-            verses.append((int(v["verse"]), v["text"]))
-    verses.sort(key=lambda x: x[0])
-    return verses
+            if draw.textlength(new_last + " " + w + " »", font=font) <= max_w:
+                new_last += " " + w
+            else:
+                lines[-1] = new_last
+                lines.append(w)
+                new_last = w
+        lines[-1] = new_last
+    if lines:
+        lines[0] = "« " + lines[0]
+        lines[-1] = lines[-1] + " »"
+    return lines
 
 
-def make_meditation_video(num, verses_with_idx, part_label=None):
-    """
-    Gera vídeo de meditação.
-    verses_with_idx: lista de tuplos (verse_num, text)
-    part_label: ex. "1-22" se for Salmo 119 dividido
-    """
-    n_verses = len(verses_with_idx)
-    TOTAL = FPS * (SECS_INTRO + n_verses * SECS_PER_VERSE + SECS_OUTRO)
+def list_music(folder="music"):
+    """Lista as faixas de áudio da pasta (extensão insensível a maiúsculas),
+    removendo duplicados EXATOS pelo conteúdo do ficheiro — mesmo com nomes
+    diferentes (ex.: 'x.mp3', 'x_1.mp3', 'x_2.mp3') — para não inflar a rotação
+    com a mesma música e dar sempre a sensação de repetição."""
+    import hashlib
+    if not os.path.isdir(folder):
+        return []
+    seen = set()
+    out = []
+    for f in sorted(os.listdir(folder)):
+        if not f.lower().endswith((".mp3", ".m4a", ".ogg", ".wav")):
+            continue
+        p = os.path.join(folder, f)
+        try:
+            with open(p, "rb") as fh:
+                h = hashlib.md5(fh.read()).hexdigest()
+        except Exception:
+            h = p  # se não conseguir ler, trata como faixa única
+        if h in seen:
+            continue  # duplicado exato -> ignora
+        seen.add(h)
+        out.append(p)
+    return out
 
-    # Paleta por rotação (número do Salmo)
-    BG_TOP, BG_BOTTOM, GOLD, GOLD_BRIGHT, WHITE, SIL = get_palette(num)
 
-    BORDER = 80
-    CARD_PAD = 120
-    MAX_TW = W - BORDER * 2 - CARD_PAD * 2
-    max_text_h = int((H - BORDER * 2) * 0.55)
+def pick_music(progress):
+    """Toca TODAS as faixas distintas antes de repetir (saco baralhado).
+    Lida com mudancas na pasta: faixas apagadas sao ignoradas; faixas novas
+    entram JA no ciclo atual, sem repetir as ja tocadas."""
+    tracks = list_music("music")
+    if not tracks:
+        return None
+    tset = set(tracks)
+    played = [t for t in (progress.get("music_played", []) if progress else []) if t in tset]
+    bag = [t for t in (progress.get("music_bag", []) if progress else []) if t in tset]
+    # faixas novas (nem tocadas neste ciclo nem ja no saco) entram agora
+    known = set(played) | set(bag)
+    new = [t for t in tracks if t not in known]
+    if new:
+        bag += new
+        random.shuffle(bag)
+    if not bag:
+        # ciclo completo -> baralha tudo de novo
+        bag = tracks[:]
+        random.shuffle(bag)
+        played = []
+        last = progress.get("last_music") if progress else None
+        if last and len(bag) > 1 and bag[0] == last:
+            bag.append(bag.pop(0))   # evita repetir na junção de dois ciclos
+    choice = bag.pop(0)
+    played.append(choice)
+    if progress is not None:
+        progress["music_bag"] = bag
+        progress["music_played"] = played
+        progress["last_music"] = choice
+    print(f"\U0001F3B5 {choice}  ({len(tracks)} faixas distintas; restam {len(bag)} no ciclo)")
+    return choice
 
-    # Pre-calcular fonte e linhas para cada versículo (otimização)
-    tmp = Image.new("RGB", (10, 10))
-    d_tmp = ImageDraw.Draw(tmp)
-    verse_layouts = []
-    for vnum, vtext in verses_with_idx:
-        cleaned = clean_text(strip_rubric(vtext)).rstrip('.')
-        text_q = f"« {cleaned} »"
-        fv, lines, lh = autosize_font(d_tmp, text_q, MAX_TW, max_text_h)
-        verse_layouts.append((vnum, fv, lines, lh))
 
-    f_title     = ImageFont.truetype(FONT_SERIF_BOLD, 88)
-    f_theme     = ImageFont.truetype(FONT_SERIF, 50)   # tema editorial (intro)
-    f_phrase    = ImageFont.truetype(FONT_SERIF, 40)   # frase da Parola (intro)
-    f_sub       = ImageFont.truetype(FONT_SERIF, 42)
-    f_subsmall  = ImageFont.truetype(FONT_SERIF, 34)
-    f_vnum      = ImageFont.truetype(FONT_SERIF_BOLD, 48)
-    f_wm        = ImageFont.truetype(FONT_SANS, 32)
-    f_outro     = ImageFont.truetype(FONT_SERIF_BOLD, 110)
-    f_outro_sub = ImageFont.truetype(FONT_SERIF, 38)
-
+def make_reel_video(text, ref, progress=None, cat_name=None):
+    W, H = 1080, 1920
+    FPS, TOTAL = 30, 30 * 15
+    seed = abs(hash(ref)) % (2**31)
+    rng = np.random.default_rng(seed)
+    fp, fpb = FONT_SERIF, FONT_SERIF_BOLD
+    text_clean = text.rstrip('.')
+    BORDER, CARD_PAD = 100, 100
+    MAX_TW = W - BORDER*2 - CARD_PAD*2
+    size = 72
+    while size > 32:
+        fv = ImageFont.truetype(fp, size)
+        tmp = Image.new("RGB", (10, 10)); d = ImageDraw.Draw(tmp)
+        test_lines = wrap_text_with_quotes(d, text_clean, fv, MAX_TW)
+        lh = size + 20
+        max_line_w = max(d.textbbox((0,0), l, font=fv)[2] for l in test_lines)
+        total_h = lh * len(test_lines)
+        if max_line_w <= MAX_TW and total_h <= int((H - BORDER*2) * 0.60):
+            break
+        size -= 2
+    fv = ImageFont.truetype(fp, size)
+    tmp = Image.new("RGB", (10, 10)); d = ImageDraw.Draw(tmp)
+    verse_lines = wrap_text_with_quotes(d, text_clean, fv, MAX_TW)
+    fr = ImageFont.truetype(fpb, 36)
+    fl = ImageFont.truetype(fp, 28)
+    fw = ImageFont.truetype(fp, 28)
+    REEL_PALETTES = [
+        ((10, 14, 38), (180, 148, 72),  (192, 158, 80),  (230, 228, 220), (160, 160, 175)),
+        ((30,  8, 12), (210, 155, 75),  (220, 168, 85),  (255, 245, 225), (170, 145, 115)),
+        (( 8, 24, 16), (130, 190, 110), (145, 205, 125), (235, 255, 235), (110, 155, 100)),
+        ((22,  8, 40), (195, 160, 75),  (210, 175, 88),  (250, 245, 255), (155, 135, 180)),
+        ((10, 10, 10), (195, 172,  95), (210, 187, 108), (250, 248, 235), (145, 135,  95)),
+    ]
+    BG, GOLD, GR, WHITE, SIL = REEL_PALETTE_BY_CAT.get(cat_name) or REEL_PALETTES[seed % len(REEL_PALETTES)]
+    CX1, CY1, CX2, CY2 = BORDER, BORDER, W-BORDER, H-BORDER
+    N_P = 30
+    px = rng.uniform(CX1+20, CX2-20, N_P); py = rng.uniform(CY1+20, CY2-20, N_P)
+    ps = rng.uniform(0.2, 0.8, N_P); pr = rng.uniform(2, 5, N_P)
+    pa = rng.uniform(0, 2*math.pi, N_P)
+    def ease(t): t = max(0, min(1, t)); return t*t*(3-2*t)
+    def blend(base, a, bg=BG):
+        a = max(0, min(1, a))
+        return tuple(int(bg[i] + (base[i]-bg[i])*a) for i in range(3))
+    LINE_H = size + 20
+    start_y = int(CY1 + (CY2-CY1)*0.42 - len(verse_lines)*LINE_H//2)
+    FL, FT = CY2-200, CY2-170
     os.makedirs("frames", exist_ok=True)
-
-    # ─── Conteúdo do cartão de abertura: número + tema + frase ───
-    card_number = f"Psaume {num}"
-    theme = get_psaume_theme(num)
-    card_theme = theme or ""
-    if part_label:
-        card_theme = (f"{theme} ({part_label})" if theme else f"({part_label})")
-    theme_lines = wrap(d_tmp, card_theme, f_theme, W - BORDER * 2 - 220) if card_theme else []
-
-    phrase = get_psaume_titre(num)
-    phrase_lines = wrap(d_tmp, f"« {phrase} »", f_phrase, W - BORDER * 2 - 260) if phrase else []
-
     for f in range(TOTAL):
         s = f / FPS
-        img = gradient_bg(W, H, BG_TOP, BG_BOTTOM)
+        alpha = ease(s/0.5) if s < 0.5 else (ease((15-s)/1.5) if s > 13.5 else 1.0)
+        img = Image.new("RGB", (W, H), BG)
         draw = ImageDraw.Draw(img)
-
-        # Border discreto
-        draw.rounded_rectangle(
-            [BORDER, BORDER, W - BORDER, H - BORDER],
-            radius=24, outline=tuple(int(c * 0.7) for c in GOLD), width=2,
-        )
-
-        # ---------- INTRO ----------
-        if s < SECS_INTRO:
-            a = ease(s / 1.0) if s < 1.0 else (ease((SECS_INTRO - s) / 1.0) if s > SECS_INTRO - 1.0 else 1.0)
-            c_title  = lerp_color(BG_TOP, GOLD_BRIGHT, a)
-            c_theme  = lerp_color(BG_TOP, GOLD, a)
-            c_phrase = lerp_color(BG_TOP, WHITE, a)
-            c_sub    = lerp_color(BG_TOP, SIL, a * 0.8)
-
-            sub = "Bible Louis Segond 1910"
-            th_lh, ph_lh = 60, 52
-
-            title_h = draw.textbbox((0, 0), card_number, font=f_title)[3]
-            sub_h = draw.textbbox((0, 0), sub, font=f_subsmall)[3]
-
-            block_h = title_h
-            if theme_lines:
-                block_h += 26 + th_lh * len(theme_lines)
-            if phrase_lines:
-                block_h += 22 + ph_lh * len(phrase_lines)
-            block_h += 46 + sub_h
-            y = (H - block_h) // 2
-
-            # Número "Psaume N"
-            bb = draw.textbbox((0, 0), card_number, font=f_title)
-            draw.text(((W - (bb[2] - bb[0])) // 2, y), card_number, font=f_title, fill=c_title)
-            y += title_h
-
-            # Tema editorial (dourado)
-            if theme_lines:
-                y += 26
-                for tl in theme_lines:
-                    bbt = draw.textbbox((0, 0), tl, font=f_theme)
-                    draw.text(((W - (bbt[2] - bbt[0])) // 2, y), tl, font=f_theme, fill=c_theme)
-                    y += th_lh
-
-            # Frase da Parola (branco)
-            if phrase_lines:
-                y += 22
-                for pl in phrase_lines:
-                    bbp = draw.textbbox((0, 0), pl, font=f_phrase)
-                    draw.text(((W - (bbp[2] - bbp[0])) // 2, y), pl, font=f_phrase, fill=c_phrase)
-                    y += ph_lh
-
-            # Divisória + assinatura
-            y += 22
-            draw.line([((W - 360) // 2, y), ((W + 360) // 2, y)], fill=c_sub, width=1)
-            y += 24
-            bb2 = draw.textbbox((0, 0), sub, font=f_subsmall)
-            draw.text(((W - (bb2[2] - bb2[0])) // 2, y), sub, font=f_subsmall, fill=c_sub)
-
-        # ---------- VERSÍCULOS ----------
-        elif s < SECS_INTRO + n_verses * SECS_PER_VERSE:
-            verse_s = s - SECS_INTRO
-            verse_idx = int(verse_s / SECS_PER_VERSE)
-            verse_idx = min(verse_idx, n_verses - 1)
-            local_s = verse_s - verse_idx * SECS_PER_VERSE
-
-            # Fade in / hold / fade out
-            if local_s < FADE_DURATION:
-                a = ease(local_s / FADE_DURATION)
-            elif local_s > SECS_PER_VERSE - FADE_DURATION:
-                a = ease((SECS_PER_VERSE - local_s) / FADE_DURATION)
-            else:
-                a = 1.0
-
-            vnum, fv, lines, lh = verse_layouts[verse_idx]
-
-            # Versículo número no canto
-            vnum_text = str(vnum)
-            color_vnum = lerp_color(BG_TOP, GOLD, a * 0.85)
-            draw.text((BORDER + 60, BORDER + 50), vnum_text, font=f_vnum, fill=color_vnum)
-
-            # Texto do versículo centrado
-            total_h = lh * len(lines)
-            ty = BORDER + (H - BORDER * 2) // 2 - total_h // 2
-
-            color_text = lerp_color(BG_TOP, WHITE, a)
-            color_shadow = tuple(int(BG_TOP[i] * (1 - a * 0.5)) for i in range(3))
-
-            for line in lines:
-                bb = draw.textbbox((0, 0), line, font=fv)
-                tw = bb[2] - bb[0]
-                x = (W - tw) // 2
-                draw.text((x + 2, ty + 2), line, font=fv, fill=color_shadow)
-                draw.text((x, ty), line, font=fv, fill=color_text)
-                ty += lh
-
-            # Rodapé: referência + watermark
-            color_ref = lerp_color(BG_TOP, GOLD, a * 0.7)
-            ref_text = f"Psaume {num}:{vnum}"
-            draw.text((BORDER + CARD_PAD, H - BORDER - 70), ref_text, font=f_sub, fill=color_ref)
-            wm_bb = draw.textbbox((0, 0), WATERMARK, font=f_wm)
-            draw.text(
-                (W - BORDER - CARD_PAD - (wm_bb[2] - wm_bb[0]), H - BORDER - 65),
-                WATERMARK, font=f_wm, fill=color_ref,
-            )
-
-        # ---------- OUTRO ----------
-        else:
-            outro_s = s - SECS_INTRO - n_verses * SECS_PER_VERSE
-            a = ease(outro_s / 1.0) if outro_s < 1.0 else 1.0
-            color_app = lerp_color(BG_TOP, GOLD_BRIGHT, a)
-            color_sub = lerp_color(BG_TOP, SIL, a * 0.7)
-
-            msg = "Méditez la Parole chaque jour"
-            bb = draw.textbbox((0, 0), msg, font=f_sub)
-            tw = bb[2] - bb[0]
-            draw.text(((W - tw) // 2, H // 2 - 130), msg, font=f_sub, fill=color_sub)
-
-            app = "LaBible.app"
-            bb2 = draw.textbbox((0, 0), app, font=f_outro)
-            tw2 = bb2[2] - bb2[0]
-            draw.text(((W - tw2) // 2 + 3, H // 2 - 30 + 3), app, font=f_outro, fill=(0, 0, 0))
-            draw.text(((W - tw2) // 2, H // 2 - 30), app, font=f_outro, fill=color_app)
-
-            sub2 = "Gratuit · Sans publicité · LSG 1910"
-            bb3 = draw.textbbox((0, 0), sub2, font=f_outro_sub)
-            sw2 = bb3[2] - bb3[0]
-            draw.text(((W - sw2) // 2, H // 2 + 110), sub2, font=f_outro_sub, fill=color_sub)
-
+        for y in range(0, H, 4):
+            t2 = y/H
+            draw.rectangle([(0, y), (W, min(y+4, H))], fill=tuple(max(0, int(BG[i]*(1-t2*0.3))) for i in range(3)))
+        cl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        cd = ImageDraw.Draw(cl)
+        cd.rounded_rectangle([CX1,CY1,CX2,CY2], radius=40, fill=(*BG, int(alpha*230)))
+        img = Image.alpha_composite(img.convert("RGBA"), cl).convert("RGB")
+        draw = ImageDraw.Draw(img)
+        draw.rounded_rectangle([CX1,CY1,CX2,CY2], radius=40, outline=blend(GOLD, alpha), width=5)
+        draw.rounded_rectangle([CX1+10,CY1+10,CX2-10,CY2-10], radius=34, outline=blend(GOLD, alpha*0.3), width=1)
+        pl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        pd = ImageDraw.Draw(pl)
+        for i in range(N_P):
+            tp = s * ps[i]
+            cx = int((px[i] + math.sin(tp*0.5+pa[i])*20) % W)
+            cy = int((py[i] - s*ps[i]*12) % H)
+            bright = (math.sin(tp+pa[i])+1)/2*0.3+0.1
+            a_p = int(bright*alpha*90)
+            pd.ellipse([(cx-int(pr[i]), cy-int(pr[i])), (cx+int(pr[i]), cy+int(pr[i]))], fill=(*blend(GOLD, bright*0.6), a_p))
+        img = Image.alpha_composite(img.convert("RGBA"), pl).convert("RGB")
+        draw = ImageDraw.Draw(img)
+        for i, line in enumerate(verse_lines):
+            ls = 0.1 + i*0.20; le = ls + 0.5
+            la = (0 if s<ls else (ease((s-ls)/(le-ls)) if s<le else 1.0)) * alpha
+            bbox = draw.textbbox((0,0), line, font=fv); tw = bbox[2]-bbox[0]
+            x = (W-tw)//2; y = start_y + i*LINE_H
+            draw.text((x+2, y+2), line, font=fv, fill=blend((0,0,0), la*0.6))
+            draw.text((x, y), line, font=fv, fill=blend(WHITE, la))
+        fs = 0.6 + len(verse_lines)*0.20 + 0.3
+        fa = (0 if s<fs else (ease((s-fs)/0.6) if s<fs+0.6 else 1.0)) * alpha
+        lx1, lx2 = CX1+CARD_PAD, CX2-CARD_PAD
+        draw.line([(lx1, FL), (lx2, FL)], fill=blend(GOLD, fa*0.8), width=2)
+        draw.text((lx1, FT), ref, font=fr, fill=blend(GR, fa))
+        draw.text((lx1, FT+44), "LSG 1910", font=fl, fill=blend(SIL, fa*0.85))
+        wbbox = draw.textbbox((0,0), WATERMARK, font=fw)
+        draw.text((lx2-(wbbox[2]-wbbox[0]), FT+44), WATERMARK, font=fw, fill=blend(SIL, fa*0.85))
+        # CTA — apparaît dans les dernières 5 secondes
+        if s > TOTAL/FPS - 5:
+            f_cta = ImageFont.truetype(FONT_SANS, 26)
+            cta = "Abonnez-vous pour plus de versets"
+            cta_a = ease((s - (TOTAL/FPS - 5)) / 1.0) * alpha
+            cta_bbox = draw.textbbox((0,0), cta, font=f_cta)
+            cta_w = cta_bbox[2] - cta_bbox[0]
+            draw.text(((W-cta_w)//2, CY2 + 20), cta, font=f_cta, fill=blend(SIL, cta_a * 0.7))
         img.save(f"frames/frame_{f:04d}.png")
-
-    # Música — rotação por número do Salmo (cada Salmo usa uma faixa diferente,
-    # nunca duas seguidas iguais quando há ≥2 faixas). A música faz loop
-    # automático (-stream_loop -1) para cobrir toda a duração do vídeo, por isso
-    # o comprimento de cada faixa não importa.
-    output_path = f"meditation_psaume_{num}{'_' + part_label.replace('-', '_') if part_label else ''}.mp4"
-    video_duration = SECS_INTRO + n_verses * SECS_PER_VERSE + SECS_OUTRO
-    print(f"⏱️  Duração do vídeo: {video_duration}s ({video_duration/60:.1f} min)")
-
-    # Só faixas "seguras" (Pixabay), rotação por nº do Salmo. Ignora ficheiros
-    # com nome de título de vídeo do YouTube (risco de reclamação Content ID).
-    music_file = pick_safe_music(num)
-
+    output_path = "reel.mp4"
+    import glob, shutil
+    music_file = pick_music(progress)
     if music_file:
-        subprocess.run([
-            'ffmpeg', '-framerate', str(FPS), '-i', 'frames/frame_%04d.png',
-            '-stream_loop', '-1', '-i', music_file,
-            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
-            '-c:a', 'aac', '-b:a', '192k',
-            '-af', 'volume=0.5',
-            '-shortest', output_path, '-y',
-        ], capture_output=True)
+        print(f"🎵 {music_file}")
+        subprocess.run(['ffmpeg', '-framerate', '30', '-i', 'frames/frame_%04d.png', '-ss', '2', '-i', music_file,
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20', '-c:a', 'aac', '-b:a', '192k', '-shortest', output_path, '-y'], capture_output=True)
     else:
-        print("⚠️  Sem música disponível")
-        subprocess.run([
-            'ffmpeg', '-framerate', str(FPS), '-i', 'frames/frame_%04d.png',
-            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
-            output_path, '-y',
-        ], capture_output=True)
-
+        subprocess.run(['ffmpeg', '-framerate', '30', '-i', 'frames/frame_%04d.png',
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20', output_path, '-y'], capture_output=True)
     shutil.rmtree("frames", ignore_errors=True)
-    print(f"✅ Vídeo: {output_path}")
+    print(f"✅ Reel : {output_path}")
     return output_path
 
 
-def _meditation_head(num, part_label=None):
-    """Cabeçalho legível p/ captions: 'Psaume N — Thème (part)' com fallback."""
-    theme = get_psaume_theme(num)
-    head = f"Psaume {num}" + (f" — {theme}" if theme else "")
-    if part_label:
-        head += f" ({part_label})"
-    return head
+# ---------------------------------------------------
+# SÉLECTION PAR HEURE UTC
+# ---------------------------------------------------
+def load_list(path):
+    arr = load_json(path)
+    if not arr:
+        raise RuntimeError(f"Liste vide : {path}")
+    return arr
 
 
-def _video_title(num, part_label=None):
-    """Título YouTube/Facebook: 'Psaume N — Thème (part) | Lecture Complète | Bible LSG1910'."""
-    theme = get_psaume_theme(num)
-    title = f"Psaume {num}" + (f" — {theme}" if theme else "")
-    if part_label:
-        title += f" ({part_label})"
-    title += f" | {TITLE_SUFFIX}"
-    if len(title) > 100:
-        title = title[:97] + "..."
-    return title
+def reshuffle_if_needed(path, index):
+    arr = load_list(path)
+    if index >= len(arr):
+        random.shuffle(arr)
+        save_json(path, arr)
+        index = 0
+    return arr, index
 
 
-def post_to_telegram(video_path, num, part_label=None):
-    """Publica a meditação no canal Telegram."""
-    if not TELEGRAM_TOKEN or not TELEGRAM_CHANNEL:
-        print("⚠️  Telegram credentials ausentes.")
-        return
-    head = _meditation_head(num, part_label)
-    caption = (
-        f"🎵 <b>{head}</b>\n"
-        f"Bible Louis Segond 1910\n\n"
-        f"{PSAUME_CTA}\n\n"
-        f"📖 labible.app\n\n"
-        f"#LaBibleApp #Psaumes #Méditation #LSG1910"
-    )
-    reply_markup = json.dumps({"inline_keyboard": [[
-        {"text": "📖 Lire dans LaBible.app", "url": "https://t.me/BIBLE_APP_BOT/labible"}
-    ]]})
-    try:
-        with open(video_path, "rb") as f:
-            r = requests.post(
-                f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendVideo",
-                data={"chat_id": TELEGRAM_CHANNEL, "caption": caption,
-                      "parse_mode": "HTML", "disable_web_page_preview": True,
-                      "reply_markup": reply_markup},
-                files={"video": f}, timeout=180,
-            )
-        if r.status_code == 200:
-            print("✅ Telegram publié")
-        else:
-            print(f"❌ Telegram ({r.status_code}): {r.text[:200]}")
-    except Exception as e:
-        print(f"❌ Telegram: {e}")
-
-
-def post_to_facebook(video_path, num, part_label=None):
-    """Publica a meditação como vídeo na página Facebook."""
-    if not FB_PAGE_TOKEN:
-        print("⚠️  FB_PAGE_TOKEN ausente.")
-        return
-    head = _meditation_head(num, part_label)
-    desc = (
-        f"🎵 {head}\n"
-        f"Bible Louis Segond 1910\n\n"
-        f"{PSAUME_CTA}\n\n"
-        f"📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n"
-        f"#LaBibleApp #Psaumes #Méditation #Bible #LSG1910 #ParoleDeDieu"
-    )
-    try:
-        with open(video_path, "rb") as f:
-            r = requests.post(
-                f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
-                data={"title": _video_title(num, part_label),
-                      "description": desc, "access_token": FB_PAGE_TOKEN},
-                files={"source": f}, timeout=300,
-            )
-        if r.status_code == 200:
-            print(f"✅ Facebook publié — {r.json().get('id')}")
-        else:
-            print(f"❌ Facebook ({r.status_code}): {r.text[:200]}")
-    except Exception as e:
-        print(f"❌ Facebook: {e}")
-
-
-def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
-    """Upload do vídeo para YouTube como vídeo normal (não Short)."""
-    if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
-        print("⚠️  Credentials YouTube ausentes.")
-        return None
-
-    from google.oauth2.credentials import Credentials
-    from googleapiclient.discovery import build
-    from googleapiclient.http import MediaFileUpload
-    from google.auth.transport.requests import Request
-
-    creds = Credentials(
-        token=None, refresh_token=YT_REFRESH_TOKEN, client_id=YT_CLIENT_ID,
-        client_secret=YT_CLIENT_SECRET, token_uri="https://oauth2.googleapis.com/token",
-        scopes=["https://www.googleapis.com/auth/youtube.upload"],
-    )
-    creds.refresh(Request())
-    youtube = build("youtube", "v3", credentials=creds)
-
-    title = _video_title(num, part_label)
-
-    # Lista de versículos para descrição
-    verses_text = "\n".join(
-        f"Psaume {num}:{vnum} — {clean_text(strip_rubric(vtext)).rstrip('.')}."
-        for vnum, vtext in verses_with_idx
-    )
-
-    head = _meditation_head(num, part_label)
-    description = (
-        f"🎵 Méditation — {head}\n"
-        f"Bible Louis Segond 1910\n\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"{verses_text}\n\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"{PSAUME_CTA}\n\n"
-        f"📖 Lire la Bible gratuitement : {APP_URL}\n"
-        f"🔔 Abonnez-vous pour une méditation chaque jour 🙏\n\n"
-        f"🔗 {APP_URL}/liens\n\n"
-        f"#LaBibleApp #Psaumes #Méditation #Bible #ParoleDeDieu #LSG1910"
-    )
-    # YouTube limita descrição a 5000 chars
-    if len(description) > 5000:
-        description = description[:4997] + "..."
-
-    body = {
-        "snippet": {
-            "title": title,
-            "description": description,
-            "tags": [
-                "Bible", "Psaumes", "Méditation", "LSG1910",
-                "ParoleDeDieu", "Foi", "Prière", "Chrétien", "BibleFrancaise",
-            ],
-            "categoryId": "22",
-        },
-        "status": {
-            "privacyStatus": "public",
-            "selfDeclaredMadeForKids": False,
-        },
-    }
-
-    media = MediaFileUpload(video_path, mimetype="video/mp4", resumable=True, chunksize=1024 * 1024)
-    request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
-
-    response = None
-    while response is None:
-        status, response = request.next_chunk()
-        if status:
-            print(f"  ⏳ Upload: {int(status.progress() * 100)}%")
-
-    video_id = response.get("id")
-    print(f"✅ YouTube: https://youtube.com/watch?v={video_id}")
-    return video_id
-
-
-def main():
-    # ─── Parse args ───
-    args = sys.argv[1:]
-    if args:
-        # Modo manual: psaume_meditation.py 23  |  psaume_meditation.py 119 1-22
-        num = int(args[0])
-        if len(args) >= 2 and "-" in args[1]:
-            vfrom_str, vto_str = args[1].split("-")
-            vfrom, vto = int(vfrom_str), int(vto_str)
-            part_label = f"{vfrom}-{vto}"
-        else:
-            vfrom = vto = None
-            part_label = None
+def pick_from_category(cat, progress):
+    index = progress.get(cat["key"], 0)
+    arr, index = reshuffle_if_needed(cat["file"], index)
+    entry = arr[index]
+    book, ch = entry[0], entry[1]
+    if len(entry) >= 4:
+        vstart, vend = entry[2], entry[3]   # intervalle : [livre, chap, début, fin]
     else:
-        # Modo automático: usa progress_meditation.json
-        if os.path.exists(PROGRESS_FILE):
-            progress = load_json(PROGRESS_FILE)
+        vstart = vend = entry[2]            # verset unique : [livre, chap, verset]
+    progress[cat["key"]] = index + 1
+    return book, ch, vstart, vend
+
+
+def pick_verse(progress):
+    hour_utc = datetime.datetime.utcnow().hour
+    # Usar categoria definida pelo publish.yml se disponível
+    cat_name = os.environ.get("BOT_CATEGORY", "").strip()
+    if cat_name and cat_name in CATEGORIES:
+        print(f"📌 Catégorie forcée : {cat_name}")
+    else:
+        cat_name = HOUR_SCHEDULE.get(hour_utc)
+        if cat_name is None:
+            cat_name = HOUR_FALLBACK.get(hour_utc, "promise")
+            print(f"⚠️  {hour_utc}h UTC hors créneau — fallback : {cat_name}")
         else:
-            progress = {"next_psaume": 1, "psaume_119_part": 0}
+            print(f"🕐 {hour_utc}h UTC → {cat_name}")
+    cat = CATEGORIES[cat_name]
+    for attempt in range(5):
+        book, ch, vstart, vend = pick_from_category(cat, progress)
+        # Joindre les versets de l'intervalle (vstart..vend) — un seul si vstart == vend
+        raw_text = " ".join(load_verse(book, ch, vv) for vv in range(vstart, vend + 1))
+        if not is_rubric(raw_text):
+            break
+        print(f"⏭️  Rubrique ignorée : {book} {ch}:{vstart}")
+    raw_text = strip_rubric(raw_text)
+    text = clean_text(raw_text)
+    display_book = "Psaumes" if book == "Psaume" else book
+    if vstart == vend:
+        ref = f"{display_book} {ch}:{vstart}"
+    else:
+        ref = f"{display_book} {ch}:{vstart}-{vend}"
+    return text, ref, cat, cat_name, hour_utc
 
-        num = progress.get("next_psaume", 1)
-        part_label = None
-        vfrom = vto = None
 
-        # Caso especial: Psaume 119 dividido
-        if num == 119:
-            part_idx = progress.get("psaume_119_part", 0)
-            if part_idx < len(PSAUME_119_PARTS):
-                vfrom, vto = PSAUME_119_PARTS[part_idx]
-                part_label = f"{vfrom}-{vto}"
-                progress["psaume_119_part"] = part_idx + 1
-                if part_idx + 1 >= len(PSAUME_119_PARTS):
-                    # Acabou as 8 partes → seguir para 120
-                    progress["next_psaume"] = 120
-                    progress["psaume_119_part"] = 0
+# ---------------------------------------------------
+# YOUTUBE
+# ---------------------------------------------------
+def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
+    if not should_post("youtube"):
+        print("⏭️  YouTube skip (filtro)")
+        return
+    if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
+        print("⚠️  Credentials YouTube manquants.")
+        return
+    try:
+        from google.oauth2.credentials import Credentials
+        from googleapiclient.discovery import build
+        from googleapiclient.http import MediaFileUpload
+        from google.auth.transport.requests import Request
+        creds = Credentials(token=None, refresh_token=YT_REFRESH_TOKEN, client_id=YT_CLIENT_ID,
+            client_secret=YT_CLIENT_SECRET, token_uri="https://oauth2.googleapis.com/token",
+            scopes=["https://www.googleapis.com/auth/youtube.upload"])
+        creds.refresh(Request())
+        youtube = build("youtube", "v3", credentials=creds)
+        title = build_yt_title(cat_name, cat, ref, hour_utc)
+        description = (f"« {text} »\n"
+            f"— {ref} (LSG 1910)\n\n"
+            f"📖 Lire la Bible gratuitement : {APP_URL}\n"
+            f"🔔 Abonnez-vous pour un verset chaque jour 🙏\n\n"
+            f"🔗 {APP_URL}/liens\n\n"
+            f"#LaBibleApp #Bible #VersetDuJour #ParoleDeDieu #LSG1910 #Shorts #{cat['tag'].lstrip('#')}")
+        body = {"snippet": {"title": title, "description": description,
+            "tags": ["Bible", "LaBible", "VersetDuJour", "LSG1910", "Shorts", "BibleFrancaise"], "categoryId": "22"},
+            "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}}
+        media = MediaFileUpload(video_path, mimetype="video/mp4", resumable=True)
+        request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
+        response = None
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                print(f"  ⏳ YouTube : {int(status.progress()*100)}%")
+        print(f"✅ YouTube Short — https://youtube.com/shorts/{response.get('id')}")
+    except Exception as e:
+        print(f"❌ YouTube : {e}")
+
+
+# ---------------------------------------------------
+# PARABOLE VIDEO — vídeo longo 60-90s avec texte complet
+# ---------------------------------------------------
+def make_parabole_video(title, verses, progress=None):
+    """
+    verses = liste de tuples (ref, text)
+    ex: [("Luc 15:11", "Un homme avait deux fils."), ("Luc 15:12", "...")]
+    """
+    W, H = 1080, 1920
+    FPS = 30
+    SECS_PER_VERSE = 6  # secondes par verset
+    SECS_TITLE = 4      # secondes pour le titre
+    SECS_FINAL = 4      # secondes pour le final
+    TOTAL = FPS * (SECS_TITLE + len(verses) * SECS_PER_VERSE + SECS_FINAL)
+
+    fp  = FONT_SERIF
+    fpb = FONT_SERIF_BOLD
+    BORDER, CARD_PAD = 100, 100
+    MAX_TW = W - BORDER*2 - CARD_PAD*2
+
+    REEL_PALETTES = [
+        ((10, 14, 38),  (180, 148, 72),  (192, 158, 80),  (230, 228, 220), (160, 160, 175)),
+        ((30,  8, 12),  (210, 155, 75),  (220, 168, 85),  (255, 245, 225), (170, 145, 115)),
+        (( 8, 24, 16),  (130, 190, 110), (145, 205, 125), (235, 255, 235), (110, 155, 100)),
+        ((22,  8, 40),  (195, 160, 75),  (210, 175, 88),  (250, 245, 255), (155, 135, 180)),
+        ((10, 10, 10),  (195, 172,  95), (210, 187, 108), (250, 248, 235), (145, 135,  95)),
+    ]
+    seed = abs(hash(title)) % (2**31)
+    BG, GOLD, GR, WHITE, SIL = REEL_PALETTES[seed % len(REEL_PALETTES)]
+
+    def ease(t): t = max(0, min(1, t)); return t*t*(3-2*t)
+    def blend(base, a, bg=BG):
+        a = max(0, min(1, a))
+        return tuple(int(bg[i] + (base[i]-bg[i])*a) for i in range(3))
+
+    def draw_bg(draw):
+        for y in range(0, H, 4):
+            t2 = y/H
+            draw.rectangle([(0, y), (W, min(y+4, H))],
+                fill=tuple(max(0, int(BG[i]*(1-t2*0.25))) for i in range(3)))
+
+    def wrap(draw, text, font, max_w):
+        words = text.split()
+        if not words: return [""]
+        lines, current = [], words[0]
+        for w in words[1:]:
+            if w == '»' or (w and w[0] in '?!:;'):
+                current += '\u00a0' + w
+                continue
+            test = current + " " + w
+            if draw.textlength(test, font=font) <= max_w:
+                current = test
             else:
-                progress["next_psaume"] = 120
-                progress["psaume_119_part"] = 0
-                num = 120
+                lines.append(current)
+                current = w
+        lines.append(current)
+        # S'assurer que » est collé à la dernière ligne et non seul
+        if len(lines) > 1 and lines[-1].strip() == '»':
+            lines[-2] = lines[-2] + '\u00a0»'
+            lines.pop()
+        return lines
+
+    def autosize_font(draw, text, max_w, max_h):
+        for size in range(88, 32, -2):
+            fv = ImageFont.truetype(fp, size)
+            lines = wrap(draw, text, fv, max_w)
+            lh = size + 20
+            max_line_w = max(draw.textbbox((0,0), l, font=fv)[2] for l in lines)
+            if max_line_w <= max_w and lh * len(lines) <= max_h:
+                return fv, lines, lh
+        fv = ImageFont.truetype(fp, 32)
+        lines = wrap(draw, text, fv, max_w)
+        return fv, lines, 52
+
+    f_title_big = ImageFont.truetype(fpb, 96)
+    f_sub       = ImageFont.truetype(fp,  36)
+    f_ref       = ImageFont.truetype(fpb, 36)
+    f_wm        = ImageFont.truetype(FONT_SANS, 28)
+    max_text_h  = int((H - BORDER*2) * 0.65)
+
+    os.makedirs("frames", exist_ok=True)
+
+    for f in range(TOTAL):
+        s = f / FPS
+        img = Image.new("RGB", (W, H), BG)
+        draw = ImageDraw.Draw(img)
+        draw_bg(draw)
+
+        draw.rounded_rectangle([BORDER, BORDER, W-BORDER, H-BORDER], radius=40, outline=blend(GOLD, 0.8), width=5)
+        draw.rounded_rectangle([BORDER+10, BORDER+10, W-BORDER-10, H-BORDER-10], radius=34, outline=blend(GOLD, 0.25), width=1)
+
+        title_end = SECS_TITLE
+
+        if s < title_end:
+            a = ease(s/0.8) if s < 0.8 else (ease((title_end-s)/0.5) if s > title_end-0.5 else 1.0)
+            # Autosize titre
+            for t_size in range(96, 48, -4):
+                ft = ImageFont.truetype(fpb, t_size)
+                t_lines = wrap(draw, title, ft, MAX_TW)
+                t_lh = t_size + 18
+                max_tw = max(draw.textbbox((0,0), l, font=ft)[2] for l in t_lines)
+                if max_tw <= MAX_TW and t_lh * len(t_lines) <= 320:
+                    break
+            t_total = t_lh * len(t_lines)
+            ty = H//2 - t_total//2 - 60
+            for line in t_lines:
+                bbox = draw.textbbox((0,0), line, font=ft)
+                tw = bbox[2]-bbox[0]
+                x = (W-tw)//2
+                draw.text((x+2, ty+2), line, font=ft, fill=blend((0,0,0), a*0.5))
+                draw.text((x, ty), line, font=ft, fill=blend(GOLD, a))
+                ty += t_lh
+            sub = "Les Paraboles de Jésus · LSG 1910"
+            bbox2 = draw.textbbox((0,0), sub, font=f_sub)
+            sw = bbox2[2]-bbox2[0]
+            draw.line([((W-300)//2, H//2+90), ((W+300)//2, H//2+90)], fill=blend(GOLD, a*0.5), width=1)
+            draw.text(((W-sw)//2, H//2+105), sub, font=f_sub, fill=blend(SIL, a*0.7))
+
+        elif s < title_end + len(verses) * SECS_PER_VERSE:
+            verse_s = s - title_end
+            verse_idx = int(verse_s / SECS_PER_VERSE)
+            verse_idx = min(verse_idx, len(verses)-1)
+            local_s = verse_s - verse_idx * SECS_PER_VERSE
+            a = ease(local_s/0.5) if local_s < 0.5 else (ease((SECS_PER_VERSE-local_s)/0.5) if local_s > SECS_PER_VERSE-0.5 else 1.0)
+
+            ref_v, text_v = verses[verse_idx]
+            num = f"{verse_idx+1}/{len(verses)}"
+            draw.text((BORDER+CARD_PAD, BORDER+50), num, font=f_wm, fill=blend(SIL, a*0.5))
+
+            text_q = f"« {text_v.rstrip('.')} »"
+            fv, lines, lh = autosize_font(draw, text_q, MAX_TW, max_text_h)
+            total_h = lh * len(lines)
+            ty = BORDER + (H - BORDER*2)//2 - total_h//2 - 40
+
+            for line in lines:
+                bbox = draw.textbbox((0,0), line, font=fv)
+                tw = bbox[2]-bbox[0]
+                x = (W-tw)//2
+                draw.text((x+2, ty+2), line, font=fv, fill=blend((0,0,0), a*0.6))
+                draw.text((x, ty), line, font=fv, fill=blend(WHITE, a))
+                ty += lh
+
+            lx1, lx2 = BORDER+CARD_PAD, W-BORDER-CARD_PAD
+            draw.line([(lx1, H-250), (lx2, H-250)], fill=blend(GOLD, a*0.8), width=2)
+            draw.text((lx1, H-230), ref_v, font=f_ref, fill=blend(GR, a))
+            draw.text((lx1, H-185), "LSG 1910", font=f_wm, fill=blend(SIL, a*0.85))
+            wbbox = draw.textbbox((0,0), WATERMARK, font=f_wm)
+            draw.text((lx2-(wbbox[2]-wbbox[0]), H-185), WATERMARK, font=f_wm, fill=blend(SIL, a*0.85))
+
         else:
-            progress["next_psaume"] = num + 1
-            if progress["next_psaume"] > 150:
-                progress["next_psaume"] = 1  # recomeça do início
+            final_s = s - title_end - len(verses)*SECS_PER_VERSE
+            a = ease(final_s/0.8) if final_s < 0.8 else 1.0
+            msg = "Lisez la Bible complète"
+            bbox3 = draw.textbbox((0,0), msg, font=f_sub)
+            tw3 = bbox3[2]-bbox3[0]
+            draw.text(((W-tw3)//2, H//2-100), msg, font=f_sub, fill=blend(SIL, a*0.8))
+            app = "LaBible.app"
+            bbox4 = draw.textbbox((0,0), app, font=f_title_big)
+            tw4 = bbox4[2]-bbox4[0]
+            draw.text(((W-tw4)//2+2, H//2+2), app, font=f_title_big, fill=blend((0,0,0), a*0.5))
+            draw.text(((W-tw4)//2, H//2), app, font=f_title_big, fill=blend(GOLD, a))
+            sub2 = "Gratuit · Sans publicité · LSG 1910"
+            bbox5 = draw.textbbox((0,0), sub2, font=f_wm)
+            sw2 = bbox5[2]-bbox5[0]
+            draw.text(((W-sw2)//2, H//2+120), sub2, font=f_wm, fill=blend(SIL, a*0.6))
 
-        save_json(PROGRESS_FILE, progress)
+        img.save(f"frames/frame_{f:04d}.png")
 
-    print(f"🎵 Méditation — {_meditation_head(num, part_label)}")
+    output_path = "parabole.mp4"
+    import glob, shutil
+    music_file = pick_music(progress)
+    if music_file:
+        print(f"🎵 {music_file}")
+        subprocess.run(['ffmpeg', '-framerate', '30', '-i', 'frames/frame_%04d.png',
+            '-ss', '2', '-i', music_file,
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
+            '-c:a', 'aac', '-b:a', '192k', '-shortest', output_path, '-y'], capture_output=True)
+    else:
+        subprocess.run(['ffmpeg', '-framerate', '30', '-i', 'frames/frame_%04d.png',
+            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
+            output_path, '-y'], capture_output=True)
+    shutil.rmtree("frames", ignore_errors=True)
+    print(f"✅ Parabole vidéo : {output_path}")
+    return output_path
 
-    # ─── Carregar versículos ───
-    verses = fetch_psaume_verses(num, vfrom, vto)
-    if not verses:
-        print(f"❌ Nenhum versículo encontrado para Psaume {num}")
-        sys.exit(1)
 
-    # Remover rubricas demasiado curtas (linhas como "De David")
-    filtered = [(vn, vt) for vn, vt in verses if not is_rubric(vt)]
-    if filtered:
-        verses = filtered
+def pick_parabole(progress):
+    """Charge la prochaine parabole depuis paraboles_curated.json"""
+    paraboles_file = "paraboles_curated.json"
+    arr = load_json(paraboles_file)
+    index = progress.get("i_parabole", 0)
+    if index >= len(arr):
+        index = 0
+    parabole = arr[index]
+    progress["i_parabole"] = index + 1
+    return parabole
 
-    print(f"📖 {len(verses)} versículos")
 
-    # ─── Gerar vídeo ───
-    video_path = make_meditation_video(num, verses, part_label)
+def main_parabole():
+    progress = load_json(PROGRESS_FILE)
+    parabole = pick_parabole(progress)
+    title = parabole["title"]
+    verses = [(v["ref"], v["text"]) for v in parabole["verses"]]
+    print(f"📖 Parabole — {title} ({len(verses)} versets)")
 
-    # ─── Upload YouTube ───
-    upload_to_youtube(video_path, num, verses, part_label)
+    video = make_parabole_video(title, verses, progress)
 
-    # ─── Telegram + Facebook ───
-    post_to_telegram(video_path, num, part_label)
-    post_to_facebook(video_path, num, part_label)
+    # Caption court pour Telegram/Instagram
+    first_ref = verses[0][0] if verses else ""
+    caption = f"✝️ <b>{title}</b>\n{first_ref}\n\n📲 Partage cette parabole avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBibleApp #LSG1910 #ParaboleDeJésus"
+    send_video(video, caption)
 
-    print("✅ Terminé (méditation).")
+    # Publier sur les plateformes
+    cat = CATEGORIES["jesus"]
+    post_reel_to_facebook(video, title, verses[0][1] if verses else "", cat, "jesus")
+    post_reel_to_instagram(video, title, verses[0][1] if verses else "", cat, "jesus")
+
+    # YouTube — titre avec référence
+    try:
+        from google.oauth2.credentials import Credentials
+        from googleapiclient.discovery import build
+        from googleapiclient.http import MediaFileUpload
+        from google.auth.transport.requests import Request
+        if should_post("youtube") and YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
+            creds = Credentials(token=None, refresh_token=YT_REFRESH_TOKEN, client_id=YT_CLIENT_ID,
+                client_secret=YT_CLIENT_SECRET, token_uri="https://oauth2.googleapis.com/token",
+                scopes=["https://www.googleapis.com/auth/youtube.upload"])
+            creds.refresh(Request())
+            youtube = build("youtube", "v3", credentials=creds)
+            ref_range = parabole.get("ref_range", verses[0][0] if verses else "")
+            yt_title = f"✝️ {title} — {ref_range} | Bible LSG1910"[:100]
+            description = (f"✝️ {title}\n\n"
+                + "\n".join([f"{r} — {t}" for r, t in verses])
+                + f"\n\n📖 Lire la Bible gratuitement : {APP_URL}\n"
+                + f"🔔 Abonnez-vous pour plus de paraboles 🙏\n\n"
+                + f"🔗 {APP_URL}/liens\n\n"
+                + f"#LaBibleApp #Bible #ParaboleDeJésus #Jésus #LSG1910")
+            body = {"snippet": {"title": yt_title, "description": description,
+                "tags": ["Bible", "Parabole", "Jésus", "LSG1910", "BibleFrancaise"], "categoryId": "22"},
+                "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}}
+            media = MediaFileUpload(video, mimetype="video/mp4", resumable=True)
+            request = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
+            response = None
+            while response is None:
+                status, response = request.next_chunk()
+                if status:
+                    print(f"  ⏳ YouTube : {int(status.progress()*100)}%")
+            print(f"✅ YouTube publié — https://youtube.com/watch?v={response.get('id')}")
+    except Exception as e:
+        print(f"❌ YouTube parabole : {e}")
+
+    save_json(PROGRESS_FILE, progress)
+    print("✅ Terminé (parabole).")
+
+
+# ---------------------------------------------------
+# MAIN
+# ---------------------------------------------------
+def main():
+    progress = load_json(PROGRESS_FILE)
+    text, ref, cat, cat_name, hour_utc = pick_verse(progress)
+    print(f"📖 Image — {ref} [{cat_name}]")
+    img = make_image(text, ref, cat_name)
+    caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partage ce verset avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBibleApp #LSG1910 #versetdujour {cat['tag']}"
+    send_photo(img, caption)
+    post_to_facebook(img, ref, text, cat, cat_name)
+    # Instagram : toujours un reel — les images fixes n'ont quasiment aucune portée sur IG,
+    # alors que les reels sont distribués bien plus largement.
+    if should_post("instagram"):
+        if not os.path.exists("logo.png"):
+            try:
+                r = requests.get("https://labible.app/icons/icon-512x512.png", timeout=10)
+                if r.status_code == 200:
+                    with open("logo.png", "wb") as f:
+                        f.write(r.content)
+            except Exception as e:
+                print(f"⚠️ Logo : {e}")
+        video_ig = make_reel_video(text, ref, progress, cat_name)
+        post_reel_to_instagram(video_ig, ref, text, cat, cat_name)
+    post_to_pinterest(img, ref, text, cat, cat_name)
+    post_to_threads(img, ref, text, cat, cat_name)
+    save_json(PROGRESS_FILE, progress)
+    print("✅ Terminé (image).")
+
+
+def main_reel():
+    progress = load_json(PROGRESS_FILE)
+    text, ref, cat, cat_name, hour_utc = pick_verse(progress)
+    print(f"🎬 Reel — {ref} [{cat_name}]")
+    if not os.path.exists("logo.png"):
+        try:
+            r = requests.get("https://labible.app/icons/icon-512x512.png", timeout=10)
+            if r.status_code == 200:
+                with open("logo.png", "wb") as f:
+                    f.write(r.content)
+        except Exception as e:
+            print(f"⚠️ Logo : {e}")
+    video = make_reel_video(text, ref, progress, cat_name)
+    caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partage ce verset avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBibleApp #LSG1910 #versetdujour {cat['tag']}"
+    send_video(video, caption)
+    post_reel_to_facebook(video, ref, text, cat, cat_name)
+    post_reel_to_instagram(video, ref, text, cat, cat_name)
+    post_to_youtube(video, ref, text, cat, cat_name, hour_utc)
+    post_reel_to_threads(video, ref, text, cat, cat_name)
+    save_json(PROGRESS_FILE, progress)
+    print("✅ Terminé (reel).")
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "reel":
+        main_reel()
+    elif len(sys.argv) > 1 and sys.argv[1] == "parabole":
+        main_parabole()
+    else:
+        main()
