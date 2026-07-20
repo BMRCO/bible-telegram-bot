@@ -1,13 +1,13 @@
 {
   "mode": "alt_curated_no_labels",
   "next": "promise",
-  "i_promise": 41,
+  "i_promise": 42,
   "i_jesus": 16,
   "cat_index": 1,
   "i_psaume": 32,
   "i_proverbe": 94,
   "i_prophetie": 139,
-  "last_music": "music/Page 2 - Free Instrumental Christian Music MP3 Download.mp3",
+  "last_music": "music/Free Musique Gratuite Music MP3 Download.mp3",
   "i_parabole": 1,
   "i_protection": 6,
   "i_esperance": 1,
@@ -42,7 +42,6 @@
     "music/audiodollar-worship-is-worship-451096.mp3"
   ],
   "music_bag": [
-    "music/Free Musique Gratuite Music MP3 Download.mp3",
     "music/the_mountain-piano-483803.mp3",
     "music/igorlisul-sweet-dreams-relaxing-guitar-music-480281.mp3",
     "music/freemusicforvideo-soft-background-music-409193-LENOVOBC.mp3",
@@ -95,6 +94,7 @@
     "music/adrian_huminiak-morning-worship-180330.mp3",
     "music/Free Instrumental Christian Music MP3 Download_6.mp3",
     "music/faespencer-silent-prayer-instrumental-212811.mp3",
-    "music/Page 2 - Free Instrumental Christian Music MP3 Download.mp3"
+    "music/Page 2 - Free Instrumental Christian Music MP3 Download.mp3",
+    "music/Free Musique Gratuite Music MP3 Download.mp3"
   ]
 }
