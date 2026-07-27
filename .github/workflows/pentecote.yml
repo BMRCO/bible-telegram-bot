@@ -1,26 +1,35 @@
-name: Pentecôte 2026
+name: Pentecôte
+
+# ─────────────────────────────────────────────────────────────
+# Déclenchement MANUEL uniquement.
+#
+# La Pentecôte est une fête mobile (Pâques + 49 jours) : une date
+# fixe dans le cron publierait le mauvais jour dès l'année suivante.
+#
+#   2026 : dimanche 24 mai
+#   2027 : dimanche 16 mai
+#   2028 : dimanche  4 juin
+#   2029 : dimanche 20 mai
+#   2030 : dimanche  9 juin
+#
+# Le jour venu, lancer le workflow une fois par slot, à l'heure
+# souhaitée (Actions → Pentecôte → Run workflow → choisir le slot).
+# Prévoir ~1 h 30 à 3 h de retard côté GitHub Actions : lancer en
+# avance si l'heure de diffusion compte.
+#
+#   slot 1 — 🛡️ Le Consolateur              (image)
+#   slot 2 — 🌿 La Promesse accomplie        (reel)
+#   slot 3 — 💡 Le Fruit de l'Esprit         (image)
+#   slot 4 — ✝️ L'Esprit de vérité           (reel)
+#   slot 5 — 📯 La Prophétie accomplie       (image)
+#   slot 6 — 🎵 Ne me retire pas ton Esprit  (reel)
+# ─────────────────────────────────────────────────────────────
 
 on:
-  schedule:
-    # Cron em UTC. France = UTC+2 (été)
-    # 🕊️ Pentecôte = Dimanche 24 mai 2026
-    # On limite aux crons matchent CE dimanche via condition de date dans le job
-    # 🛡️ 5h03 UTC → 7h03 FR  | slot 1 — Le Consolateur (image)
-    # 🌿 7h12 UTC → 9h12 FR  | slot 2 — La Promesse accomplie (reel)
-    # 💡 10h00 UTC → 12h00 FR | slot 3 — Le Fruit de l'Esprit (image)
-    # ✝️ 13h45 UTC → 15h45 FR | slot 4 — L'Esprit de vérité (reel)
-    # 📯 17h41 UTC → 19h41 FR | slot 5 — La Prophétie accomplie (image)
-    # 🎵 19h08 UTC → 21h08 FR | slot 6 — Ne me retire pas ton Esprit (reel)
-    - cron: '3 5 24 5 *'
-    - cron: '12 7 24 5 *'
-    - cron: '0 10 24 5 *'
-    - cron: '45 13 24 5 *'
-    - cron: '41 17 24 5 *'
-    - cron: '8 19 24 5 *'
   workflow_dispatch:
     inputs:
       slot:
-        description: 'Slot Pentecôte à publier (1-6)'
+        description: 'Slot à publier — 1 Consolateur · 2 Promesse · 3 Fruit de l''Esprit · 4 Esprit de vérité · 5 Prophétie · 6 Ne me retire pas ton Esprit'
         required: true
         type: choice
         default: '1'
@@ -35,13 +44,15 @@ on:
 permissions:
   contents: write
 
+# Groupe unique par run : deux slots lancés coup sur coup ne s'annulent pas.
 concurrency:
-  group: pentecote-post
+  group: pentecote-post-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Current UTC time
         run: date -u
@@ -62,26 +73,6 @@ jobs:
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      - name: Determine Pentecôte slot
-        id: slot
-        run: |
-          SCHEDULE="${{ github.event.schedule }}"
-          MANUAL_SLOT="${{ inputs.slot }}"
-
-          if [ -n "$SCHEDULE" ]; then
-            case "$SCHEDULE" in
-              "3 5 24 5 *")   echo "slot=1" >> $GITHUB_OUTPUT ;;
-              "12 7 24 5 *")  echo "slot=2" >> $GITHUB_OUTPUT ;;
-              "0 10 24 5 *")  echo "slot=3" >> $GITHUB_OUTPUT ;;
-              "45 13 24 5 *") echo "slot=4" >> $GITHUB_OUTPUT ;;
-              "41 17 24 5 *") echo "slot=5" >> $GITHUB_OUTPUT ;;
-              "8 19 24 5 *")  echo "slot=6" >> $GITHUB_OUTPUT ;;
-              *)              echo "slot=1" >> $GITHUB_OUTPUT ;;
-            esac
-          else
-            echo "slot=$MANUAL_SLOT" >> $GITHUB_OUTPUT
-          fi
-
       - name: Run Pentecôte bot
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -99,12 +90,13 @@ jobs:
           THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
           PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
           PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
-        run: python pentecote.py ${{ steps.slot.outputs.slot }}
+        run: python pentecote.py ${{ inputs.slot }}
 
       - name: Commit progress
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase --autostash || true
           git add progress.json
           git diff --staged --quiet || git commit -m "Update progress Pentecôte [skip ci]"
           git push || true
