@@ -228,7 +228,10 @@ def clean_text(text: str) -> str:
     text = re.sub(r'\s*Sélah\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s*Selah\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s+', ' ', text).strip()
-    text = re.sub(r'\s*([;:!?])', '\u00a0\\1', text)
+    # Typographie française : espace insécable normale avant « : »,
+    # espace fine insécable avant « ; ! ? » (règle de l'Imprimerie nationale).
+    text = re.sub(r'\s*:', '\u00a0:', text)
+    text = re.sub(r'\s*([;!?])', '\u202f\\1', text)
     text = text.replace("'", "\u2019").replace("'", "\u2019")
     text = text.replace("Eternel", "Éternel")
     # œ (oeu -> œu): cœur, sœur, œuvre, œuf, bœuf, vœu, nœud, mœurs, chœur, manœuvre, rancœur…
@@ -631,9 +634,11 @@ def wrap_text(draw, text, font, max_w):
         return [""]
     lines, current = [], words[0]
     for w in words[1:]:
-        # Ne pas couper avant ? ! : ; — les garder avec le mot précédent
+        # Ne pas couper avant ? ! : ; — les garder avec le mot précédent,
+        # avec l'espacement français correct (fine avant ?!;, normale avant :)
         if w and w[0] in '?!:;':
-            current = current + '\u00a0' + w
+            sep = '\u00a0' if w[0] == ':' else '\u202f'
+            current = current + sep + w
             continue
         test = current + " " + w
         if draw.textlength(test, font=font) <= max_w:
@@ -700,9 +705,11 @@ def wrap_text_with_quotes(draw, text, font, max_w):
     q_open = draw.textlength("« ", font=font)
     lines, current = [], words[0]
     for w in words[1:]:
-        # Ne pas couper avant ? ! : ; — les garder avec le mot précédent
+        # Ne pas couper avant ? ! : ; — les garder avec le mot précédent,
+        # avec l'espacement français correct (fine avant ?!;, normale avant :)
         if w and w[0] in '?!:;':
-            current = current + '\u00a0' + w
+            sep = '\u00a0' if w[0] == ':' else '\u202f'
+            current = current + sep + w
             continue
         test = current + " " + w
         margin = q_open if not lines else 0
@@ -718,7 +725,8 @@ def wrap_text_with_quotes(draw, text, font, max_w):
         new_last = words_last[0]
         for w in words_last[1:]:
             if w and w[0] in '?!:;':
-                new_last = new_last + '\u00a0' + w
+                sep = '\u00a0' if w[0] == ':' else '\u202f'
+                new_last = new_last + sep + w
                 continue
             if draw.textlength(new_last + " " + w + " »", font=font) <= max_w:
                 new_last += " " + w
@@ -1057,7 +1065,8 @@ def make_parabole_video(title, verses, progress=None):
         lines, current = [], words[0]
         for w in words[1:]:
             if w == '»' or (w and w[0] in '?!:;'):
-                current += '\u00a0' + w
+                sep = '\u00a0' if (w == '»' or w[0] == ':') else '\u202f'
+                current += sep + w
                 continue
             test = current + " " + w
             if draw.textlength(test, font=font) <= max_w:
