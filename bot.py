@@ -2,6 +2,7 @@ import os
 import json
 import random
 import re
+import unicodedata
 import datetime
 import math
 import subprocess
@@ -50,6 +51,28 @@ FONT_SANS       = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 WATERMARK    = "LaBible.app"
 MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
 APP_URL      = "https://labible.app"
+
+
+def slugify_book(name: str) -> str:
+    """'Cantique des Cantiques' -> 'cantique-des-cantiques' ; 'Ésaïe' -> 'esaie'
+    (même algorithme que generate_chapter_pages.py, cote labible.app)."""
+    s = unicodedata.normalize("NFD", name)
+    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+    s = s.lower().replace(" ", "-")
+    s = re.sub(r"[^a-z0-9-]", "", s)
+    return s
+
+
+def parse_ref_to_chapter_url(ref: str) -> str:
+    """'Jean 3:16' ou '1 Corinthiens 13:4-6' -> lien direct vers la page du
+    chapitre (labible.app/lsg/{livre}/{chapitre}). Repli sur APP_URL si le
+    format de la référence n'est pas reconnu — jamais de lien casse."""
+    m = re.match(r"^(.+?)\s+(\d+):\d+", (ref or "").strip())
+    if not m:
+        return APP_URL
+    book, ch = m.group(1), m.group(2)
+    return f"{APP_URL}/lsg/{slugify_book(book)}/{ch}"
+
 
 HASHTAGS_BASE_IG = [
     "#LaBibleApp", "#VersetDuJour", "#LSG1910", "#Bible",
@@ -320,14 +343,15 @@ def send_video(path, caption):
 # ---------------------------------------------------
 # FACEBOOK
 # ---------------------------------------------------
-def post_to_facebook(image_path, ref, text, cat, cat_name):
+def post_to_facebook(image_path, ref, text, cat, cat_name, link_override=None):
     if not should_post("facebook"):
         print("⏭️  Facebook skip (filtro)")
         return
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
-    msg = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
+    chapter_url = link_override or parse_ref_to_chapter_url(ref)
+    msg = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
     with open(image_path, "rb") as f:
         r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/photos",
             data={"message": msg, "access_token": FB_PAGE_TOKEN}, files={"source": f}, timeout=60)
@@ -337,14 +361,15 @@ def post_to_facebook(image_path, ref, text, cat, cat_name):
         print(f"❌ Erreur Facebook ({r.status_code}): {r.text}")
 
 
-def post_reel_to_facebook(video_path, ref, text, cat, cat_name):
+def post_reel_to_facebook(video_path, ref, text, cat, cat_name, link_override=None):
     if not should_post("facebook"):
         print("⏭️  Facebook reel skip (filtro)")
         return
     if not FB_PAGE_TOKEN:
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
-    desc = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n🔔 Abonnez-vous pour plus de versets 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
+    chapter_url = link_override or parse_ref_to_chapter_url(ref)
+    desc = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n🔔 Abonnez-vous pour plus de versets 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
     with open(video_path, "rb") as f:
         r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
             data={"description": desc, "access_token": FB_PAGE_TOKEN}, files={"source": f}, timeout=120)
@@ -412,7 +437,7 @@ def upload_video_public(video_path):
 # ---------------------------------------------------
 # INSTAGRAM
 # ---------------------------------------------------
-def post_to_instagram(image_path, ref, text, cat, cat_name):
+def post_to_instagram(image_path, ref, text, cat, cat_name, link_override=None):
     if not should_post("instagram"):
         print("⏭️  Instagram skip (filtro)")
         return
@@ -423,7 +448,8 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
         return
     if "cloudinary.com" in image_url:
         image_url = image_url.replace("/upload/", "/upload/f_jpg/")
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n🔔 Suivez @labible.app pour un verset chaque jour 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    chapter_url = link_override or parse_ref_to_chapter_url(ref)
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n🔔 Suivez @labible.app pour un verset chaque jour 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"image_url": image_url, "caption": caption, "access_token": FB_PAGE_TOKEN}, timeout=60)
     if r.status_code != 200:
@@ -451,7 +477,7 @@ def post_to_instagram(image_path, ref, text, cat, cat_name):
         print(f"❌ Instagram publication ({r2.status_code}): {r2.text}")
 
 
-def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
+def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=None):
     if not should_post("instagram"):
         print("⏭️  Instagram reel skip (filtro)")
         return
@@ -460,7 +486,8 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name):
     video_url = upload_video_public(video_path)
     if not video_url:
         return
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n🔔 Suivez @labible.app pour un verset chaque jour 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    chapter_url = link_override or parse_ref_to_chapter_url(ref)
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n🔔 Suivez @labible.app pour un verset chaque jour 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"media_type": "REELS", "video_url": video_url, "caption": caption, "access_token": FB_PAGE_TOKEN, "thumb_offset": "7500"}, timeout=60)
     if r.status_code != 200:
@@ -500,14 +527,17 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
     image_url = upload_to_imgbb(image_path)
     if not image_url:
         return
+    chapter_url = parse_ref_to_chapter_url(ref)
     pin_keywords = {"promise": "Promesses de Dieu", "jesus": "Paroles de Jésus",
                     "psaume": "Psaumes Bibliques", "proverbe": "Sagesse Biblique", "prophetie": "Prophéties Bibliques",
                     "protection": "Protection Divine"}
     payload = {
         "board_id": PINTEREST_BOARD_ID,
         "title": f"{cat['emoji']} {pin_keywords.get(cat_name, 'Verset Biblique')} — {ref} | LaBible.app",
-        "description": f"{cat['emoji']} « {text} »\n\n— {ref} (LSG 1910)\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n#Bible #VersetDuJour #LaBibleApp #LSG1910 #Foi",
-        "link": f"{APP_URL}/#{ref.replace(' ', '-')}",
+        "description": f"{cat['emoji']} « {text} »\n\n— {ref} (LSG 1910)\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n#Bible #VersetDuJour #LaBibleApp #LSG1910 #Foi",
+        # Page reelle et crawlable (meilleure pour l'apercu Pinterest qu'un lien
+        # #hash, que son robot ne peut pas rendre cote client).
+        "link": chapter_url,
         "media_source": {"source_type": "image_url", "url": image_url}
     }
     r = requests.post("https://api.pinterest.com/v5/pins",
@@ -532,7 +562,7 @@ def _threads_publish(container_id):
         print(f"❌ Threads publication ({r2.status_code}): {r2.text}")
 
 
-def post_to_threads(image_path, ref, text, cat, cat_name):
+def post_to_threads(image_path, ref, text, cat, cat_name, link_override=None):
     if not should_post("threads"):
         print("⏭️  Threads skip (filtro)")
         return
@@ -543,7 +573,8 @@ def post_to_threads(image_path, ref, text, cat, cat_name):
         return
     if "cloudinary.com" in image_url:
         image_url = image_url.replace("/upload/", "/upload/f_jpg/")
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    chapter_url = link_override or parse_ref_to_chapter_url(ref)
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "IMAGE", "image_url": image_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
@@ -552,7 +583,7 @@ def post_to_threads(image_path, ref, text, cat, cat_name):
     _threads_publish(r.json().get("id"))
 
 
-def post_reel_to_threads(video_path, ref, text, cat, cat_name):
+def post_reel_to_threads(video_path, ref, text, cat, cat_name, link_override=None):
     if not should_post("threads"):
         print("⏭️  Threads reel skip (filtro)")
         return
@@ -563,7 +594,8 @@ def post_reel_to_threads(video_path, ref, text, cat, cat_name):
     if not video_url:
         print("❌ Threads — upload vidéo échoué")
         return
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez la Bible complète gratuitement → {APP_URL}\n🔔 Abonnez-vous pour plus de versets 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    chapter_url = link_override or parse_ref_to_chapter_url(ref)
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n🔔 Abonnez-vous pour plus de versets 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "VIDEO", "video_url": video_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
@@ -998,9 +1030,10 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
         creds.refresh(Request())
         youtube = build("youtube", "v3", credentials=creds)
         title = build_yt_title(cat_name, cat, ref, hour_utc)
+        chapter_url = parse_ref_to_chapter_url(ref)
         description = (f"« {text} »\n"
             f"— {ref} (LSG 1910)\n\n"
-            f"📖 Lire la Bible gratuitement : {APP_URL}\n"
+            f"📖 Lire le chapitre complet : {chapter_url}\n"
             f"🔔 Abonnez-vous pour un verset chaque jour 🙏\n\n"
             f"🔗 {APP_URL}/liens\n\n"
             f"#LaBibleApp #Bible #VersetDuJour #ParoleDeDieu #LSG1910 #Shorts #{cat['tag'].lstrip('#')}")
@@ -1229,7 +1262,8 @@ def main_parabole():
 
     # Caption court pour Telegram/Instagram
     first_ref = verses[0][0] if verses else ""
-    caption = f"✝️ <b>{title}</b>\n{first_ref}\n\n📲 Partage cette parabole avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBibleApp #LSG1910 #ParaboleDeJésus"
+    parabole_url = parse_ref_to_chapter_url(first_ref)
+    caption = f"✝️ <b>{title}</b>\n{first_ref}\n\n📲 Partage cette parabole avec quelqu'un qui en a besoin 🙏\n📖 {parabole_url}\n\n#LaBibleApp #LSG1910 #ParaboleDeJésus"
     send_video(video, caption)
 
     # Publier sur les plateformes
@@ -1253,7 +1287,7 @@ def main_parabole():
             yt_title = f"✝️ {title} — {ref_range} | Bible LSG1910"[:100]
             description = (f"✝️ {title}\n\n"
                 + "\n".join([f"{r} — {t}" for r, t in verses])
-                + f"\n\n📖 Lire la Bible gratuitement : {APP_URL}\n"
+                + f"\n\n📖 Lire le passage complet : {parabole_url}\n"
                 + f"🔔 Abonnez-vous pour plus de paraboles 🙏\n\n"
                 + f"🔗 {APP_URL}/liens\n\n"
                 + f"#LaBibleApp #Bible #ParaboleDeJésus #Jésus #LSG1910")
@@ -1283,7 +1317,8 @@ def main():
     text, ref, cat, cat_name, hour_utc = pick_verse(progress)
     print(f"📖 Image — {ref} [{cat_name}]")
     img = make_image(text, ref, cat_name)
-    caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partage ce verset avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBibleApp #LSG1910 #VersetDuJour {cat['tag']}"
+    chapter_url = parse_ref_to_chapter_url(ref)
+    caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partage ce verset avec quelqu'un qui en a besoin 🙏\n📖 {chapter_url}\n\n#LaBibleApp #LSG1910 #VersetDuJour {cat['tag']}"
     send_photo(img, caption)
     post_to_facebook(img, ref, text, cat, cat_name)
     # Instagram : toujours un reel — les images fixes n'ont quasiment aucune portée sur IG,
@@ -1318,7 +1353,8 @@ def main_reel():
         except Exception as e:
             print(f"⚠️ Logo : {e}")
     video = make_reel_video(text, ref, progress, cat_name)
-    caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partage ce verset avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBibleApp #LSG1910 #VersetDuJour {cat['tag']}"
+    chapter_url = parse_ref_to_chapter_url(ref)
+    caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partage ce verset avec quelqu'un qui en a besoin 🙏\n📖 {chapter_url}\n\n#LaBibleApp #LSG1910 #VersetDuJour {cat['tag']}"
     send_video(video, caption)
     post_reel_to_facebook(video, ref, text, cat, cat_name)
     post_reel_to_instagram(video, ref, text, cat, cat_name)
