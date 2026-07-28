@@ -52,22 +52,22 @@ MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
 APP_URL      = "https://labible.app"
 
 HASHTAGS_BASE_IG = [
-    "#LaBibleApp", "#Bible", "#VersetDuJour", "#BibleFrancaise",
-    "#Chrétien", "#Foi", "#Évangile", "#Jésus",
-    "#ParoleDeDieu", "#LSG1910",
+    "#LaBibleApp", "#VersetDuJour", "#LSG1910", "#Bible",
 ]
 
 HASHTAGS_BASE_FB = [
     "#LaBibleApp", "#Bible", "#VersetDuJour", "#Foi", "#BibleFrancaise", "#LSG1910",
 ]
 
+# Instagram (2026) : Meta recommande 3 à 5 hashtags precis plutot que d'en empiler
+# beaucoup ; on garde 4 fixes + 1 seul tag de categorie, tres specifique (= 5 au total).
 HASHTAGS_CAT_IG = {
-    "promise":   ["#Promesse", "#Espérance", "#PromesseDeDieu", "#Bénédiction", "#Confiance"],
-    "jesus":     ["#JésusChrist", "#ParoleDeJésus", "#GrâceDeDieu", "#Rédemption", "#Amour"],
-    "psaume":    ["#Psaumes", "#Louange", "#Adoration", "#Prière", "#Cantique"],
-    "proverbe":  ["#Sagesse", "#Proverbes", "#SagesseDeJésus", "#Discernement", "#Conseil"],
-    "prophetie": ["#Prophétie", "#EspoirEnDieu", "#Révélation", "#Accomplissement", "#GloireDeDieu"],
-    "protection": ["#Protection", "#ProtectionDivine", "#Refuge", "#Sécurité", "#Confiance"],
+    "promise":   ["#PromesseDeDieu"],
+    "jesus":     ["#JésusChrist"],
+    "psaume":    ["#Psaumes"],
+    "proverbe":  ["#Sagesse"],
+    "prophetie": ["#Prophétie"],
+    "protection": ["#Protection"],
 }
 
 HASHTAGS_CAT_FB = {
@@ -163,7 +163,8 @@ def build_yt_title(cat_name, cat, ref, hour_utc):
 
 def build_hashtags_ig(cat_name):
     specific = HASHTAGS_CAT_IG.get(cat_name, [])
-    return " ".join((HASHTAGS_BASE_IG + specific)[:15])
+    # 2026 : Meta recommande 3-5 hashtags precis (plus n'aide plus, et peut nuire).
+    return " ".join((HASHTAGS_BASE_IG + specific)[:5])
 
 
 def build_hashtags_fb(cat_name):
@@ -1282,7 +1283,7 @@ def main():
     text, ref, cat, cat_name, hour_utc = pick_verse(progress)
     print(f"📖 Image — {ref} [{cat_name}]")
     img = make_image(text, ref, cat_name)
-    caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partage ce verset avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBibleApp #LSG1910 #versetdujour {cat['tag']}"
+    caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partage ce verset avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBibleApp #LSG1910 #VersetDuJour {cat['tag']}"
     send_photo(img, caption)
     post_to_facebook(img, ref, text, cat, cat_name)
     # Instagram : toujours un reel — les images fixes n'ont quasiment aucune portée sur IG,
@@ -1317,7 +1318,7 @@ def main_reel():
         except Exception as e:
             print(f"⚠️ Logo : {e}")
     video = make_reel_video(text, ref, progress, cat_name)
-    caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partage ce verset avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBibleApp #LSG1910 #versetdujour {cat['tag']}"
+    caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partage ce verset avec quelqu'un qui en a besoin 🙏\n📖 labible.app\n\n#LaBibleApp #LSG1910 #VersetDuJour {cat['tag']}"
     send_video(video, caption)
     post_reel_to_facebook(video, ref, text, cat, cat_name)
     post_reel_to_instagram(video, ref, text, cat, cat_name)
