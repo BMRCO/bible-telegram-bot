@@ -477,11 +477,12 @@ def post_to_telegram(video_path, num, part_label=None):
         print("⚠️  Telegram credentials ausentes.")
         return
     head = _meditation_head(num, part_label)
+    chapter_url = f"{APP_URL}/lsg/psaumes/{num}"
     caption = (
         f"🎵 <b>{head}</b>\n"
         f"Bible Louis Segond 1910\n\n"
         f"{PSAUME_CTA}\n\n"
-        f"📖 labible.app\n\n"
+        f"📖 {chapter_url}\n\n"
         f"#LaBibleApp #Psaumes #Méditation #LSG1910"
     )
     reply_markup = json.dumps({"inline_keyboard": [[
@@ -510,11 +511,12 @@ def post_to_facebook(video_path, num, part_label=None):
         print("⚠️  FB_PAGE_TOKEN ausente.")
         return
     head = _meditation_head(num, part_label)
+    chapter_url = f"{APP_URL}/lsg/psaumes/{num}"
     desc = (
         f"🎵 {head}\n"
         f"Bible Louis Segond 1910\n\n"
         f"{PSAUME_CTA}\n\n"
-        f"📖 Lisez la Bible complète gratuitement → {APP_URL}\n\n"
+        f"📖 Lisez le psaume complet gratuitement → {chapter_url}\n\n"
         f"#LaBibleApp #Psaumes #Méditation #Bible #LSG1910 #ParoleDeDieu"
     )
     try:
@@ -561,6 +563,7 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
     )
 
     head = _meditation_head(num, part_label)
+    chapter_url = f"{APP_URL}/lsg/psaumes/{num}"
     description = (
         f"🎵 Méditation — {head}\n"
         f"Bible Louis Segond 1910\n\n"
@@ -568,7 +571,7 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
         f"{verses_text}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{PSAUME_CTA}\n\n"
-        f"📖 Lire la Bible gratuitement : {APP_URL}\n"
+        f"📖 Lire le psaume complet : {chapter_url}\n"
         f"🔔 Abonnez-vous pour une méditation chaque jour 🙏\n\n"
         f"🔗 {APP_URL}/liens\n\n"
         f"#LaBibleApp #Psaumes #Méditation #Bible #ParoleDeDieu #LSG1910"
