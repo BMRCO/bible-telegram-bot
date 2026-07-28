@@ -31,7 +31,7 @@ from PIL import Image, ImageDraw, ImageFont
 from bot import (
     load_json, save_json, clean_text, strip_rubric,
     post_reel_to_instagram, post_reel_to_threads,
-    BIBLE_FILE, APP_URL, WATERMARK,
+    BIBLE_FILE, APP_URL, WATERMARK, parse_ref_to_chapter_url,
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
 )
 # Reutiliza helpers de render + musica das meditacoes de Salmos
@@ -148,8 +148,24 @@ THEMES = {
         palette=((28, 20, 12), (16, 11, 6), (210, 165, 120), (230, 190, 150), (246, 240, 230), (165, 135, 108))),
 }
 
-# Ordem de rotacao automatica (um tema por dia). Edita a vontade  "depois vou alimentando".
+# Ordre de rotation automatique (un theme par jour. Edite a vontade "depois vou alimentando".
 ROTATION = ["protection", "paix", "peur", "esperance", "confiance", "amour", "pardon", "guerison", "deuil", "solitude", "priere", "gratitude", "force", "combat", "promesses", "famille", "sagesse", "jesus", "psaumes", "propheties"]
+
+# Themes ayant une page dediee sur labible.app/versets/{theme}. Les 4 restants
+# (sagesse, jesus, psaumes, propheties) n'ont pas de page thematique equivalente ;
+# pour ceux-la, _theme_url() renvoie plutot le chapitre du premier verset.
+THEMES_WITH_VERSETS_PAGE = {
+    "protection", "paix", "amour", "esperance", "priere", "promesses",
+    "guerison", "peur", "pardon", "deuil", "confiance", "force",
+    "famille", "gratitude", "combat", "solitude",
+}
+
+
+def _theme_url(theme_key, verses):
+    if theme_key in THEMES_WITH_VERSETS_PAGE:
+        return f"{APP_URL}/versets/{theme_key}"
+    first_ref = verses[0][0] if verses else ""
+    return parse_ref_to_chapter_url(first_ref)
 
 
 # 
@@ -408,12 +424,13 @@ def post_to_telegram(video_path, theme_key, verses):
         print("\u26a0\ufe0f  Telegram credentials ausentes.")
         return
     th = THEMES[theme_key]
+    theme_url = _theme_url(theme_key, verses)
     caption = (
         f"{th['emoji']} <b>{th['title']}</b>\n"
         f"Bible Louis Segond 1910\n\n"
         f"{_refs_line(verses)}\n\n"
         f"Prenez un moment pour m\u00e9diter la Parole. \U0001f64f\n\n"
-        f"\U0001f4d6 labible.app\n\n"
+        f"\U0001f4d6 {theme_url}\n\n"
         f"#LaBible #{th['tag']} #M\u00e9ditation #LSG1910"
     )
     reply_markup = json.dumps({"inline_keyboard": [[
@@ -437,12 +454,13 @@ def post_to_facebook(video_path, theme_key, verses):
         print("\u26a0\ufe0f  FB_PAGE_TOKEN ausente.")
         return
     th = THEMES[theme_key]
+    theme_url = _theme_url(theme_key, verses)
     desc = (
         f"{th['emoji']} {th['title']}\n"
         f"Bible Louis Segond 1910\n\n"
         f"{_refs_line(verses)}\n\n"
         f"Prenez un moment pour m\u00e9diter la Parole de Dieu. \U0001f64f\n\n"
-        f"\U0001f4d6 Lisez la Bible compl\u00e8te gratuitement \u2192 {APP_URL}\n\n"
+        f"\U0001f4d6 D\u00e9couvrez tous les versets sur ce th\u00e8me \u2192 {theme_url}\n\n"
         f"#Bible #{th['tag']} #M\u00e9ditation #LSG1910 #ParoleDeDieu #Foi"
     )
     try:
@@ -479,13 +497,14 @@ def upload_to_youtube(video_path, theme_key, verses):
         title = title[:97] + "..."
 
     verses_text = "\n".join(f"{ref} \u2014 {text.rstrip('.')}." for ref, text in verses)
+    theme_url = _theme_url(theme_key, verses)
     description = (
         f"{th['emoji']} {th['title']} \u2014 m\u00e9dit\u00e9e \u00e0 travers la Parole.\n"
         f"Bible Louis Segond 1910\n\n"
         f"\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
         f"{verses_text}\n\n"
         f"\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\n\n"
-        f"\U0001f4d6 Lisez la Bible compl\u00e8te gratuitement \u2192 {APP_URL}\n"
+        f"\U0001f4d6 D\u00e9couvrez tous les versets sur ce th\u00e8me : {theme_url}\n"
         f"\U0001f514 Abonnez-vous pour une m\u00e9ditation chaque jour \U0001f64f\n\n"
         f"#Bible #{th['tag']} #M\u00e9ditation #LSG1910 #ParoleDeDieu "
         f"#Foi #Pri\u00e8re #Chr\u00e9tien #BibleFrancaise"
@@ -545,6 +564,7 @@ def main():
     upload_to_youtube(video_path, theme_key, verses)
     post_to_telegram(video_path, theme_key, verses)
     post_to_facebook(video_path, theme_key, verses)
+    theme_url = _theme_url(theme_key, verses)
     # Instagram (Reel) - agora que e vertical 9:16, encaixa perfeitamente
     post_reel_to_instagram(
         video_path,
@@ -552,6 +572,7 @@ def main():
         verses[0][1] if verses else "",
         THEMES[theme_key],
         theme_key,
+        link_override=theme_url,
     )
     post_reel_to_threads(
         video_path,
@@ -559,6 +580,7 @@ def main():
         verses[0][1] if verses else "",
         THEMES[theme_key],
         theme_key,
+        link_override=theme_url,
     )
 
     # Atualiza progresso
