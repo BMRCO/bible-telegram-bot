@@ -5,9 +5,9 @@
   "i_jesus": 25,
   "cat_index": 1,
   "i_psaume": 41,
-  "i_proverbe": 103,
+  "i_proverbe": 104,
   "i_prophetie": 148,
-  "last_music": "music/nastelbom-instrumental-music-501712.mp3",
+  "last_music": "music/faespencer-praise-212799.mp3",
   "i_parabole": 1,
   "i_protection": 15,
   "i_esperance": 1,
@@ -42,7 +42,6 @@
     "music/audiodollar-worship-is-worship-451096.mp3"
   ],
   "music_bag": [
-    "music/faespencer-praise-212799.mp3",
     "music/igorlisul-sweet-dreams-relaxing-guitar-music-480281.mp3"
   ],
   "music_played": [
@@ -95,6 +94,7 @@
     "music/Free Instrumental Christian Music MP3 Download_9.mp3",
     "music/sonican-peaceful-music-loop-nature-wonder-302753.mp3",
     "music/nastelbom-instrumental-501713.mp3",
-    "music/nastelbom-instrumental-music-501712.mp3"
+    "music/nastelbom-instrumental-music-501712.mp3",
+    "music/faespencer-praise-212799.mp3"
   ]
 }
