@@ -431,7 +431,7 @@ def post_to_telegram(video_path, theme_key, verses):
         f"{_refs_line(verses)}\n\n"
         f"Prenez un moment pour m\u00e9diter la Parole. \U0001f64f\n\n"
         f"\U0001f4d6 {theme_url}\n\n"
-        f"#LaBible #{th['tag']} #M\u00e9ditation #LSG1910"
+        f"#LaBibleApp #{th['tag']} #M\u00e9ditation #LSG1910"
     )
     reply_markup = json.dumps({"inline_keyboard": [[
         {"text": "\U0001f4d6 Lire dans LaBible.app", "url": "https://t.me/BIBLE_APP_BOT/labible"}
