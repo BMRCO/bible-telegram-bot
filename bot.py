@@ -178,7 +178,7 @@ def build_yt_title(cat_name, cat, ref, hour_utc):
         label = "Protection Divine"
     else:
         label = "Verset Biblique"
-    title = f"{cat['emoji']} {label} — {ref} | Bible LSG1910"
+    title = f"{ref} — {cat['emoji']} {label} | Bible LSG1910"
     if len(title) > 100:
         title = title[:97] + "..."
     return title
@@ -449,7 +449,7 @@ def post_to_instagram(image_path, ref, text, cat, cat_name, link_override=None):
     if "cloudinary.com" in image_url:
         image_url = image_url.replace("/upload/", "/upload/f_jpg/")
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n🔔 Suivez @labible.app pour un verset chaque jour 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    caption = f"« {text} »\n— {cat['emoji']} {ref}\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n🔔 Suivez @labible.app pour un verset chaque jour 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"image_url": image_url, "caption": caption, "access_token": FB_PAGE_TOKEN}, timeout=60)
     if r.status_code != 200:
@@ -487,7 +487,7 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=N
     if not video_url:
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n🔔 Suivez @labible.app pour un verset chaque jour 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    caption = f"« {text} »\n— {cat['emoji']} {ref}\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n🔔 Suivez @labible.app pour un verset chaque jour 🙏\n\n👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"media_type": "REELS", "video_url": video_url, "caption": caption, "access_token": FB_PAGE_TOKEN, "thumb_offset": "7500"}, timeout=60)
     if r.status_code != 200:
