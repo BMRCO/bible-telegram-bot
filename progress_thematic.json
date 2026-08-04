@@ -5,7 +5,7 @@
     "esperance": 17,
     "amour": 2,
     "priere": 4,
-    "promesses": 19,
+    "promesses": 24,
     "pardon": 17,
     "guerison": 17,
     "deuil": 0,
@@ -21,10 +21,9 @@
     "peur": 10,
     "confiance": 10
   },
-  "theme_index": 14,
+  "theme_index": 15,
   "rot": 17,
   "music_bag": [
-    "music_meditation/onetent-relaxing-meditation-music-2-225173.mp3",
     "music_meditation/Christian instrumental music for prayer (7-42) - Royalty-free Music.mp3",
     "music_meditation/Christian instrumental music for prayer (God Is Making a Way) - Royalty-free Music.mp3",
     "music_meditation/Christian instrumental music for prayer (Heaven’s Whisper) - Royalty-free Music.mp3",
@@ -39,7 +38,7 @@
     "music_meditation/nickpanekaiassets-peaceful-piano-background-music-218762.mp3",
     "music_meditation/Fundo musical relaxante para oração e meditação - Royalty-free Music.mp3"
   ],
-  "last_music": "music_meditation/Flute Meditation Music 15 - Royalty-free Music.mp3",
+  "last_music": "music_meditation/onetent-relaxing-meditation-music-2-225173.mp3",
   "music_played": [
     "music_meditation/Christian instrumental music for prayer (FAITH) - Royalty-free Music.mp3",
     "music_meditation/Instrumental Christian music for prayer (12-56) - Royalty-free Music.mp3",
@@ -51,6 +50,7 @@
     "music_meditation/Christian Instrumental Piano Worship Calm Emotional Soaking Prayer - Royalty-free Music.mp3",
     "music_meditation/Christian instrumental music for prayer (God Is My Strength) - Royalty-free Music.mp3",
     "music_meditation/Meditation - Royalty-free Music.mp3",
-    "music_meditation/Flute Meditation Music 15 - Royalty-free Music.mp3"
+    "music_meditation/Flute Meditation Music 15 - Royalty-free Music.mp3",
+    "music_meditation/onetent-relaxing-meditation-music-2-225173.mp3"
   ]
 }
