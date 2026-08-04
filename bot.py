@@ -196,59 +196,37 @@ def build_hashtags_fb(cat_name):
 
 
 def strip_rubric(text: str) -> str:
-    text = text.replace("¶", "").strip()
-    # Supprimer une chaîne d'indications liminaires, segment par segment
-    # ex. "Au chef des chantres. De David. Psaume. Eternel! tu me sondes..."
+    text = text.replace("\u00b6", "").strip()
+    # Supprimer une chaine d'indications liminaires, segment par segment.
+    # Chaque alternative est ancree sur un terme de rubrique reel : on ne
+    # supprime jamais un debut de verset ordinaire ("Sur la terre...").
     lead_rubric = re.compile(
         r'^\s*(?:'
-        r'au chef des chantres[^.]*|pour le chef des chantres[^.]*|au chef[^.]*|'
-        r'psaume de david[^.]*|psaume|cantique des degrés[^.]*|cantique|de david|'
-        r'des fils de koré[^.]*|fils de koré[^.]*|sur alamoth[^.]*|sur la[^.]*|'
-        r'prière de[^.]*|maschil[^.]*|michtam[^.]*|hymne[^.]*'
-        r')\s*\.\s*',
+        r'au chef des chantres|pour le chef des chantres|'
+        r'psaume de david|psaume d\u2019asaph|psaume d\'asaph|psaume des fils de kor\u00e9|'
+        r'psaume[^.,]*|cantique des degr\u00e9s|cantique|de david|d\u2019asaph|d\'asaph|'
+        r'des fils de kor\u00e9|fils de kor\u00e9|'
+        r'sur\s+(?:alamoth|la\s+gitthith|gitthith|schoschannim|mahalath|'
+        r'muth-labben|nehiloth|neginoth|sheminith|l\u2019octave|l\'octave|'
+        r'biche\b[^.,]*|la\s+biche\b[^.,]*|les\s+instruments[^.,]*|lis\b[^.,]*)|'
+        r'a\s+jeduthun|d\u2019apr\u00e8s\s+jeduthun|d\'apr\u00e8s\s+jeduthun|jeduthun|'
+        r'pri\u00e8re de[^.,]*|maschil[^.,]*|michtam[^.,]*|hymne[^.,]*'
+        r')\s*[.,]\s*',
         flags=re.IGNORECASE,
     )
     prev = None
     while prev != text:
         prev = text
         text = lead_rubric.sub('', text, count=1).strip()
-
-    rubric_keywords = [
-        "chef des chantres", "maschil", "michtam", "cantique",
-        "psaume de david", "prière de", "fils de koré", "sur alamoth",
-        "sur les", "au chef", "à jouer", "pour les", "jeduthun",
-        "higgaion", "sheminith", "nehiloth", "neginoth", "gittith",
-        "instruments à cordes", "instruments à vent",
-    ]
-    t = text.lower()
-    for kw in rubric_keywords:
-        if kw in t:
-            sentences = text.split(". ")
-            real_sentences = [s for s in sentences if not any(kw in s.lower() for kw in rubric_keywords)]
-            if real_sentences:
-                return ". ".join(real_sentences).strip()
     return text
-
-
-def is_rubric(text: str) -> bool:
-    rubric_keywords = [
-        "chef des chantres", "maschil", "michtam",
-        "fils de koré", "sur alamoth", "au chef",
-        "jeduthun", "higgaion", "sheminith", "nehiloth", "neginoth", "gittith",
-    ]
-    t = text.lower()
-    if len(t.split()) < 18:
-        for kw in rubric_keywords:
-            if kw in t:
-                return True
-    return False
 
 
 def clean_text(text: str) -> str:
     if not text:
         return ""
     text = text.replace("¶", "").strip()
-    text = re.sub(r'\s*[-—]\s*Pause\.?', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\s*[-\u2014]?\s*Jeu d[\u2019\']instruments\.?', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\s*[-\u2014]?\s*Pause\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s*Sélah\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s*Selah\.?', '', text, flags=re.IGNORECASE)
     text = re.sub(r'\s+', ' ', text).strip()
@@ -260,7 +238,9 @@ def clean_text(text: str) -> str:
     text = text.replace("Eternel", "Éternel")
     # œ (oeu -> œu): cœur, sœur, œuvre, œuf, bœuf, vœu, nœud, mœurs, chœur, manœuvre, rancœur…
     text = re.sub(r'[Oo][Ee]([Uu])', lambda m: ('Œ' if m.group(0)[0].isupper() else 'œ') + m.group(1), text)
+    text = re.sub(r'\s*[-\u2014]\s*$', '', text).strip()
     text = text.rstrip(';').rstrip(':').rstrip(',').strip()
+    text = re.sub(r'\s*[-\u2014]\s*$', '', text).strip()
     if not text.endswith(('.', '!', '?')):
         text += '.'
     return text
