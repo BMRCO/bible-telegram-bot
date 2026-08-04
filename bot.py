@@ -221,6 +221,17 @@ def strip_rubric(text: str) -> str:
     return text
 
 
+def is_rubric(text: str) -> bool:
+    """True si le verset ne contient qu'une rubrique / superscription
+    (aucun contenu reel une fois le nettoyage applique). Ces versets sont
+    ignores a la selection : ils n'ont pas de sens publies seuls."""
+    if not text or not text.strip():
+        return True
+    core = strip_rubric(text)
+    core = re.sub(r"[\s\-\u2014.,;:!?\u00ab\u00bb'\u2019]", "", core)
+    return len(core) < 3
+
+
 def clean_text(text: str) -> str:
     if not text:
         return ""
