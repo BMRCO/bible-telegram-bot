@@ -37,4 +37,6 @@ jobs:
           PINTEREST_REFRESH_TOKEN: ${{ secrets.PINTEREST_REFRESH_TOKEN }}
           GH_PAT_SECRETS:          ${{ secrets.GH_PAT_SECRETS }}
           REPO:                    ${{ github.repository }}
+          TELEGRAM_BOT_TOKEN:      ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL:        ${{ secrets.TELEGRAM_CHANNEL }}
         run: python scripts/pinterest_refresh.py
