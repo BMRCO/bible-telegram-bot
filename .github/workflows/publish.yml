@@ -59,6 +59,10 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Un job sans limite occupe un emplacement de concurrence jusqu'a la
+    # coupure implicite (6 h). Les deux workflows de meditation fixent 60 ;
+    # la publication est plus courte, 30 suffit largement (reel + uploads).
+    timeout-minutes: 30
     steps:
       - name: Current UTC time (debug atraso real)
         run: date -u
