@@ -196,6 +196,36 @@ def build_hashtags_fb(cat_name):
 
 
 def strip_rubric(text: str) -> str:
+    """Retire les rubriques et superscriptions EN TETE de verset uniquement.
+
+    ###################################################################
+    #  A LIRE AVANT TOUTE MODIFICATION DE CETTE FONCTION              #
+    ###################################################################
+
+    NE JAMAIS elargir une alternative en motif ouvert du type
+    `sur la[^.]*`, `sur les[^.]*`, `pour les...`, ni ajouter une passe
+    par mots-cles appliquee au milieu du verset.
+
+    Pourquoi : les vraies dedicaces musicales ("Sur alamoth",
+    "Sur Biche de l'aurore") suivent TOUJOURS "Au chef des chantres."
+    Elles n'ouvrent jamais un verset. En revanche, des versets
+    ordinaires commencent par "Sur la/les" :
+
+        Psaume 137:1  Sur les bords des fleuves de Babylone...
+        Job 41:33     Sur la terre nul n'est son maitre...
+        Ezechiel 48:2 Sur la limite de Dan...
+
+    Un motif ouvert les ampute jusqu'au premier point. Une passe par
+    mots-cles generiques fait pire : elle a supprime des phrases
+    entieres au milieu des versets. Ces deux defauts ont coexiste
+    jusqu'en aout 2026 et ont VIDE 24 versets et mutile 112 autres.
+    Psaumes 46:10 ("...je domine sur les nations...") a ete publie
+    sur toutes les plateformes sous la forme « -. ».
+
+    Regle : chaque alternative doit etre ancree sur un terme de
+    rubrique atteste. Apres toute modification, revalider sur les
+    31 102 versets — attendu : 0 verset vide, 0 rubrique residuelle.
+    """
     text = text.replace("\u00b6", "").strip()
     # Supprimer une chaine d'indications liminaires, segment par segment.
     # Chaque alternative est ancree sur un terme de rubrique reel : on ne
@@ -284,8 +314,20 @@ def get_bible_index():
     return _bible_index
 
 
+# Correspondance graphie usuelle -> graphie du fichier source.
+#
+# ATTENTION : le fichier bible/lsg1910.json contient le nom TRONQUE
+# "Cantique Des Cantiqu" (et non "Cantique des cantiques"). L'entree
+# ci-dessous pointe donc vers la graphie reelle du fichier. Aucun
+# fichier cure n'utilise ce livre aujourd'hui ; le jour ou un verset
+# du Cantique y sera ajoute, verifier que load_verse() le trouve ET
+# que parse_ref_to_chapter_url() produit bien
+# https://labible.app/lsg/cantique-des-cantiques/<n> — le slug est
+# derive du nom affiche, pas de celui du fichier source.
 BOOK_NAME_MAP = {
-    "Psaumes": "Psaume", "Cantique des Cantiques": "Cantique des cantiques",
+    "Psaumes": "Psaume",
+    "Cantique des Cantiques": "Cantique Des Cantiqu",
+    "Cantique des cantiques": "Cantique Des Cantiqu",
     "1 Rois": "1 Rois", "2 Rois": "2 Rois",
     "1 Samuel": "1 Samuel", "2 Samuel": "2 Samuel",
     "1 Chroniques": "1 Chroniques", "2 Chroniques": "2 Chroniques",
