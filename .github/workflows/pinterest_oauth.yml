@@ -1,0 +1,54 @@
+name: Pinterest — capture OAuth (a lancer une seule fois)
+
+# Etape unique : recuperer un refresh token permanent.
+#
+# 1. Dans l'app Pinterest (developers.pinterest.com), ajouter l'URI de
+#    redirection :  https://labible.app/
+# 2. Ouvrir dans le navigateur (remplacer CLIENT_ID) :
+#    https://www.pinterest.com/oauth/?client_id=CLIENT_ID&redirect_uri=https://labible.app/&response_type=code&scope=boards:read,pins:read,pins:write&state=labible
+# 3. Autoriser. Le navigateur redirige vers
+#    https://labible.app/?code=XXXXXXXX&state=labible
+#    Copier la valeur de code= (uniquement le code, sans &state).
+# 4. Lancer ce workflow en collant ce code.
+#
+# Le code n'est valable que quelques minutes : le lancer aussitot.
+
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: 'Code OAuth renvoye par Pinterest (parametre code=)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pinterest-oauth
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer les dependances
+        run: pip install requests pynacl
+
+      - name: Echanger le code contre les jetons et ecrire les Secrets
+        env:
+          PINTEREST_CLIENT_ID:     ${{ secrets.PINTEREST_CLIENT_ID }}
+          PINTEREST_CLIENT_SECRET: ${{ secrets.PINTEREST_CLIENT_SECRET }}
+          GH_PAT_SECRETS:          ${{ secrets.GH_PAT_SECRETS }}
+          OAUTH_CODE:              ${{ inputs.code }}
+          REPO:                    ${{ github.repository }}
+          REDIRECT_URI:            'https://labible.app/'
+        run: python scripts/pinterest_oauth.py

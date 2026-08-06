@@ -1,0 +1,40 @@
+name: Pinterest — renouvellement du jeton
+
+# L'access token Pinterest vit 30 jours. Renouvellement hebdomadaire :
+# large marge en cas d'echec ponctuel d'une execution.
+
+on:
+  schedule:
+    - cron: '23 4 * * 1'   # lundi, 04h23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pinterest-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer les dependances
+        run: pip install requests pynacl
+
+      - name: Renouveler l'access token
+        env:
+          PINTEREST_CLIENT_ID:     ${{ secrets.PINTEREST_CLIENT_ID }}
+          PINTEREST_CLIENT_SECRET: ${{ secrets.PINTEREST_CLIENT_SECRET }}
+          PINTEREST_REFRESH_TOKEN: ${{ secrets.PINTEREST_REFRESH_TOKEN }}
+          GH_PAT_SECRETS:          ${{ secrets.GH_PAT_SECRETS }}
+          REPO:                    ${{ github.repository }}
+        run: python scripts/pinterest_refresh.py
