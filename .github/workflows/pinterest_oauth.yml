@@ -5,7 +5,7 @@ name: Pinterest — capture OAuth (a lancer une seule fois)
 # 1. Dans l'app Pinterest (developers.pinterest.com), ajouter l'URI de
 #    redirection :  https://labible.app/
 # 2. Ouvrir dans le navigateur (remplacer CLIENT_ID) :
-#    https://www.pinterest.com/oauth/?client_id=CLIENT_ID&redirect_uri=https://labible.app/&response_type=code&scope=boards:read,pins:read,pins:write&state=labible
+#    https://www.pinterest.com/oauth/?client_id=CLIENT_ID&redirect_uri=https://labible.app/&response_type=code&scope=boards:read,boards:write,pins:read,pins:write&state=labible
 # 3. Autoriser. Le navigateur redirige vers
 #    https://labible.app/?code=XXXXXXXX&state=labible
 #    Copier la valeur de code= (uniquement le code, sans &state).
