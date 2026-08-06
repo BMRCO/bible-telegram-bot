@@ -81,10 +81,14 @@ jobs:
 
       - name: Determine publication mode and category
         id: schedule
+        env:
+          # Passer par l'environnement plutot que d'interpoler dans le script :
+          # evite toute injection de commande via une valeur d'entree.
+          SCHEDULE:     ${{ github.event.schedule }}
+          MANUAL_MODE:  ${{ inputs.mode }}
+          INPUT_CAT:    ${{ inputs.category }}
         run: |
-          SCHEDULE="${{ github.event.schedule }}"
-          MANUAL_MODE="${{ inputs.mode }}"
-          CAT="${{ inputs.category }}"
+          CAT="$INPUT_CAT"
 
           # Categoria a partir do cron AGENDADO (fiavel apesar do atraso do GitHub:
           # usa o horario agendado, nao a hora de execucao).
@@ -140,8 +144,9 @@ jobs:
           PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
           BOT_CATEGORY: ${{ steps.schedule.outputs.category }}
           ONLY_PLATFORM: ${{ inputs.platform }}
+          PUB_MODE: ${{ steps.schedule.outputs.mode }}
         run: |
-          MODE="${{ steps.schedule.outputs.mode }}"
+          MODE="$PUB_MODE"
           if [ "$MODE" = "reel" ]; then
             python bot.py reel
           elif [ "$MODE" = "parabole" ]; then
