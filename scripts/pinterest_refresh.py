@@ -23,6 +23,31 @@ TOKEN_URL = "https://api.pinterest.com/v5/oauth/token"
 GH_API = "https://api.github.com"
 
 
+def alert(msg: str) -> None:
+    """Previent sur Telegram : sans cela, une panne passe inapercue
+    pendant des semaines. Silencieux si les identifiants sont absents."""
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    chat = os.environ.get("TELEGRAM_CHANNEL_ALERT", "").strip() or os.environ.get(
+        "TELEGRAM_CHANNEL", ""
+    ).strip()
+    if not token or not chat:
+        return
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data={"chat_id": chat, "text": msg, "disable_notification": False},
+            timeout=30,
+        )
+    except Exception:
+        pass
+
+
+def die(msg: str) -> None:
+    print(msg)
+    alert(f"\u26a0\ufe0f LaBible.app \u2014 Pinterest\n\n{msg}")
+    sys.exit(1)
+
+
 def need(name: str) -> str:
     val = os.environ.get(name, "").strip()
     if not val:
@@ -46,9 +71,10 @@ def refresh_token(client_id: str, client_secret: str, refresh: str) -> dict:
         timeout=60,
     )
     if r.status_code != 200:
-        sys.exit(
-            f"❌ Renouvellement refuse ({r.status_code}) : {r.text[:400]}\n"
-            "   Si le refresh token est invalide, relancer le workflow "
+        die(
+            f"❌ Renouvellement du jeton refuse ({r.status_code}).\n"
+            f"{r.text[:300]}\n\n"
+            "Si le refresh token a expire, relancer le workflow "
             "« Pinterest — capture OAuth »."
         )
     return r.json()
@@ -59,7 +85,7 @@ def put_secret(repo: str, pat: str, name: str, value: str) -> None:
 
     k = requests.get(f"{GH_API}/repos/{repo}/actions/secrets/public-key", headers=h, timeout=30)
     if k.status_code != 200:
-        sys.exit(f"❌ Cle publique GitHub ({k.status_code}) : {k.text[:300]}")
+        die(f"❌ Cle publique GitHub inaccessible ({k.status_code}).\n{k.text[:300]}")
     key = k.json()
 
     sealed = public.SealedBox(public.PublicKey(key["key"].encode(), encoding.Base64Encoder))
@@ -72,7 +98,7 @@ def put_secret(repo: str, pat: str, name: str, value: str) -> None:
         timeout=30,
     )
     if w.status_code not in (201, 204):
-        sys.exit(f"❌ Ecriture du secret {name} ({w.status_code}) : {w.text[:300]}")
+        die(f"❌ Ecriture du secret {name} refusee ({w.status_code}).\n{w.text[:300]}")
     print(f"✅ Secret mis a jour : {name}")
 
 
@@ -90,7 +116,10 @@ def main() -> None:
     if not access:
         sys.exit(f"❌ Reponse sans access_token : {list(data.keys())}")
 
-    print(f"   valable : {data.get('expires_in', '?')} s")
+    rexp = data.get("refresh_token_expires_in")
+    print(f"   access valable  : {data.get('expires_in', '?')} s")
+    if rexp:
+        print(f"   refresh valable : {rexp} s (~{int(rexp) // 86400} jours)")
     put_secret(repo, pat, "PINTEREST_ACCESS_TOKEN", access)
 
     # Certains flux renvoient aussi un nouveau refresh token : on le conserve.

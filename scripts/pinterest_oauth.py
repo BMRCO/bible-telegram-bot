@@ -102,14 +102,25 @@ def main() -> None:
     print(f"   type de reponse   : {data.get('response_type', '?')}")
     print(f"   scopes            : {data.get('scope', '?')}")
     print(f"   access valable    : {data.get('expires_in', '?')} s")
-    print(f"   refresh valable   : {data.get('refresh_token_expires_in', 'permanent')} s")
+    rexp = data.get("refresh_token_expires_in")
+    if rexp:
+        print(f"   refresh valable   : {rexp} s (~{int(rexp) // 86400} jours)")
+    else:
+        print("   refresh valable   : permanent")
 
     put_secret(repo, pat, "PINTEREST_ACCESS_TOKEN", access)
     put_secret(repo, pat, "PINTEREST_REFRESH_TOKEN", refresh)
 
     print("\n✅ Termine. Le renouvellement automatique peut desormais fonctionner.")
     if data.get("response_type") != "everlasting_refresh":
-        print("⚠️  Refresh non permanent : a renouveler dans un an environ.")
+        jours = int(data.get("refresh_token_expires_in", 0)) // 86400 or "?"
+        print(
+            f"⚠️  Refresh NON permanent (valable {jours} jours).\n"
+            "    Le renouvellement hebdomadaire prolonge ce delai a chaque\n"
+            "    execution reussie. En revanche, si le workflow echoue sans\n"
+            "    interruption pendant toute cette periode, le refresh token\n"
+            "    expire et il faudra relancer cette capture OAuth."
+        )
 
 
 if __name__ == "__main__":
