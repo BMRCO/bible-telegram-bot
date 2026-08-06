@@ -13,9 +13,9 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 TOKEN         = os.environ["TELEGRAM_BOT_TOKEN"]
 CHANNEL       = os.environ["TELEGRAM_CHANNEL"]
 
-FB_PAGE_ID    = os.environ.get("FB_PAGE_ID", "1018605031335601")
+FB_PAGE_ID    = os.environ.get("FB_PAGE_ID", "")
 FB_PAGE_TOKEN = os.environ.get("FB_PAGE_TOKEN", "")
-IG_ACCOUNT_ID = os.environ.get("IG_ACCOUNT_ID", "17841447648424267")
+IG_ACCOUNT_ID = os.environ.get("IG_ACCOUNT_ID", "")
 IMGBB_API_KEY = os.environ.get("IMGBB_API_KEY", "")
 YT_CLIENT_ID      = os.environ.get("YOUTUBE_CLIENT_ID", "")
 YT_CLIENT_SECRET  = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
@@ -25,7 +25,7 @@ CLOUDINARY_API_KEY    = os.environ.get("CLOUDINARY_API_KEY", "")
 CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET", "")
 THREADS_ACCESS_TOKEN = os.environ.get("THREADS_ACCESS_TOKEN", "")
 PINTEREST_ACCESS_TOKEN = os.environ.get("PINTEREST_ACCESS_TOKEN", "")
-PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "1092404522055080754")
+PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "")
 
 # ----- Filtro de plataforma (para testes manuais) -----
 # Definido pela variável de ambiente ONLY_PLATFORM (passada pelo publish.yml).
@@ -349,7 +349,7 @@ def post_to_facebook(image_path, ref, text, cat, cat_name, link_override=None):
     if r.status_code == 200:
         print(f"✅ Facebook publié — {r.json().get('post_id') or r.json().get('id')}")
     else:
-        print(f"❌ Erreur Facebook ({r.status_code}): {r.text}")
+        print(f"❌ Erreur Facebook ({r.status_code}): {r.text[:300]}")
 
 
 def post_reel_to_facebook(video_path, ref, text, cat, cat_name, link_override=None):
@@ -367,7 +367,7 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name, link_override=No
     if r.status_code == 200:
         print(f"✅ Facebook reel publié — {r.json().get('id')}")
     else:
-        print(f"❌ Erreur Facebook reel ({r.status_code}): {r.text}")
+        print(f"❌ Erreur Facebook reel ({r.status_code}): {r.text[:300]}")
 
 
 # ---------------------------------------------------
@@ -383,7 +383,7 @@ def upload_to_imgbb(image_path):
         print(f"✅ ImgBB : {url}")
         import time; time.sleep(5)
         return url
-    print(f"❌ ImgBB ({r.status_code}): {r.text}")
+    print(f"❌ ImgBB ({r.status_code}): {r.text[:300]}")
     return None
 
 
@@ -401,7 +401,7 @@ def upload_to_cloudinary(image_path):
         print(f"✅ Cloudinary : {url}")
         _time.sleep(3)
         return url
-    print(f"❌ Cloudinary ({r.status_code}): {r.text}")
+    print(f"❌ Cloudinary ({r.status_code}): {r.text[:300]}")
     return upload_to_imgbb(image_path)
 
 
@@ -421,7 +421,7 @@ def upload_video_public(video_path):
         print(f"✅ Cloudinary vidéo : {url}")
         _time.sleep(5)
         return url
-    print(f"❌ Cloudinary vidéo ({r.status_code}): {r.text}")
+    print(f"❌ Cloudinary vidéo ({r.status_code}): {r.text[:300]}")
     return None
 
 
@@ -444,7 +444,7 @@ def post_to_instagram(image_path, ref, text, cat, cat_name, link_override=None):
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"image_url": image_url, "caption": caption, "access_token": FB_PAGE_TOKEN}, timeout=60)
     if r.status_code != 200:
-        print(f"❌ Instagram container ({r.status_code}): {r.text}")
+        print(f"❌ Instagram container ({r.status_code}): {r.text[:300]}")
         return
     container_id = r.json().get("id")
     print(f"✅ Container Instagram : {container_id}")
@@ -465,7 +465,7 @@ def post_to_instagram(image_path, ref, text, cat, cat_name, link_override=None):
     if r2.status_code == 200:
         print(f"✅ Instagram publié — {r2.json().get('id')}")
     else:
-        print(f"❌ Instagram publication ({r2.status_code}): {r2.text}")
+        print(f"❌ Instagram publication ({r2.status_code}): {r2.text[:300]}")
 
 
 def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=None):
@@ -482,7 +482,7 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=N
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"media_type": "REELS", "video_url": video_url, "caption": caption, "access_token": FB_PAGE_TOKEN, "thumb_offset": "7500"}, timeout=60)
     if r.status_code != 200:
-        print(f"❌ Reel Instagram container ({r.status_code}): {r.text}")
+        print(f"❌ Reel Instagram container ({r.status_code}): {r.text[:300]}")
         return
     container_id = r.json().get("id")
     print(f"✅ Container reel : {container_id}")
@@ -503,7 +503,7 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=N
     if r2.status_code == 200:
         print(f"✅ Instagram reel publié — {r2.json().get('id')}")
     else:
-        print(f"❌ Instagram reel publication ({r2.status_code}): {r2.text}")
+        print(f"❌ Instagram reel publication ({r2.status_code}): {r2.text[:300]}")
 
 
 # ---------------------------------------------------
@@ -537,7 +537,7 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
     if r.status_code in (200, 201):
         print(f"✅ Pinterest publié — {r.json().get('id')}")
     else:
-        print(f"❌ Pinterest ({r.status_code}): {r.text}")
+        print(f"❌ Pinterest ({r.status_code}): {r.text[:300]}")
 
 
 # ---------------------------------------------------
@@ -550,7 +550,7 @@ def _threads_publish(container_id):
     if r2.status_code == 200:
         print(f"✅ Threads publié — {r2.json().get('id')}")
     else:
-        print(f"❌ Threads publication ({r2.status_code}): {r2.text}")
+        print(f"❌ Threads publication ({r2.status_code}): {r2.text[:300]}")
 
 
 def post_to_threads(image_path, ref, text, cat, cat_name, link_override=None):
@@ -569,7 +569,7 @@ def post_to_threads(image_path, ref, text, cat, cat_name, link_override=None):
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "IMAGE", "image_url": image_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
-        print(f"❌ Threads container ({r.status_code}): {r.text}")
+        print(f"❌ Threads container ({r.status_code}): {r.text[:300]}")
         return
     _threads_publish(r.json().get("id"))
 
@@ -590,7 +590,7 @@ def post_reel_to_threads(video_path, ref, text, cat, cat_name, link_override=Non
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "VIDEO", "video_url": video_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
-        print(f"❌ Threads reel container ({r.status_code}): {r.text}")
+        print(f"❌ Threads reel container ({r.status_code}): {r.text[:300]}")
         return
     container_id = r.json().get("id")
     # Attendre que le container soit prêt
