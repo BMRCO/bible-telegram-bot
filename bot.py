@@ -524,7 +524,7 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
                     "protection": "Protection Divine"}
     payload = {
         "board_id": PINTEREST_BOARD_ID,
-        "title": f"{cat['emoji']} {pin_keywords.get(cat_name, 'Verset Biblique')} — {ref} | LaBible.app",
+        "title": f"{ref} — {cat['emoji']} {pin_keywords.get(cat_name, 'Verset Biblique')} | LaBible.app",
         "description": f"{cat['emoji']} « {text} »\n\n— {ref} (LSG 1910)\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n#Bible #VersetDuJour #LaBibleApp #LSG1910 #Foi",
         # Page reelle et crawlable (meilleure pour l'apercu Pinterest qu'un lien
         # #hash, que son robot ne peut pas rendre cote client).
