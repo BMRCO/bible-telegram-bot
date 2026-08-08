@@ -163,21 +163,21 @@ HOUR_FALLBACK = {
 }
 
 
-def build_yt_title(cat_name, cat, ref, hour_utc):
+def category_label(cat_name, hour_utc=None):
+    """Libelle lisible d'une categorie — titre YouTube et vignette."""
     if cat_name == "psaume":
-        label = "Psaume du Matin" if hour_utc == 5 else "Psaume du Soir"
-    elif cat_name == "promise":
-        label = "Promesses de Dieu"
-    elif cat_name == "jesus":
-        label = "Paroles de Jésus"
-    elif cat_name == "proverbe":
-        label = "Sagesse Biblique"
-    elif cat_name == "prophetie":
-        label = "Prophéties Bibliques"
-    elif cat_name == "protection":
-        label = "Protection Divine"
-    else:
-        label = "Verset Biblique"
+        return "Psaume du Matin" if hour_utc == 5 else "Psaume du Soir"
+    return {
+        "promise":    "Promesses de Dieu",
+        "jesus":      "Paroles de Jésus",
+        "proverbe":   "Sagesse Biblique",
+        "prophetie":  "Prophéties Bibliques",
+        "protection": "Protection Divine",
+    }.get(cat_name, "Verset Biblique")
+
+
+def build_yt_title(cat_name, cat, ref, hour_utc):
+    label = category_label(cat_name, hour_utc)
     title = f"{ref} — {cat['emoji']} {label} | Bible LSG1910"
     if len(title) > 100:
         title = title[:97] + "..."
@@ -761,6 +761,63 @@ def make_image(text, ref, cat_name=None):
     return out
 
 
+def make_thumbnail(ref, cat_name=None, cat=None):
+    """Vignette YouTube 1280x720, lisible a taille reduite.
+
+    Le cadre du Short (verset entier, corps 40-76) devient illisible dans un
+    resultat de recherche Google : la vignette n'y fait que ~120 px de large.
+    On y met donc la SEULE chose que l'internaute a tapee — la reference —
+    en tres gros, plus le nom de la categorie en second plan.
+    """
+    palette = IMAGE_PALETTE_BY_CAT.get(cat_name) or random.choice(PALETTES)
+    bg_top, bg_bot, color_border, color_ref, color_wm = palette
+
+    W, H = 1280, 720
+    img = _gradient(W, H, bg_top, bg_bot)
+    draw = ImageDraw.Draw(img)
+
+    m = 34
+    draw.rounded_rectangle([m, m, W - m, H - m], radius=22, outline=color_border, width=5)
+
+    # Reference : la plus grande taille qui tienne sur une seule ligne.
+    max_w = W - 200
+    font_ref = None
+    for size in range(168, 60, -4):
+        f = ImageFont.truetype(FONT_SERIF_BOLD, size)
+        if draw.textlength(ref, font=f) <= max_w:
+            font_ref = f
+            break
+    if font_ref is None:
+        font_ref = ImageFont.truetype(FONT_SERIF_BOLD, 60)
+
+    # Centrage du bloc (reference + libelle) dans la hauteur utile.
+    f_cat_probe = ImageFont.truetype(FONT_SANS, 44)
+    bloc_h = font_ref.size + 42 + f_cat_probe.size
+    rw = draw.textlength(ref, font=font_ref)
+    ry = (H - bloc_h) // 2 - 10
+    draw.text(((W - rw) // 2 + 3, ry + 3), ref, font=font_ref, fill=(0, 0, 0))
+    draw.text(((W - rw) // 2, ry), ref, font=font_ref, fill=(250, 248, 240))
+
+    # Categorie, en dessous, discrete.
+    label = category_label(cat_name)
+    if label:
+        f_cat = ImageFont.truetype(FONT_SANS, 44)
+        cw = draw.textlength(label, font=f_cat)
+        cy = ry + font_ref.size + 42
+        draw.line([(W // 2 - cw // 2 - 40, cy - 16), (W // 2 + cw // 2 + 40, cy - 16)],
+                  fill=color_border, width=2)
+        draw.text(((W - cw) // 2, cy), label, font=f_cat, fill=color_ref)
+
+    f_wm = ImageFont.truetype(FONT_SANS, 32)
+    draw.text((70, H - 82), "LSG 1910", font=f_wm, fill=color_wm)
+    ww = draw.textlength(WATERMARK, font=f_wm)
+    draw.text((W - 70 - ww, H - 82), WATERMARK, font=f_wm, fill=color_wm)
+
+    out = "thumb.png"
+    img.save(out, "PNG")
+    return out
+
+
 # ---------------------------------------------------
 # REEL
 # ---------------------------------------------------
@@ -1080,7 +1137,21 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
             status, response = request.next_chunk()
             if status:
                 print(f"  ⏳ YouTube : {int(status.progress()*100)}%")
-        print(f"✅ YouTube Short — https://youtube.com/shorts/{response.get('id')}")
+        video_id = response.get("id")
+        print(f"✅ YouTube Short — https://youtube.com/shorts/{video_id}")
+
+        # Vignette : le cadre choisi par YouTube est illisible a la taille
+        # d'un resultat de recherche. On impose une vignette lisible.
+        # Echec sans consequence : la video reste publiee.
+        try:
+            thumb = make_thumbnail(ref, cat_name, cat)
+            youtube.thumbnails().set(
+                videoId=video_id,
+                media_body=MediaFileUpload(thumb, mimetype="image/png"),
+            ).execute()
+            print("✅ Vignette YouTube definie")
+        except Exception as e:
+            print(f"⚠️  Vignette non definie : {str(e)[:200]}")
     except Exception as e:
         print(f"❌ YouTube : {e}")
 
