@@ -30,6 +30,7 @@ from PIL import Image, ImageDraw, ImageFont
 # Reutiliza utilitários do bot
 from bot import (
     load_json, save_json, load_verse, clean_text, strip_rubric, is_rubric,
+    make_thumbnail,
     BIBLE_FILE, APP_URL, WATERMARK,
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
 )
@@ -607,6 +608,24 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
 
     video_id = response.get("id")
     print(f"✅ YouTube: https://youtube.com/watch?v={video_id}")
+
+    # Vignette : contrairement aux Shorts, une video longue affiche partout
+    # la vignette definie. Echec sans consequence : la video reste publiee.
+    try:
+        theme = get_psaume_theme(num)
+        sub = theme if theme else "Bible Louis Segond 1910"
+        if part_label:
+            sub = f"{sub} ({part_label})"
+        thumb = make_thumbnail(f"Psaume {num}", subtitle=sub,
+                               palette=get_palette(num), out="thumb_psaume.png")
+        youtube.thumbnails().set(
+            videoId=video_id,
+            media_body=MediaFileUpload(thumb, mimetype="image/png"),
+        ).execute()
+        print("✅ Vignette YouTube definie")
+    except Exception as e:
+        print(f"⚠️  Vignette non definie : {str(e)[:200]}")
+
     return video_id
 
 

@@ -761,16 +761,27 @@ def make_image(text, ref, cat_name=None):
     return out
 
 
-def make_thumbnail(ref, cat_name=None, cat=None):
+def make_thumbnail(title, cat_name=None, cat=None, subtitle=None, palette=None,
+                   out="thumb.png"):
     """Vignette YouTube 1280x720, lisible a taille reduite.
 
-    Le cadre du Short (verset entier, corps 40-76) devient illisible dans un
-    resultat de recherche Google : la vignette n'y fait que ~120 px de large.
-    On y met donc la SEULE chose que l'internaute a tapee — la reference —
-    en tres gros, plus le nom de la categorie en second plan.
+    Le cadre choisi par YouTube (texte du verset, corps 40-76) devient
+    illisible dans un resultat de recherche Google : la vignette n'y fait
+    que ~120 px de large. On y met donc la SEULE chose que l'internaute a
+    tapee — la reference — en tres gros, le libelle en second plan.
+
+    Utilisee aussi par psaume_meditation.py et thematic_meditation.py, d'ou
+    `subtitle` et `palette` explicites (leurs palettes leur sont propres).
+    Une palette externe peut compter 6 elements : on ne lit que les 5
+    premiers dans l'ordre (fond haut, fond bas, bordure, accent, filigrane).
     """
-    palette = IMAGE_PALETTE_BY_CAT.get(cat_name) or random.choice(PALETTES)
-    bg_top, bg_bot, color_border, color_ref, color_wm = palette
+    if palette is not None:
+        p = list(palette)
+        bg_top, bg_bot, color_border, color_ref = p[0], p[1], p[2], p[3]
+        color_wm = p[5] if len(p) > 5 else p[3]
+    else:
+        p = IMAGE_PALETTE_BY_CAT.get(cat_name) or random.choice(PALETTES)
+        bg_top, bg_bot, color_border, color_ref, color_wm = p
 
     W, H = 1280, 720
     img = _gradient(W, H, bg_top, bg_bot)
@@ -779,29 +790,36 @@ def make_thumbnail(ref, cat_name=None, cat=None):
     m = 34
     draw.rounded_rectangle([m, m, W - m, H - m], radius=22, outline=color_border, width=5)
 
-    # Reference : la plus grande taille qui tienne sur une seule ligne.
+    # Titre : la plus grande taille qui tienne sur une seule ligne.
     max_w = W - 200
     font_ref = None
-    for size in range(168, 60, -4):
+    for size in range(168, 52, -4):
         f = ImageFont.truetype(FONT_SERIF_BOLD, size)
-        if draw.textlength(ref, font=f) <= max_w:
+        if draw.textlength(title, font=f) <= max_w:
             font_ref = f
             break
     if font_ref is None:
-        font_ref = ImageFont.truetype(FONT_SERIF_BOLD, 60)
+        font_ref = ImageFont.truetype(FONT_SERIF_BOLD, 52)
 
     # Centrage du bloc (reference + libelle) dans la hauteur utile.
     f_cat_probe = ImageFont.truetype(FONT_SANS, 44)
     bloc_h = font_ref.size + 42 + f_cat_probe.size
-    rw = draw.textlength(ref, font=font_ref)
+    rw = draw.textlength(title, font=font_ref)
     ry = (H - bloc_h) // 2 - 10
-    draw.text(((W - rw) // 2 + 3, ry + 3), ref, font=font_ref, fill=(0, 0, 0))
-    draw.text(((W - rw) // 2, ry), ref, font=font_ref, fill=(250, 248, 240))
+    draw.text(((W - rw) // 2 + 3, ry + 3), title, font=font_ref, fill=(0, 0, 0))
+    draw.text(((W - rw) // 2, ry), title, font=font_ref, fill=(250, 248, 240))
 
     # Categorie, en dessous, discrete.
-    label = category_label(cat_name)
+    label = subtitle if subtitle is not None else category_label(cat_name)
     if label:
-        f_cat = ImageFont.truetype(FONT_SANS, 44)
+        f_cat = None
+        for size in range(44, 24, -2):
+            f = ImageFont.truetype(FONT_SANS, size)
+            if draw.textlength(label, font=f) <= W - 240:
+                f_cat = f
+                break
+        if f_cat is None:
+            f_cat = ImageFont.truetype(FONT_SANS, 24)
         cw = draw.textlength(label, font=f_cat)
         cy = ry + font_ref.size + 42
         draw.line([(W // 2 - cw // 2 - 40, cy - 16), (W // 2 + cw // 2 + 40, cy - 16)],
@@ -813,7 +831,6 @@ def make_thumbnail(ref, cat_name=None, cat=None):
     ww = draw.textlength(WATERMARK, font=f_wm)
     draw.text((W - 70 - ww, H - 82), WATERMARK, font=f_wm, fill=color_wm)
 
-    out = "thumb.png"
     img.save(out, "PNG")
     return out
 

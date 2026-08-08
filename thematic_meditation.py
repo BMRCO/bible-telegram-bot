@@ -30,7 +30,7 @@ from PIL import Image, ImageDraw, ImageFont
 # Reutiliza utilitarios do bot
 from bot import (
     load_json, save_json, clean_text, strip_rubric,
-    post_reel_to_instagram, post_reel_to_threads,
+    post_reel_to_instagram, post_reel_to_threads, make_thumbnail,
     BIBLE_FILE, APP_URL, WATERMARK, parse_ref_to_chapter_url,
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
 )
@@ -530,6 +530,19 @@ def upload_to_youtube(video_path, theme_key, verses):
             print(f"  \u23f3 Upload: {int(status.progress() * 100)}%")
     vid = response.get("id")
     print(f"\u2705 YouTube: https://youtube.com/watch?v={vid}")
+
+    # Vignette : une video longue affiche partout la vignette definie.
+    try:
+        thumb = make_thumbnail(th["title"], subtitle="Versets bibliques \u2014 LSG 1910",
+                               palette=th["palette"], out="thumb_theme.png")
+        youtube.thumbnails().set(
+            videoId=vid,
+            media_body=MediaFileUpload(thumb, mimetype="image/png"),
+        ).execute()
+        print("\u2705 Vignette YouTube definie")
+    except Exception as e:
+        print(f"\u26a0\ufe0f  Vignette non definie : {str(e)[:200]}")
+
     return vid
 
 
