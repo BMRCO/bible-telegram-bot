@@ -23,28 +23,11 @@ TOKEN_URL = "https://api.pinterest.com/v5/oauth/token"
 GH_API = "https://api.github.com"
 
 
-def alert(msg: str) -> None:
-    """Previent sur Telegram : sans cela, une panne passe inapercue
-    pendant des semaines. Silencieux si les identifiants sont absents."""
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
-    chat = os.environ.get("TELEGRAM_CHANNEL_ALERT", "").strip() or os.environ.get(
-        "TELEGRAM_CHANNEL", ""
-    ).strip()
-    if not token or not chat:
-        return
-    try:
-        requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            data={"chat_id": chat, "text": msg, "disable_notification": False},
-            timeout=30,
-        )
-    except Exception:
-        pass
-
-
 def die(msg: str) -> None:
+    """Sortie en erreur. Le job GitHub Actions echoue, ce qui declenche
+    la notification par e-mail de GitHub — aucun envoi vers Telegram :
+    le canal est public et diffuse les versets."""
     print(msg)
-    alert(f"\u26a0\ufe0f LaBible.app \u2014 Pinterest\n\n{msg}")
     sys.exit(1)
 
 
