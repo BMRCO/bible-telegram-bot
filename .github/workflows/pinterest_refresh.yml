@@ -2,6 +2,7 @@ name: Pinterest — renouvellement du jeton
 
 # L'access token Pinterest vit 30 jours. Renouvellement hebdomadaire :
 # large marge en cas d'echec ponctuel d'une execution.
+# En cas d'echec le job sort en erreur : GitHub notifie par e-mail.
 
 on:
   schedule:
@@ -18,6 +19,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
