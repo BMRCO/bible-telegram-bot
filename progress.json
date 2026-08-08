@@ -1,13 +1,13 @@
 {
   "mode": "alt_curated_no_labels",
   "next": "promise",
-  "i_promise": 15,
+  "i_promise": 16,
   "i_jesus": 36,
   "cat_index": 1,
   "i_psaume": 51,
   "i_proverbe": 115,
   "i_prophetie": 157,
-  "last_music": "music/Free Instrumental Christian Music MP3 Download_4.mp3",
+  "last_music": "music/music_for_video-calming-94427.mp3",
   "i_parabole": 1,
   "i_protection": 25,
   "i_esperance": 1,
@@ -42,7 +42,6 @@
     "music/audiodollar-worship-is-worship-451096.mp3"
   ],
   "music_bag": [
-    "music/music_for_video-calming-94427.mp3",
     "music/poorartistt-174hz-frequency-meditationcalmingzenspiritual-music-318995.mp3",
     "music/nastelbom-instrumental-501713.mp3",
     "music/djovan-whispers-in-the-bamboo-grove-497191.mp3",
@@ -95,6 +94,7 @@
     "music/Free Instrumental Christian Music MP3 Download_9.mp3",
     "music/Page 3 - Free Instrumental Christian Music MP3 Download_4.mp3",
     "music/meditativetiger-gentle-piano-melodies-with-flowing-river-sounds-402863.mp3",
-    "music/Free Instrumental Christian Music MP3 Download_4.mp3"
+    "music/Free Instrumental Christian Music MP3 Download_4.mp3",
+    "music/music_for_video-calming-94427.mp3"
   ]
 }
