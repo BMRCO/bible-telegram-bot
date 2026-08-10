@@ -29,7 +29,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from bot import make_thumbnail, load_json, save_json  # noqa: E402
+from bot import make_thumbnail, save_json  # noqa: E402
 
 PROGRESS_FILE = "backfill_progress.json"
 QUOTA_COST_SET = 50
@@ -137,7 +137,13 @@ def main():
     args = ap.parse_args()
 
     limit = min(args.limit, SAFE_MAX)
-    done = set(load_json(PROGRESS_FILE) or [])
+    # load_json() de bot.py leve une exception si le fichier manque ; ici
+    # son absence est normale au premier passage.
+    try:
+        with open(PROGRESS_FILE, encoding="utf-8") as f:
+            done = set(json.load(f))
+    except (FileNotFoundError, json.JSONDecodeError):
+        done = set()
     print(f"→ Deja traitees : {len(done)}")
 
     youtube = get_youtube()
