@@ -60,6 +60,11 @@ jobs:
           YOUTUBE_CLIENT_ID:     ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          # bot.py exige ces deux variables au chargement du module.
+          # Ce script ne publie RIEN sur Telegram : elles ne servent qu'a
+          # permettre l'import de make_thumbnail.
+          TELEGRAM_BOT_TOKEN:    ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL:      ${{ secrets.TELEGRAM_CHANNEL }}
           MODE:    ${{ inputs.mode }}
           LIMIT:   ${{ inputs.limit }}
           DRY_RUN: ${{ inputs.dry_run }}
