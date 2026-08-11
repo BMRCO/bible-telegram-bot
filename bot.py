@@ -34,8 +34,28 @@ ONLY_PLATFORM = os.environ.get("ONLY_PLATFORM", "all").strip().lower()
 if ONLY_PLATFORM in ("", "all"):
     ONLY_PLATFORM = "all"
 
+# Categories publiees sur le canal Telegram public.
+#
+# Telegram n'est pas un fil : chaque message declenche une notification sur
+# le telephone de l'abonne. Huit par jour fatiguent — le canal a perdu des
+# abonnes et les vues sont tombees a 2-5 par message pour 132 inscrits.
+# On garde donc les deux rendez-vous les plus utiles ; les autres
+# plateformes continuent de tout recevoir.
+#
+# Vider la variable (TELEGRAM_CATEGORIES="") retablit toutes les categories.
+_tg_cats = os.environ.get("TELEGRAM_CATEGORIES", "proverbe,psaume")
+TELEGRAM_CATEGORIES = {c.strip().lower() for c in _tg_cats.split(",") if c.strip()}
+
+
 def should_post(platform: str) -> bool:
     """True se a plataforma deve publicar neste run. 'all' = publica em todas."""
+    # Le filtre ne s'applique qu'aux publications automatiques : un envoi
+    # force a la main (ONLY_PLATFORM=telegram) doit toujours passer.
+    if platform == "telegram" and TELEGRAM_CATEGORIES and ONLY_PLATFORM != "telegram":
+        cat = os.environ.get("BOT_CATEGORY", "").strip().lower()
+        # Sans categorie (parabole, lancement manuel), on laisse passer.
+        if cat and cat not in TELEGRAM_CATEGORIES:
+            return False
     if ONLY_PLATFORM == "all":
         return True
     return platform == ONLY_PLATFORM
