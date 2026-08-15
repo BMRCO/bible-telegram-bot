@@ -397,30 +397,6 @@ def send_video(path, caption):
 # FACEBOOK
 # ---------------------------------------------------
 
-def _comment_link_facebook(post_id, chapter_url):
-    """Poste le lien en premier commentaire.
-
-    Facebook diffuse moins les publications qui sortent les gens du site.
-    Le lien passe donc en commentaire ; le texte, lui, reste propre.
-    Un echec ici n'a pas d'importance : la publication est deja en ligne.
-    """
-    if not post_id:
-        return
-    try:
-        r = requests.post(
-            f"https://graph.facebook.com/v25.0/{post_id}/comments",
-            data={"message": f"\U0001f4d6 Lisez le chapitre complet gratuitement \u2192 {chapter_url}",
-                  "access_token": FB_PAGE_TOKEN},
-            timeout=60,
-        )
-        if r.status_code == 200:
-            print("\u2705 Facebook \u2014 lien en premier commentaire")
-        else:
-            print(f"\u26a0\ufe0f  Commentaire Facebook ({r.status_code}): {r.text[:200]}")
-    except Exception as e:
-        print(f"\u26a0\ufe0f  Commentaire Facebook : {str(e)[:200]}")
-
-
 def post_to_facebook(image_path, ref, text, cat, cat_name, link_override=None):
     if not should_post("facebook"):
         print("⏭️  Facebook skip (filtro)")
@@ -429,14 +405,12 @@ def post_to_facebook(image_path, ref, text, cat, cat_name, link_override=None):
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    msg = f"{cat['emoji']} {ref}\n\n« {text} »\n\n👇 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
+    msg = f"{cat['emoji']} {ref}\n\n« {text} »\n\n\U0001f4d6 Lisez le chapitre complet gratuitement \u2192 {chapter_url}\n\n👇 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
     with open(image_path, "rb") as f:
         r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/photos",
             data={"message": msg, "access_token": FB_PAGE_TOKEN}, files={"source": f}, timeout=60)
     if r.status_code == 200:
-        post_id = r.json().get("post_id") or r.json().get("id")
-        print(f"\u2705 Facebook publi\u00e9 \u2014 {post_id}")
-        _comment_link_facebook(post_id, chapter_url)
+        print(f"\u2705 Facebook publi\u00e9 \u2014 {r.json().get('post_id') or r.json().get('id')}")
     else:
         print(f"❌ Erreur Facebook ({r.status_code}): {r.text[:300]}")
 
@@ -449,14 +423,12 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name, link_override=No
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    desc = f"{cat['emoji']} {ref}\n\n« {text} »\n\n👇 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
+    desc = f"{cat['emoji']} {ref}\n\n« {text} »\n\n\U0001f4d6 Lisez le chapitre complet gratuitement \u2192 {chapter_url}\n\n👇 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
     with open(video_path, "rb") as f:
         r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
             data={"description": desc, "access_token": FB_PAGE_TOKEN}, files={"source": f}, timeout=120)
     if r.status_code == 200:
-        post_id = r.json().get("id")
-        print(f"\u2705 Facebook reel publi\u00e9 \u2014 {post_id}")
-        _comment_link_facebook(post_id, chapter_url)
+        print(f"\u2705 Facebook reel publi\u00e9 \u2014 {r.json().get('id')}")
     else:
         print(f"❌ Erreur Facebook reel ({r.status_code}): {r.text[:300]}")
 
