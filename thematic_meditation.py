@@ -49,7 +49,7 @@ YT_CLIENT_SECRET = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
 YT_REFRESH_TOKEN = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
 TELEGRAM_TOKEN   = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHANNEL = os.environ.get("TELEGRAM_CHANNEL", "")
-FB_PAGE_ID       = os.environ.get("FB_PAGE_ID", "1018605031335601")
+FB_PAGE_ID       = os.environ.get("FB_PAGE_ID", "")
 FB_PAGE_TOKEN    = os.environ.get("FB_PAGE_TOKEN", "")
 
 PROGRESS_FILE   = "progress_thematic.json"

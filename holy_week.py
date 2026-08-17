@@ -9,9 +9,9 @@ from PIL import Image, ImageDraw, ImageFont
 # ── Secrets ──
 TOKEN                 = os.environ["TELEGRAM_BOT_TOKEN"]
 CHANNEL               = os.environ["TELEGRAM_CHANNEL"]
-FB_PAGE_ID            = os.environ.get("FB_PAGE_ID", "1018605031335601")
+FB_PAGE_ID            = os.environ.get("FB_PAGE_ID", "")
 FB_PAGE_TOKEN         = os.environ.get("FB_PAGE_TOKEN", "")
-IG_ACCOUNT_ID         = os.environ.get("IG_ACCOUNT_ID", "17841447648424267")
+IG_ACCOUNT_ID         = os.environ.get("IG_ACCOUNT_ID", "")
 IMGBB_API_KEY         = os.environ.get("IMGBB_API_KEY", "")
 CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME", "")
 CLOUDINARY_API_KEY    = os.environ.get("CLOUDINARY_API_KEY", "")
