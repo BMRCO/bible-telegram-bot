@@ -54,12 +54,16 @@ jobs:
           TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+          # Par l'environnement : une entree libre ne doit jamais etre interpolee dans un script.
+          IN_PSAUME: ${{ inputs.psaume }}
+          # Par l'environnement : une entree libre ne doit jamais etre interpolee dans un script.
+          IN_VERSES: ${{ inputs.verses }}
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
         run: |
-          PSAUME="${{ inputs.psaume }}"
-          VERSES="${{ inputs.verses }}"
+          PSAUME="${IN_PSAUME}"
+          VERSES="${IN_VERSES}"
           if [ -n "$PSAUME" ] && [ -n "$VERSES" ]; then
             python psaume_meditation.py "$PSAUME" "$VERSES"
           elif [ -n "$PSAUME" ]; then
