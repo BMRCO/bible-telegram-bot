@@ -86,12 +86,6 @@ def get_psaume_titre(num):
     return PSAUME_TITRES.get(str(num)) or None
 
 
-# Divisão do Salmo 119
-PSAUME_119_PARTS = [
-    (1, 22), (23, 44), (45, 66), (67, 88),
-    (89, 110), (111, 132), (133, 154), (155, 176),
-]
-
 # Leque de 4 paletas serenas para Salmos — rotação por número (nunca 2 seguidas iguais)
 # Cada uma: (BG_TOP, BG_BOTTOM, GOLD/accent, GOLD_BRIGHT, WHITE, SIL)
 PSAUME_PALETTES = [
@@ -629,6 +623,25 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
     return video_id
 
 
+def _next_psaume(progress):
+    """
+    Ordem embaralhada dos 150 Salmos (mesmo princípio que reshuffle_if_needed
+    em bot.py): percorre os 150 sem repetir nenhum, e só reembaralha quando
+    os 150 já foram todos publicados. Evita a sequência fixa 1→150→1→150…
+    """
+    order = progress.get("order")
+    idx = progress.get("idx", 0)
+    if not order or idx >= len(order):
+        order = list(range(1, 151))
+        random.shuffle(order)
+        idx = 0
+        print("🔀 Novo ciclo — 150 Salmos reembaralhados.")
+    num = order[idx]
+    progress["order"] = order
+    progress["idx"] = idx + 1
+    return num
+
+
 def main():
     # ─── Parse args ───
     args = sys.argv[1:]
@@ -644,34 +657,16 @@ def main():
             part_label = None
     else:
         # Modo automático: usa progress_meditation.json
+        # Sem repetição dentro do ciclo (ordem embaralhada dos 150 Salmos).
+        # Salmo 119 publica-se sempre inteiro (176 versículos), como qualquer outro.
         if os.path.exists(PROGRESS_FILE):
             progress = load_json(PROGRESS_FILE)
         else:
-            progress = {"next_psaume": 1, "psaume_119_part": 0}
+            progress = {}
 
-        num = progress.get("next_psaume", 1)
+        num = _next_psaume(progress)
         part_label = None
         vfrom = vto = None
-
-        # Caso especial: Psaume 119 dividido
-        if num == 119:
-            part_idx = progress.get("psaume_119_part", 0)
-            if part_idx < len(PSAUME_119_PARTS):
-                vfrom, vto = PSAUME_119_PARTS[part_idx]
-                part_label = f"{vfrom}-{vto}"
-                progress["psaume_119_part"] = part_idx + 1
-                if part_idx + 1 >= len(PSAUME_119_PARTS):
-                    # Acabou as 8 partes → seguir para 120
-                    progress["next_psaume"] = 120
-                    progress["psaume_119_part"] = 0
-            else:
-                progress["next_psaume"] = 120
-                progress["psaume_119_part"] = 0
-                num = 120
-        else:
-            progress["next_psaume"] = num + 1
-            if progress["next_psaume"] > 150:
-                progress["next_psaume"] = 1  # recomeça do início
 
         save_json(PROGRESS_FILE, progress)
 
