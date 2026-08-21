@@ -9,7 +9,7 @@
     "pardon": 2,
     "guerison": 1,
     "deuil": 5,
-    "solitude": 5,
+    "solitude": 10,
     "gratitude": 1,
     "force": 4,
     "combat": 4,
@@ -21,10 +21,9 @@
     "peur": 15,
     "confiance": 15
   },
-  "theme_index": 9,
+  "theme_index": 10,
   "rot": 17,
   "music_bag": [
-    "music_meditation/nickpanekaiassets-peaceful-piano-background-music-218762.mp3",
     "music_meditation/Fundo musical relaxante para oração e meditação - Royalty-free Music.mp3",
     "music_meditation/Christian instrumental music for prayer (God Is My Strength) - Royalty-free Music.mp3",
     "music_meditation/jessequinn-christian-worship-instrumental-calm-emotional-piano-by-jesse-quinn-164626.mp3",
@@ -49,8 +48,9 @@
     "music_meditation/Christian instrumental music for prayer (God Is Making a Way) - Royalty-free Music.mp3",
     "music_meditation/Christian Live Streaming music (Light of Faith) - Royalty-free Music.mp3"
   ],
-  "last_music": "music_meditation/Christian instrumental music for prayer (FAITH) - Royalty-free Music.mp3",
+  "last_music": "music_meditation/nickpanekaiassets-peaceful-piano-background-music-218762.mp3",
   "music_played": [
-    "music_meditation/Christian instrumental music for prayer (FAITH) - Royalty-free Music.mp3"
+    "music_meditation/Christian instrumental music for prayer (FAITH) - Royalty-free Music.mp3",
+    "music_meditation/nickpanekaiassets-peaceful-piano-background-music-218762.mp3"
   ]
 }
