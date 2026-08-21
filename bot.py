@@ -131,6 +131,246 @@ CATEGORIES = {
     "protection": {"key": "i_protection", "file": "protection_curated.json", "emoji": "🛡️", "tag": "#Protection"},
 }
 
+# CTA par catégorie (FB/IG/Threads) — remplace la ligne générique unique
+# "Partagez ce verset avec quelqu'un qui en a besoin 🙏" répétée partout.
+# Vouvoiement, même ton que les CTA déjà utilisés sur TikTok (manuel).
+CTA_BY_CATEGORY = {
+    "promise":    "Une promesse de Dieu pour aujourd'hui. Partagez-la avec celui qui en a besoin 🙏",
+    "jesus":      "Les paroles de Jésus traversent les siècles. Partagez cette Parole 🙏",
+    "psaume":     "Que ce Psaume vous accompagne aujourd'hui. Partagez-le 🙏",
+    "proverbe":   "La sagesse de la Parole pour votre journée. Partagez-la 🙏",
+    "prophetie":  "La Parole annoncée, la Parole accomplie. Partagez cette vérité 🙏",
+    "protection": "L'Éternel veille sur les siens. Partagez cette assurance 🙏",
+}
+CTA_DEFAULT = "Partagez ce verset avec quelqu'un qui en a besoin 🙏"
+
+# ---------------------------------------------------
+# OPTION A — CTA par mots-clés du verset (active par défaut)
+# Chaque groupe : mots-clés (sous-chaînes, insensible à la casse) + plusieurs
+# variantes de phrase, choisies au hasard à chaque publication pour éviter
+# la répétition. Vérifiés dans l'ordre — le premier groupe qui matche gagne.
+# ---------------------------------------------------
+CTA_KEYWORD_GROUPS = [
+    ("protection", [
+        "refuge", "forteresse", "rocher", "bouclier", "rempart", "abri",
+        "protèg", "protégera", "veille sur", "gardera", "gardien", "te garde",
+    ], [
+        "Dieu est votre refuge en toute circonstance. Partagez cette protection 🙏",
+        "Sous sa garde, rien ne vous atteint sans qu'il le permette. Partagez cette assurance 🙏",
+        "Il est votre rocher et votre forteresse. Partagez cette confiance 🙏",
+        "L'Éternel veille sur les siens à chaque instant. Partagez cette vérité 🙏",
+    ]),
+    ("peur", [
+        "crains", "crainte", "peur", "effroi", "trembl", "épouvant",
+    ], [
+        "N'ayez crainte : il marche avec vous. Partagez cette parole avec quelqu'un qui a peur 🙏",
+        "La peur recule devant sa présence. Partagez cet encouragement 🙏",
+        "Il chasse toute crainte du cœur qui se confie en lui. Partagez cette paix 🙏",
+    ]),
+    ("paix", [
+        "paix", "tranquille", "tranquillité", "calme", "apaise",
+    ], [
+        "Recevez cette paix qui dépasse toute intelligence. Partagez-la 🙏",
+        "Que ce verset apporte le calme à votre journée. Partagez-le 🙏",
+        "Sa paix surpasse toute agitation. Partagez cette tranquillité 🙏",
+    ]),
+    ("amour", [
+        "aime", "amour", "aimé", "charité", "tendresse",
+    ], [
+        "L'amour de Dieu ne s'épuise jamais. Partagez cette vérité 🙏",
+        "Vous êtes aimé au-delà de ce que vous imaginez. Partagez cet amour 🙏",
+        "Son amour est fidèle, jour après jour. Partagez-le avec un proche 🙏",
+    ]),
+    ("esperance", [
+        "espérance", "espère", "espérer", "espoir", "avenir",
+    ], [
+        "Gardez espérance — Dieu est fidèle à ses promesses. Partagez avec celui qui doute 🙏",
+        "Il tient l'avenir entre ses mains. Partagez cette espérance 🙏",
+        "L'espérance en Dieu ne déçoit jamais. Partagez-la aujourd'hui 🙏",
+    ]),
+    ("force", [
+        "force", "fort", "forte", "courage", "fortifie", "puissance",
+    ], [
+        "Il renouvelle vos forces chaque jour. Partagez cet encouragement 🙏",
+        "Soyez fort et courageux : il est avec vous. Partagez cette assurance 🙏",
+        "Sa puissance se déploie dans votre faiblesse. Partagez cette vérité 🙏",
+    ]),
+    ("sagesse", [
+        "sagesse", "sage", "discernement", "intelligence", "instruction", "conseil",
+    ], [
+        "La sagesse de la Parole pour votre journée. Partagez-la 🙏",
+        "Sa sagesse dépasse toute compréhension humaine. Partagez cette lumière 🙏",
+        "Demandez, et la sagesse vous sera donnée. Partagez cet encouragement 🙏",
+    ]),
+    ("priere", [
+        "prie", "prière", "invoque", "supplication",
+    ], [
+        "La prière fervente a une grande efficacité. Partagez cet encouragement 🙏",
+        "Il entend chaque prière du cœur sincère. Partagez cette confiance 🙏",
+    ]),
+    ("pardon", [
+        "pardonne", "pardon", "grâce", "miséricorde",
+    ], [
+        "Son pardon efface tout, sans condition. Partagez cette bonne nouvelle 🙏",
+        "La grâce de Dieu couvre toute faute. Partagez cette vérité 🙏",
+    ]),
+    ("deuil", [
+        "console", "consolation", "pleure", "larmes", "deuil", "chagrin", "quebranté", "quebrantés",
+    ], [
+        "Il console ceux qui pleurent. Partagez ce réconfort avec un proche 🙏",
+        "Même dans la peine, il reste proche. Partagez cette présence 🙏",
+    ]),
+    ("guerison", [
+        "guéri", "guérison", "guérit", "guéris",
+    ], [
+        "Il guérit ceux qui ont le cœur brisé. Partagez cette espérance 🙏",
+        "Sa guérison touche le corps et l'âme. Partagez cette vérité 🙏",
+    ]),
+    ("combat", [
+        "ennemi", "victoire", "vainc", "vainqueur", "combat", "armure", "diable", "satan",
+    ], [
+        "En Christ, vous êtes plus que vainqueur. Partagez cette victoire 🙏",
+        "Aucune arme forgée contre vous ne prospérera. Partagez cette assurance 🙏",
+    ]),
+    ("solitude", [
+        "abandonnera", "délaissera", "jamais seul",
+    ], [
+        "Vous n'êtes jamais seul : il reste avec vous. Partagez cette présence 🙏",
+        "Il ne vous abandonnera jamais. Partagez cette promesse 🙏",
+    ]),
+    ("famille", [
+        "famille", "enfants", "foyer", "époux", "épouse",
+    ], [
+        "La sagesse de Dieu pour le foyer. Partagez avec votre famille 🙏",
+        "Ses instructions bâtissent des familles fortes. Partagez cette parole 🙏",
+    ]),
+    ("confiance", [
+        "confie", "confiance", "s'appuie", "remets", "espère en",
+    ], [
+        "Confiez-vous en l'Éternel de tout votre cœur. Partagez cette assurance 🙏",
+        "Remettez votre sort entre ses mains. Partagez cette confiance 🙏",
+        "Il dirige les pas de celui qui s'appuie sur lui. Partagez cette vérité 🙏",
+    ]),
+    ("gratitude", [
+        "grâces", "reconnaissant", "louange", "remerci",
+    ], [
+        "Rendez grâces en toute circonstance. Partagez cette reconnaissance 🙏",
+        "La louange ouvre le cœur à sa présence. Partagez cet encouragement 🙏",
+    ]),
+    ("prophetie", [
+        "accompli", "prophète", "prophétie", "annoncé",
+    ], [
+        "Ce que Dieu annonce, il l'accomplit. Partagez cette vérité 🙏",
+    ]),
+    ("promesse", [
+        "promesse", "promet",
+    ], [
+        "Une promesse de Dieu pour aujourd'hui. Partagez-la avec celui qui en a besoin 🙏",
+    ]),
+]
+
+
+def pick_cta_by_keywords(verse_text):
+    """
+    Cherche le premier groupe thématique dont un mot-clé apparaît dans le
+    texte du verset (recherche insensible à la casse, sous-chaîne simple —
+    couvre les variantes d'accord en français : aime/aimé/aimez...).
+    Retourne une phrase au hasard parmi les variantes du groupe, ou None
+    si aucun groupe ne correspond.
+    """
+    if not verse_text:
+        return None
+    low = verse_text.lower()
+    for _name, keywords, phrases in CTA_KEYWORD_GROUPS:
+        if any(kw in low for kw in keywords):
+            return random.choice(phrases)
+    return None
+
+
+# ---------------------------------------------------
+# OPTION B — CTA généré par l'API Claude (prêt, désactivé par défaut)
+# Pour activer : mettre le secret USE_AI_CTA=true (en plus de ANTHROPIC_API_KEY).
+# ---------------------------------------------------
+USE_AI_CTA = os.environ.get("USE_AI_CTA", "").strip().lower() in ("1", "true", "yes")
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
+
+
+def generate_cta_ai(verse_text, ref, cat_name):
+    """
+    CTA généré par l'API Claude, adapté au texte exact du verset (pas seulement
+    à la catégorie). Retourne None en cas d'échec — ne lève JAMAIS d'exception :
+    un souci d'API ne doit jamais bloquer une publication.
+    """
+    if not ANTHROPIC_API_KEY:
+        return None
+    try:
+        prompt = (
+            "Tu écris un seul CTA (appel à l'action) court en français pour un post "
+            "Instagram/Facebook/Threads de LaBible.app, une app biblique gratuite (LSG 1910).\n\n"
+            f"Verset ({ref}) : « {verse_text} »\n\n"
+            "Règles strictes :\n"
+            "- Vouvoiement obligatoire (jamais \"tu\").\n"
+            "- Ton sérieux, sobre, contemplatif. La foi est une certitude, pas une émotion. "
+            "Aucun clickbait, aucune exagération.\n"
+            "- Le CTA doit inviter à PARTAGER ce verset précis, en lien avec son contenu/thème "
+            "(pas une phrase générique interchangeable).\n"
+            "- Une seule phrase courte, maximum 15 mots.\n"
+            "- Termine par l'emoji 🙏\n"
+            "- Réponds UNIQUEMENT avec la phrase, sans guillemets, sans explication."
+        )
+        r = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": ANTHROPIC_MODEL,
+                "max_tokens": 60,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=10,
+        )
+        if r.status_code != 200:
+            print(f"⚠️  CTA IA ({r.status_code}) : {r.text[:150]}")
+            return None
+        data = r.json()
+        cta = "".join(
+            block.get("text", "") for block in data.get("content", [])
+            if block.get("type") == "text"
+        ).strip().strip('"').strip("«»").strip()
+        if not cta or len(cta) > 140:
+            print(f"⚠️  CTA IA rejeté (vide ou trop long) : {cta[:50]!r}")
+            return None
+        return cta
+    except Exception as e:
+        print(f"⚠️  CTA IA indisponible : {str(e)[:150]}")
+        return None
+
+
+def cta_for(cat_name, verse_text=None, ref=None):
+    """
+    CTA final, nesta ordem de prioridade :
+    1. Option B (IA) — só se USE_AI_CTA=true nos secrets. Desligada por omissão.
+    2. Option A (palavras-chave) — se o texto do verset bater com um grupo temático,
+       usa uma frase ao calhas de entre 3-4 variantes desse grupo.
+    3. CTA fixo da categoria (o que já tínhamos).
+    4. Frase genérica, último recurso.
+    """
+    if USE_AI_CTA and verse_text:
+        ai_cta = generate_cta_ai(verse_text, ref, cat_name)
+        if ai_cta:
+            return ai_cta
+
+    if verse_text:
+        kw_cta = pick_cta_by_keywords(verse_text)
+        if kw_cta:
+            return kw_cta
+
+    return CTA_BY_CATEGORY.get(cat_name, CTA_DEFAULT)
+
 # ---------------------------------------------------
 # ROTATION PAR HEURE UTC — alignée avec publish.yml
 # 05h UTC → 07h France — image → psaume  (Matin)
@@ -405,7 +645,7 @@ def post_to_facebook(image_path, ref, text, cat, cat_name, link_override=None):
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    msg = f"{cat['emoji']} {ref}\n\n« {text} »\n\n\U0001f4d6 Lisez le chapitre complet gratuitement \u2192 {chapter_url}\n\n👇 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
+    msg = f"{cat['emoji']} {ref}\n\n« {text} »\n\n\U0001f4d6 Lisez le chapitre complet gratuitement \u2192 {chapter_url}\n\n👇 {cta_for(cat_name, text, ref)}\n\n{build_hashtags_fb(cat_name)}"
     with open(image_path, "rb") as f:
         r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/photos",
             data={"message": msg, "access_token": FB_PAGE_TOKEN}, files={"source": f}, timeout=60)
@@ -423,7 +663,7 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name, link_override=No
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    desc = f"{cat['emoji']} {ref}\n\n« {text} »\n\n\U0001f4d6 Lisez le chapitre complet gratuitement \u2192 {chapter_url}\n\n👇 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_fb(cat_name)}"
+    desc = f"{cat['emoji']} {ref}\n\n« {text} »\n\n\U0001f4d6 Lisez le chapitre complet gratuitement \u2192 {chapter_url}\n\n👇 {cta_for(cat_name, text, ref)}\n\n{build_hashtags_fb(cat_name)}"
     with open(video_path, "rb") as f:
         r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
             data={"description": desc, "access_token": FB_PAGE_TOKEN}, files={"source": f}, timeout=120)
@@ -503,7 +743,7 @@ def post_to_instagram(image_path, ref, text, cat, cat_name, link_override=None):
     if "cloudinary.com" in image_url:
         image_url = image_url.replace("/upload/", "/upload/f_jpg/")
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    caption = f"« {text} »\n— {cat['emoji']} {ref}\n\n📖 Bible complète et gratuite — lien en bio\n\n👇 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    caption = f"« {text} »\n— {cat['emoji']} {ref}\n\n📖 Bible complète et gratuite — lien en bio\n\n👇 {cta_for(cat_name, text, ref)}\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"image_url": image_url, "caption": caption, "access_token": FB_PAGE_TOKEN}, timeout=60)
     if r.status_code != 200:
@@ -541,7 +781,7 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=N
     if not video_url:
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    caption = f"« {text} »\n— {cat['emoji']} {ref}\n\n📖 Bible complète et gratuite — lien en bio\n\n👇 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    caption = f"« {text} »\n— {cat['emoji']} {ref}\n\n📖 Bible complète et gratuite — lien en bio\n\n👇 {cta_for(cat_name, text, ref)}\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"media_type": "REELS", "video_url": video_url, "caption": caption, "access_token": FB_PAGE_TOKEN, "thumb_offset": "7500"}, timeout=60)
     if r.status_code != 200:
@@ -628,7 +868,7 @@ def post_to_threads(image_path, ref, text, cat, cat_name, link_override=None):
     if "cloudinary.com" in image_url:
         image_url = image_url.replace("/upload/", "/upload/f_jpg/")
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n👇 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n👇 {cta_for(cat_name, text, ref)}\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "IMAGE", "image_url": image_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
@@ -649,7 +889,7 @@ def post_reel_to_threads(video_path, ref, text, cat, cat_name, link_override=Non
         print("❌ Threads — upload vidéo échoué")
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n👇 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n\n{build_hashtags_ig(cat_name)}"
+    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n👇 {cta_for(cat_name, text, ref)}\n\n{build_hashtags_ig(cat_name)}"
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "VIDEO", "video_url": video_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
