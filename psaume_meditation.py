@@ -625,20 +625,48 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
 
 def _next_psaume(progress):
     """
-    Ordem embaralhada dos 150 Salmos (mesmo princípio que reshuffle_if_needed
-    em bot.py): percorre os 150 sem repetir nenhum, e só reembaralha quando
-    os 150 já foram todos publicados. Evita a sequência fixa 1→150→1→150…
+    Choisit le prochain Psaume sans jamais republier un Psaume deja diffuse
+    tant que les 150 n'ont pas tous ete couverts.
+
+    `published` : liste des Psaumes deja diffuses (memoire longue).
+    `queue`     : les Psaumes restants du cycle en cours, melanges.
+
+    Migration : les anciens fichiers de progression utilisaient un simple
+    compteur sequentiel `next_psaume` (tout ce qui est en dessous a deja ete
+    publie) ; on le convertit en `published` au premier passage.
     """
-    order = progress.get("order")
-    idx = progress.get("idx", 0)
-    if not order or idx >= len(order):
-        order = list(range(1, 151))
-        random.shuffle(order)
-        idx = 0
-        print("🔀 Novo ciclo — 150 Salmos reembaralhados.")
-    num = order[idx]
-    progress["order"] = order
-    progress["idx"] = idx + 1
+    published = set(progress.get("published") or [])
+
+    if not published:
+        legacy = progress.get("next_psaume")
+        if legacy:
+            # Ancien compteur sequentiel : 1..legacy-1 sont deja sortis.
+            published |= set(range(1, int(legacy)))
+        # Rattrape aussi ce qui a pu sortir avec la version melangee initiale.
+        old_order = progress.get("order") or []
+        published |= set(old_order[: progress.get("idx", 0)])
+
+    queue = list(progress.get("queue") or [])
+    if not queue:
+        remaining = [n for n in range(1, 151) if n not in published]
+        if not remaining:
+            # Les 150 sont couverts : on repart pour un cycle complet.
+            remaining = list(range(1, 151))
+            published = set()
+            print("🔀 Les 150 Psaumes ont ete publies — nouveau cycle complet.")
+        random.shuffle(remaining)
+        queue = remaining
+        print(f"🔀 Nouveau cycle : {len(queue)} Psaumes encore jamais publies.")
+
+    num = queue.pop(0)
+    published.add(num)
+
+    progress["queue"] = queue
+    progress["published"] = sorted(published)
+    # Nettoyage des cles obsoletes (ancien compteur et ancien melange).
+    for obsolete in ("next_psaume", "psaume_119_part", "order", "idx"):
+        progress.pop(obsolete, None)
+
     return num
 
 
