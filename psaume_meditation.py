@@ -106,6 +106,17 @@ def get_palette(num):
     return PSAUME_PALETTES[idx]
 
 
+# Pistes ayant deja fait l'objet d'une revendication Content ID sur la chaine.
+# Elles restent dans le dossier (les anciennes videos les utilisent deja) mais
+# ne sont plus retenues pour les nouvelles publications.
+CLAIMED_TRACKS = ("heaven's whisper", "heavens whisper", "flute meditation music 8")
+
+
+def is_claimed(path):
+    name = os.path.basename(path).lower()
+    return any(c in name for c in CLAIMED_TRACKS)
+
+
 def is_safe_music(path):
     """
     Filtro anti-Content-ID leve. Rejeita apenas nomes com aspeto de
@@ -152,6 +163,15 @@ def pick_safe_music(num):
     if not safe:
         print("⚠️  Só faixas suspeitas (espaços/parênteses) — uso todas mesmo assim.")
         safe = all_tracks
+    # ecarter les pistes deja revendiquees (Content ID)
+    filtered = [t for t in safe if not is_claimed(t)]
+    if filtered:
+        skipped = len(safe) - len(filtered)
+        if skipped:
+            print(f"🚫 {skipped} faixa(s) com reivindicação Content ID ignorada(s).")
+        safe = filtered
+    else:
+        print("⚠️  Todas as faixas estão reivindicadas — uso na mesma.")
     idx = (num - 1) % len(safe)
     print(f"🎵 Música: {safe[idx]} ({idx + 1}/{len(safe)} faixas)")
     return safe[idx]

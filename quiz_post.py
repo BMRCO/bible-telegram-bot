@@ -35,6 +35,31 @@ from bot import (
     upload_to_cloudinary,
 )
 
+MUSIC_DIR = "music_meditation"
+
+# Pistes ayant deja fait l'objet d'une revendication Content ID sur la chaine :
+# elles restent dans le dossier pour les anciennes videos mais ne sont plus
+# utilisees pour les nouvelles publications.
+CLAIMED = ("heaven's whisper", "heavens whisper", "flute meditation music 8")
+
+
+def pick_music(seed):
+    """Choisit une piste libre de droits, en rotation, en ecartant les pistes
+    deja revendiquees. Retourne None si aucune piste n'est disponible."""
+    if not os.path.isdir(MUSIC_DIR):
+        return None
+    tracks = sorted(
+        os.path.join(MUSIC_DIR, f) for f in os.listdir(MUSIC_DIR)
+        if f.lower().endswith((".mp3", ".m4a", ".ogg", ".wav"))
+    )
+    tracks = [t for t in tracks
+              if not any(c in os.path.basename(t).lower() for c in CLAIMED)]
+    if not tracks:
+        print("⚠️  Aucune piste disponible — vidéo sans musique.")
+        return None
+    return tracks[seed % len(tracks)]
+
+
 QUIZ_FILE = "data/quiz.json"
 PROGRESS_FILE = "progress_quiz.json"
 APP_URL = "https://labible.app"
@@ -274,7 +299,7 @@ def make_annonce_card(theme="psaumes"):
     return img
 
 
-def build_video(theme, q, out_path):
+def build_video(theme, q, out_path, music=None):
     tmp = tempfile.mkdtemp(prefix="quiz_")
     frames = []
     n = 0
@@ -297,10 +322,18 @@ def build_video(theme, q, out_path):
             f.write(f"file '{p}'\nduration {s}\n")
         f.write(f"file '{frames[-1][0]}'\n")
 
-    cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", listfile,
-           "-vf", f"fps={FPS},format=yuv420p", "-c:v", "libx264",
-           "-preset", "medium", "-crf", "22", "-movflags", "+faststart",
-           out_path]
+    cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", listfile]
+    if music:
+        cmd += ["-i", music]
+    cmd += ["-vf", f"fps={FPS},format=yuv420p", "-c:v", "libx264",
+            "-preset", "medium", "-crf", "22", "-movflags", "+faststart"]
+    if music:
+        fade_out = max(0, TOTAL_SEC - 2)
+        cmd += ["-c:a", "aac", "-b:a", "128k",
+                "-af", (f"volume=0.32,afade=t=in:st=0:d=1.2,"
+                        f"afade=t=out:st={fade_out}:d=2"),
+                "-map", "0:v:0", "-map", "1:a:0", "-shortest"]
+    cmd += [out_path]
     subprocess.run(cmd, check=True, capture_output=True)
     return out_path
 
@@ -388,7 +421,11 @@ if __name__ == "__main__":
     print(f"   réponse : {q['o'][q['a']][:60]}  ({q['r']})")
 
     video = "/tmp/quiz_du_jour.mp4"
-    build_video(theme, q, video)
+    seed = (load_json(PROGRESS_FILE, {}) or {}).get("theme_idx", 0) + pos
+    music = pick_music(seed)
+    if music:
+        print(f"🎵 {os.path.basename(music)}")
+    build_video(theme, q, video, music)
     print(f"🎬 Vidéo prête ({TOTAL_SEC}s).")
 
     fb, ig, tg, th = captions(theme, q)
