@@ -1,0 +1,84 @@
+name: Quiz du jour
+
+on:
+  schedule:
+    # 12h00 heure de France (ete) = 10h00 UTC.
+    # Avance de 2h comme le reste du projet, pour compenser les retards
+    # frequents des runners GitHub Actions -> 08h04 UTC.
+    - cron: "4 8 * * *"
+  workflow_dispatch:
+    inputs:
+      theme:
+        description: "Thème forcé (psaumes, promesses, jesus, proverbes, propheties, protection). Vide = rotation."
+        required: false
+        default: ""
+      annonce:
+        description: "Publier la carte d'annonce au lieu d'une question (true/false)"
+        required: false
+        default: "false"
+
+permissions:
+  contents: write
+
+jobs:
+  quiz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+
+      - name: Installer les dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Publier le quiz du jour
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+          IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          THEME_INPUT: ${{ github.event.inputs.theme }}
+          ANNONCE_INPUT: ${{ github.event.inputs.annonce }}
+        run: |
+          ARGS=""
+          if [ "$ANNONCE_INPUT" = "true" ]; then
+            ARGS="--annonce"
+          elif [ -n "$THEME_INPUT" ]; then
+            ARGS="$THEME_INPUT"
+          fi
+          python quiz_post.py $ARGS
+
+      - name: Enregistrer la progression
+        run: |
+          if [ -n "$(git status --porcelain progress_quiz.json)" ]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add progress_quiz.json
+            git commit -m "Quiz du jour — progression"
+            git push
+          else
+            echo "Aucun changement de progression."
+          fi
