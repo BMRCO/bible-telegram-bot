@@ -68,9 +68,9 @@ QUIZ_URL = f"{APP_URL}/quiz"
 
 W, H = 1080, 1920
 FPS = 30
-SEC_QUESTION = 6      # affichage question + options
-SEC_COUNT = 3         # temps de reflexion (compte a rebours)
-SEC_REVEAL = 5        # revelation de la reponse
+SEC_QUESTION = 11     # lecture du verset + des trois options
+SEC_COUNT = 5         # temps de reflexion (compte a rebours)
+SEC_REVEAL = 7        # revelation de la reponse
 TOTAL_SEC = SEC_QUESTION + SEC_COUNT + SEC_REVEAL
 
 # cle du quiz -> cle de categorie du bot (pour reutiliser les palettes)
