@@ -191,12 +191,24 @@ def draw_frame(theme, q, phase, count_left=None):
 
     f_theme = ImageFont.truetype(FONT_SERIF_BOLD, 40)
     lbl = bank[theme]["label"]
-    d.text(((W - d.textlength(lbl, font=f_theme)) / 2, 210), lbl, font=f_theme, fill=SIL)
+    d.text(((W - d.textlength(lbl, font=f_theme)) / 2, 204), lbl, font=f_theme, fill=SIL)
+
+    # consigne : bien visible, avant le verset — beaucoup de gens ne lisent
+    # pas la legende, l'instruction doit etre dans l'image.
+    prompt = q.get("p", "Quelle est la suite de ce verset ?")
+    f_p = ImageFont.truetype(FONT_SANS, 40)
+    while d.textlength(prompt, font=f_p) > inner and f_p.size > 26:
+        f_p = ImageFont.truetype(FONT_SANS, f_p.size - 2)
+    pw = d.textlength(prompt, font=f_p)
+    py = 286
+    d.rounded_rectangle([(W - pw) / 2 - 34, py - 16, (W + pw) / 2 + 34, py + f_p.size + 20],
+                        radius=14, outline=GOLD, width=2)
+    d.text(((W - pw) / 2, py), prompt, font=f_p, fill=GOLD)
 
     # question
     head = q["q"]
-    f_q, q_lines = fit_font(d, head, FONT_SERIF, inner, 430, 62, 34, 18)
-    y = 330
+    f_q, q_lines = fit_font(d, head, FONT_SERIF, inner, 400, 60, 34, 18)
+    y = py + f_p.size + 78
     for ln in q_lines:
         d.text(((W - d.textlength(ln, font=f_q)) / 2, y), ln, font=f_q, fill=TXT)
         y += f_q.size + 18
@@ -257,9 +269,8 @@ def draw_frame(theme, q, phase, count_left=None):
         cta = "Le quiz complet sur labible.app/quiz"
         d.text(((W - d.textlength(cta, font=f_small)) / 2, y + 112), cta, font=f_small, fill=SIL)
     else:
-        cta = q.get("p", "Quelle est la suite ?")
-        f_p = f_small if d.textlength(cta, font=f_small) <= inner else ImageFont.truetype(FONT_SANS, 27)
-        d.text(((W - d.textlength(cta, font=f_p)) / 2, y + 46), cta, font=f_p, fill=SIL)
+        cta = "A, B ou C ?"
+        d.text(((W - d.textlength(cta, font=f_small)) / 2, y + 46), cta, font=f_small, fill=SIL)
 
     # pied
     f_foot = ImageFont.truetype(FONT_SANS, 28)
