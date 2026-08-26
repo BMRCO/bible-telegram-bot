@@ -26,13 +26,14 @@ import tempfile
 
 from PIL import Image, ImageDraw, ImageFont
 
+import requests
+
 import bot
 from bot import (
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
     REEL_PALETTE_BY_CAT,
-    send_video, post_reel_to_facebook, post_reel_to_instagram,
-    post_reel_to_threads, post_to_pinterest, post_to_youtube,
-    upload_to_cloudinary,
+    send_video, send_photo, post_to_youtube,
+    upload_video_public, upload_to_cloudinary,
 )
 
 MUSIC_DIR = "music_meditation"
@@ -87,6 +88,99 @@ LABEL_EMOJI = {
     "psaumes": "🎵", "promesses": "🌿", "jesus": "✝️",
     "proverbes": "💡", "propheties": "📯", "protection": "🛡️",
 }
+
+
+
+# ---------------------------------------------------------------
+#  Publication — legendes propres au quiz
+#  Les fonctions de bot.py reconstruisent leur propre message a partir
+#  du verset ; ici il faut publier la legende du quiz telle quelle.
+# ---------------------------------------------------------------
+def fb_reel(video_path, caption):
+    if not bot.FB_PAGE_TOKEN:
+        print("⚠️  FB_PAGE_TOKEN non défini.")
+        return
+    with open(video_path, "rb") as f:
+        r = requests.post(
+            f"https://graph.facebook.com/v25.0/{bot.FB_PAGE_ID}/videos",
+            data={"description": caption, "access_token": bot.FB_PAGE_TOKEN},
+            files={"source": f}, timeout=180)
+    if r.status_code == 200:
+        print(f"✅ Facebook publié — {r.json().get('id')}")
+    else:
+        print(f"❌ Facebook ({r.status_code}): {r.text[:300]}")
+
+
+def ig_reel(video_url, caption):
+    if not bot.FB_PAGE_TOKEN or not video_url:
+        return
+    r = requests.post(
+        f"https://graph.facebook.com/v25.0/{bot.IG_ACCOUNT_ID}/media",
+        data={"media_type": "REELS", "video_url": video_url, "caption": caption,
+              "access_token": bot.FB_PAGE_TOKEN, "thumb_offset": "1000"}, timeout=60)
+    if r.status_code != 200:
+        print(f"❌ Instagram container ({r.status_code}): {r.text[:300]}")
+        return
+    cid = r.json().get("id")
+    import time
+    for attempt in range(10):
+        time.sleep(15)
+        rs = requests.get(f"https://graph.facebook.com/v25.0/{cid}",
+                          params={"fields": "status_code",
+                                  "access_token": bot.FB_PAGE_TOKEN}, timeout=30)
+        st = rs.json().get("status_code", "")
+        print(f"  ⏳ {st} ({attempt + 1})")
+        if st == "FINISHED":
+            break
+        if st == "ERROR":
+            print("❌ Instagram : container en erreur.")
+            return
+    r2 = requests.post(
+        f"https://graph.facebook.com/v25.0/{bot.IG_ACCOUNT_ID}/media_publish",
+        data={"creation_id": cid, "access_token": bot.FB_PAGE_TOKEN}, timeout=60)
+    if r2.status_code == 200:
+        print(f"✅ Instagram publié — {r2.json().get('id')}")
+    else:
+        print(f"❌ Instagram publication ({r2.status_code}): {r2.text[:300]}")
+
+
+def threads_reel(video_url, caption):
+    if not bot.THREADS_ACCESS_TOKEN or not video_url:
+        return
+    r = requests.post("https://graph.threads.net/v1.0/me/threads",
+                      data={"media_type": "VIDEO", "video_url": video_url,
+                            "text": caption,
+                            "access_token": bot.THREADS_ACCESS_TOKEN}, timeout=60)
+    if r.status_code != 200:
+        print(f"❌ Threads container ({r.status_code}): {r.text[:300]}")
+        return
+    import time
+    time.sleep(30)
+    bot._threads_publish(r.json().get("id"))
+
+
+def pinterest_pin(image_path, title, description):
+    """Pinterest ne prend pas la video du quiz : on epingle l'image de la
+    reponse, qui contient le verset complet et la reference."""
+    if not bot.PINTEREST_ACCESS_TOKEN or not bot.PINTEREST_BOARD_ID:
+        print("⏭️  Pinterest non configuré.")
+        return
+    img_url = upload_to_cloudinary(image_path)
+    if not img_url:
+        return
+    r = requests.post(
+        "https://api.pinterest.com/v5/pins",
+        headers={"Authorization": f"Bearer {bot.PINTEREST_ACCESS_TOKEN}"},
+        json={"board_id": bot.PINTEREST_BOARD_ID,
+              "title": title[:100],
+              "description": description[:500],
+              "link": QUIZ_URL,
+              "media_source": {"source_type": "image_url", "url": img_url}},
+        timeout=60)
+    if r.status_code in (200, 201):
+        print(f"✅ Pinterest publié — {r.json().get('id')}")
+    else:
+        print(f"❌ Pinterest ({r.status_code}): {r.text[:300]}")
 
 
 # ---------------------------------------------------------------
@@ -448,18 +542,58 @@ if __name__ == "__main__":
         except Exception as e:
             print("⚠️ Telegram:", e)
         try:
-            bot.post_to_facebook(path, "LaBible.app", cap, REEL_PALETTE_BY_CAT["psaume"],
-                                 "psaume", link_override=QUIZ_URL)
+            if bot.FB_PAGE_TOKEN:
+                with open(path, "rb") as f:
+                    r = requests.post(
+                        f"https://graph.facebook.com/v25.0/{bot.FB_PAGE_ID}/photos",
+                        data={"message": cap, "access_token": bot.FB_PAGE_TOKEN},
+                        files={"source": f}, timeout=90)
+                print("✅ Facebook publié" if r.status_code == 200
+                      else f"❌ Facebook ({r.status_code}): {r.text[:200]}")
         except Exception as e:
             print("⚠️ Facebook:", e)
+
+        img_url = None
         try:
-            bot.post_to_instagram(path, "LaBible.app", cap, REEL_PALETTE_BY_CAT["psaume"],
-                                  "psaume", link_override=QUIZ_URL)
+            img_url = upload_to_cloudinary(path)
+        except Exception as e:
+            print("⚠️ Cloudinary:", e)
+
+        try:
+            if img_url and bot.FB_PAGE_TOKEN:
+                r = requests.post(
+                    f"https://graph.facebook.com/v25.0/{bot.IG_ACCOUNT_ID}/media",
+                    data={"image_url": img_url, "caption": cap,
+                          "access_token": bot.FB_PAGE_TOKEN}, timeout=60)
+                if r.status_code == 200:
+                    cid = r.json().get("id")
+                    import time
+                    time.sleep(8)
+                    r2 = requests.post(
+                        f"https://graph.facebook.com/v25.0/{bot.IG_ACCOUNT_ID}/media_publish",
+                        data={"creation_id": cid,
+                              "access_token": bot.FB_PAGE_TOKEN}, timeout=60)
+                    print("✅ Instagram publié" if r2.status_code == 200
+                          else f"❌ Instagram ({r2.status_code}): {r2.text[:200]}")
+                else:
+                    print(f"❌ Instagram container ({r.status_code}): {r.text[:200]}")
         except Exception as e:
             print("⚠️ Instagram:", e)
+
         try:
-            bot.post_to_threads(path, "LaBible.app", cap, REEL_PALETTE_BY_CAT["psaume"],
-                                "psaume", link_override=QUIZ_URL)
+            if img_url and bot.THREADS_ACCESS_TOKEN:
+                u = img_url.replace("/upload/", "/upload/f_jpg/")
+                r = requests.post("https://graph.threads.net/v1.0/me/threads",
+                                  data={"media_type": "IMAGE", "image_url": u,
+                                        "text": cap,
+                                        "access_token": bot.THREADS_ACCESS_TOKEN},
+                                  timeout=60)
+                if r.status_code == 200:
+                    import time
+                    time.sleep(10)
+                    bot._threads_publish(r.json().get("id"))
+                else:
+                    print(f"❌ Threads container ({r.status_code}): {r.text[:200]}")
         except Exception as e:
             print("⚠️ Threads:", e)
         print("✅ Annonce publiée.")
@@ -485,29 +619,48 @@ if __name__ == "__main__":
 
     fb, ig, tg, th, tt = captions(theme, q, seed)
     cat = CAT_MAP[theme]
-    pal = REEL_PALETTE_BY_CAT[cat]
     ref = q["r"]
 
     try:
         send_video(video, tg)
     except Exception as e:
         print("⚠️ Telegram:", e)
+
     try:
-        post_reel_to_facebook(video, ref, fb, pal, cat, link_override=QUIZ_URL)
+        fb_reel(video, fb)
     except Exception as e:
         print("⚠️ Facebook:", e)
+
+    video_url = None
     try:
-        post_reel_to_instagram(video, ref, ig, pal, cat, link_override=QUIZ_URL)
+        video_url = upload_video_public(video)
+    except Exception as e:
+        print("⚠️ Upload vidéo:", e)
+
+    try:
+        ig_reel(video_url, ig)
     except Exception as e:
         print("⚠️ Instagram:", e)
+
     try:
-        post_reel_to_threads(video, ref, th, pal, cat, link_override=QUIZ_URL)
+        threads_reel(video_url, th)
     except Exception as e:
         print("⚠️ Threads:", e)
+
     try:
-        post_to_youtube(video, ref, fb, pal, cat, 10)
+        post_to_youtube(video, ref, q["q"], bot.CATEGORIES[cat], cat, 10)
     except Exception as e:
         print("⚠️ YouTube:", e)
+
+    try:
+        reveal_png = "/tmp/quiz_reveal.png"
+        draw_frame(theme, q, "reveal").save(reveal_png)
+        pin_title = hook_for(q, seed).replace("📖 ", "")
+        pin_desc = (f"{q['q']}\n\nRéponse : {q['o'][q['a']]}\n{q['r']} — "
+                    f"Bible Louis Segond 1910.\nLe quiz complet sur labible.app/quiz")
+        pinterest_pin(reveal_png, pin_title, pin_desc)
+    except Exception as e:
+        print("⚠️ Pinterest:", e)
 
     print("✅ Quiz du jour publié.")
     print("\n" + "─" * 56)
