@@ -341,24 +341,68 @@ def build_video(theme, q, out_path, music=None):
 # ---------------------------------------------------------------
 #  Legendes
 # ---------------------------------------------------------------
-def captions(theme, q):
+# Accroches variees, adaptees au type de question : evite la repetition
+# d'un titre unique jour apres jour.
+HOOKS = {
+    "suite": [
+        "📖 Quiz : quelle est la suite de ce verset ?",
+        "📖 Quiz biblique : sauriez-vous compléter ce verset ?",
+        "📖 Quiz : comment se termine ce verset ?",
+    ],
+    "debut": [
+        "📖 Quiz : par quoi commence ce verset ?",
+        "📖 Quiz biblique : reconnaissez-vous le début de ce verset ?",
+        "📖 Quiz : quel est le début de ce verset ?",
+    ],
+    "livre": [
+        "📖 Quiz : dans quel livre se trouve ce verset ?",
+        "📖 Quiz biblique : sauriez-vous situer ce verset ?",
+        "📖 Quiz : de quel livre vient ce verset ?",
+    ],
+    "psaume": [
+        "📖 Quiz : de quel Psaume vient ce verset ?",
+        "📖 Quiz biblique : sauriez-vous retrouver ce Psaume ?",
+        "📖 Quiz : quel Psaume dit cela ?",
+    ],
+}
+
+HASHTAGS_TIKTOK = ("#bible #versetdujour #quizbiblique #foi #chretien "
+                   "#parolededieu #louissegond #dieu #priere #jesus")
+
+
+def hook_for(q, seed):
+    """Variante choisie a partir de la reference du verset : deterministe
+    (meme question -> meme accroche) mais bien repartie, contrairement a un
+    simple compteur qui retomberait toujours sur la meme variante pour un
+    type donne."""
+    variants = HOOKS.get(q.get("t"), HOOKS["suite"])
+    h = sum(ord(c) for c in q.get("r", "")) + seed
+    return variants[h % len(variants)]
+
+
+def captions(theme, q, seed=0):
     label = bank[theme]["label"]
     head = q["q"]
-    fb = (f"📖 Testez votre connaissance biblique\n\n{head}\n\n"
-          f"Quelle est la suite de ce verset ? La réponse apparaît à la fin de la vidéo.\n\n"
+    hook = hook_for(q, seed)
+    plain = hook.replace("📖 ", "")
+
+    fb = (f"{hook}\n\n{head}\n\n"
+          f"La réponse apparaît à la fin de la vidéo.\n\n"
           f"Thème du jour : {label}. Le quiz complet, en six thèmes, est disponible ici :\n"
           f"{QUIZ_URL}\n\nGratuit, sans compte, sans publicité.\n\n"
           f"#Bible #LouisSegond #LaBibleApp #QuizBiblique #Foi")
-    ig = (f"{head}\n\nQuelle est la suite de ce verset ? La réponse apparaît à la fin.\n\n"
+    ig = (f"{head}\n\n{plain}\n\nLa réponse apparaît à la fin.\n\n"
           f"Thème du jour : {label}.\n\n📖 Quiz complet — lien en bio\n\n"
           f"#Bible #LouisSegond #LaBibleApp #QuizBiblique #VersetDuJour #Foi #Chrétien")
-    tg = (f"📖 <b>Testez votre connaissance biblique</b>\n\n{head}\n\n"
+    tg = (f"📖 <b>{plain}</b>\n\n{head}\n\n"
           f"La réponse apparaît à la fin de la vidéo.\n\n"
           f"Thème du jour : {label}.\n\n"
           f"👉 <a href=\"{QUIZ_URL}\">Le quiz complet sur labible.app</a>")
-    th = (f"{head}\n\nQuelle est la suite ? La réponse à la fin de la vidéo.\n\n"
+    th = (f"{head}\n\n{plain}\n\nLa réponse à la fin de la vidéo.\n\n"
           f"Thème du jour : {label}.\n\n👉 labible.app/quiz")
-    return fb, ig, tg, th
+    tt = (f"{plain}\n\n{head}\n\nRéponse à la fin 🙏\n\n"
+          f"Quiz complet sur labible.app/quiz\n\n{HASHTAGS_TIKTOK}")
+    return fb, ig, tg, th, tt
 
 
 # ---------------------------------------------------------------
@@ -428,7 +472,7 @@ if __name__ == "__main__":
     build_video(theme, q, video, music)
     print(f"🎬 Vidéo prête ({TOTAL_SEC}s).")
 
-    fb, ig, tg, th = captions(theme, q)
+    fb, ig, tg, th, tt = captions(theme, q, seed)
     cat = CAT_MAP[theme]
     pal = REEL_PALETTE_BY_CAT[cat]
     ref = q["r"]
@@ -455,3 +499,8 @@ if __name__ == "__main__":
         print("⚠️ YouTube:", e)
 
     print("✅ Quiz du jour publié.")
+    print("\n" + "─" * 56)
+    print("TikTok — à publier manuellement, texte à copier :")
+    print("─" * 56)
+    print(tt)
+    print("─" * 56)
