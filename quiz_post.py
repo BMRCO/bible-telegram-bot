@@ -32,7 +32,7 @@ import bot
 from bot import (
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
     REEL_PALETTE_BY_CAT,
-    send_video, send_photo, post_to_youtube,
+    send_video, send_photo,
     upload_video_public, upload_to_cloudinary,
 )
 
@@ -181,6 +181,127 @@ def pinterest_pin(image_path, title, description):
         print(f"✅ Pinterest publié — {r.json().get('id')}")
     else:
         print(f"❌ Pinterest ({r.status_code}): {r.text[:300]}")
+
+
+
+def yt_upload(video_path, theme, q, seed):
+    """Upload YouTube avec un titre pense pour la recherche.
+
+    bot.post_to_youtube construit son propre titre au format des versets
+    quotidiens : il annonce la reference exacte, ce qui devoile la reponse,
+    et ne contient jamais le mot « quiz », alors que c'est precisement ce que
+    les gens tapent. D'ou cette fonction dediee.
+    """
+    if not (bot.YT_CLIENT_ID and bot.YT_CLIENT_SECRET and bot.YT_REFRESH_TOKEN):
+        print("⚠️  Credentials YouTube manquants.")
+        return
+    try:
+        from google.oauth2.credentials import Credentials
+        from googleapiclient.discovery import build
+        from googleapiclient.http import MediaFileUpload
+        from google.auth.transport.requests import Request
+
+        creds = Credentials(
+            token=None, refresh_token=bot.YT_REFRESH_TOKEN,
+            client_id=bot.YT_CLIENT_ID, client_secret=bot.YT_CLIENT_SECRET,
+            token_uri="https://oauth2.googleapis.com/token",
+            scopes=["https://www.googleapis.com/auth/youtube.upload"])
+        creds.refresh(Request())
+        youtube = build("youtube", "v3", credentials=creds)
+
+        label = bank[theme]["label"]
+        titles = {
+            "suite":  f"Quiz biblique : quelle est la suite de ce verset ? | {label} LSG 1910",
+            "debut":  f"Quiz biblique : quel est le début de ce verset ? | {label} LSG 1910",
+            "livre":  f"Quiz biblique : dans quel livre se trouve ce verset ? | {label} LSG 1910",
+            "psaume": f"Quiz biblique : de quel Psaume vient ce verset ? | Bible LSG 1910",
+        }
+        title = titles.get(q.get("t"), titles["suite"])[:100]
+
+        # La reference n'apparait qu'en fin de description : elle ne doit pas
+        # devoiler la reponse dans l'apercu.
+        description = (
+            f"{q['q']}\n\n"
+            f"Saurez-vous répondre avant la fin de la vidéo ?\n\n"
+            f"Thème : {label} — Bible Louis Segond 1910.\n\n"
+            f"📖 Le quiz complet, en six thèmes, gratuit et sans compte :\n"
+            f"{QUIZ_URL}\n\n"
+            f"🔔 Un quiz biblique chaque jour à midi 🙏\n\n"
+            f"Réponse : {q['o'][q['a']]}\n"
+            f"({q['r']} — LSG 1910)\n\n"
+            f"#QuizBiblique #Bible #LSG1910 #LaBibleApp #ParoleDeDieu #Shorts")
+
+        body = {
+            "snippet": {
+                "title": title,
+                "description": description,
+                "tags": ["quiz biblique", "quiz bible", "bible quiz français",
+                         "test connaissance biblique", "verset biblique",
+                         "Louis Segond 1910", "LSG 1910", "Bible", label,
+                         "culture biblique", "Shorts"],
+                "categoryId": "22",
+            },
+            "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False},
+        }
+        media = MediaFileUpload(video_path, mimetype="video/mp4", resumable=True)
+        req = youtube.videos().insert(part="snippet,status", body=body, media_body=media)
+        resp = None
+        while resp is None:
+            status, resp = req.next_chunk()
+            if status:
+                print(f"  ⏳ YouTube : {int(status.progress() * 100)}%")
+        vid = resp.get("id")
+        print(f"✅ YouTube Short — https://youtube.com/shorts/{vid}")
+
+        # Vignette : la question, sans les options ni la reponse.
+        try:
+            thumb_path = "/tmp/quiz_thumb.png"
+            make_quiz_thumb(theme, q).save(thumb_path)
+            youtube.thumbnails().set(
+                videoId=vid,
+                media_body=MediaFileUpload(thumb_path, mimetype="image/png")).execute()
+            print("✅ Vignette définie")
+        except Exception as e:
+            print(f"⚠️  Vignette : {str(e)[:160]}")
+    except Exception as e:
+        print(f"❌ YouTube : {str(e)[:300]}")
+
+
+def make_quiz_thumb(theme, q):
+    """Vignette 1280x720 : annonce le quiz, sans devoiler la reponse."""
+    cat = CAT_MAP[theme]
+    BG, GOLD, REF, TXT, SIL = REEL_PALETTE_BY_CAT[cat]
+    TW, TH_ = 1280, 720
+    img = Image.new("RGB", (TW, TH_))
+    d = ImageDraw.Draw(img)
+    for yy in range(TH_):
+        t = yy / TH_
+        d.line([(0, yy), (TW, yy)],
+               fill=tuple(int(BG[i] + (max(0, BG[i] - 8) - BG[i]) * t) for i in range(3)))
+    d.rounded_rectangle([26, 26, TW - 26, TH_ - 26], radius=20, outline=GOLD, width=4)
+
+    f_k = ImageFont.truetype(FONT_SANS, 30)
+    kick = "QUIZ BIBLIQUE"
+    d.text(((TW - d.textlength(kick, font=f_k)) / 2, 70), kick, font=f_k, fill=GOLD)
+
+    prompt = q.get("p", "Quelle est la suite de ce verset ?")
+    f_p = ImageFont.truetype(FONT_SANS, 40)
+    while d.textlength(prompt, font=f_p) > TW - 160 and f_p.size > 24:
+        f_p = ImageFont.truetype(FONT_SANS, f_p.size - 2)
+    d.text(((TW - d.textlength(prompt, font=f_p)) / 2, 130), prompt, font=f_p, fill=SIL)
+
+    body = q["q"]
+    f_v, lines = fit_font(d, body, FONT_SERIF, TW - 180, 300, 62, 30, 12)
+    yy = 230
+    for ln in lines[:5]:
+        d.text(((TW - d.textlength(ln, font=f_v)) / 2, yy), ln, font=f_v, fill=TXT)
+        yy += f_v.size + 12
+
+    f_f = ImageFont.truetype(FONT_SANS, 26)
+    d.text((60, TH_ - 76), "LSG 1910", font=f_f, fill=SIL)
+    bt = "LaBible.app"
+    d.text((TW - 60 - d.textlength(bt, font=f_f), TH_ - 76), bt, font=f_f, fill=GOLD)
+    return img
 
 
 # ---------------------------------------------------------------
@@ -680,7 +801,7 @@ if __name__ == "__main__":
         print("⚠️ Threads:", e)
 
     try:
-        post_to_youtube(video, ref, q["q"], bot.CATEGORIES[cat], cat, 10)
+        yt_upload(video, theme, q, seed)
     except Exception as e:
         print("⚠️ YouTube:", e)
 
