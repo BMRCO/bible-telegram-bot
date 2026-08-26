@@ -169,7 +169,7 @@ def draw_frame(theme, q, phase, count_left=None):
     d.text(((W - d.textlength(lbl, font=f_theme)) / 2, 210), lbl, font=f_theme, fill=SIL)
 
     # question
-    head = "« " + q["q"] + " …"
+    head = q["q"]
     f_q, q_lines = fit_font(d, head, FONT_SERIF, inner, 430, 62, 34, 18)
     y = 330
     for ln in q_lines:
@@ -232,8 +232,9 @@ def draw_frame(theme, q, phase, count_left=None):
         cta = "Le quiz complet sur labible.app/quiz"
         d.text(((W - d.textlength(cta, font=f_small)) / 2, y + 112), cta, font=f_small, fill=SIL)
     else:
-        cta = "Quelle est la suite ?"
-        d.text(((W - d.textlength(cta, font=f_small)) / 2, y + 46), cta, font=f_small, fill=SIL)
+        cta = q.get("p", "Quelle est la suite ?")
+        f_p = f_small if d.textlength(cta, font=f_small) <= inner else ImageFont.truetype(FONT_SANS, 27)
+        d.text(((W - d.textlength(cta, font=f_p)) / 2, y + 46), cta, font=f_p, fill=SIL)
 
     # pied
     f_foot = ImageFont.truetype(FONT_SANS, 28)
@@ -309,7 +310,7 @@ def build_video(theme, q, out_path):
 # ---------------------------------------------------------------
 def captions(theme, q):
     label = bank[theme]["label"]
-    head = "« " + q["q"] + " … »"
+    head = q["q"]
     fb = (f"📖 Testez votre connaissance biblique\n\n{head}\n\n"
           f"Quelle est la suite de ce verset ? La réponse apparaît à la fin de la vidéo.\n\n"
           f"Thème du jour : {label}. Le quiz complet, en six thèmes, est disponible ici :\n"
