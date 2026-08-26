@@ -68,9 +68,9 @@ QUIZ_URL = f"{APP_URL}/quiz"
 
 W, H = 1080, 1920
 FPS = 30
-SEC_QUESTION = 11     # lecture du verset + des trois options
-SEC_COUNT = 5         # temps de reflexion (compte a rebours)
-SEC_REVEAL = 7        # revelation de la reponse
+SEC_QUESTION = 14     # lecture du verset + des trois options
+SEC_COUNT = 8         # temps de reflexion (compte a rebours)
+SEC_REVEAL = 8        # revelation de la reponse
 TOTAL_SEC = SEC_QUESTION + SEC_COUNT + SEC_REVEAL
 
 # cle du quiz -> cle de categorie du bot (pour reutiliser les palettes)
@@ -264,8 +264,10 @@ def fit_font(draw, text, path, max_w, max_h, start, minimum=30, line_gap=16):
     return f, wrap(draw, text, f, max_w)
 
 
-def draw_frame(theme, q, phase, count_left=None):
-    """phase: 'question' | 'count' | 'reveal'"""
+def draw_frame(theme, q, phase, count_left=None, n_opts=None, bar=None):
+    """phase : 'question' | 'count' | 'reveal'
+    n_opts : n'afficher que les n premieres options (apparition progressive)
+    bar    : fraction de temps restant (0..1) -> barre de progression"""
     cat = CAT_MAP[theme]
     BG, GOLD, REF, TXT, SIL = REEL_PALETTE_BY_CAT[cat]
     dark = tuple(max(0, c - 6) for c in BG)
@@ -326,7 +328,10 @@ def draw_frame(theme, q, phase, count_left=None):
     total_opts = sum(boxes) + 26 * (len(boxes) - 1)
     y = max(y + 50, min(870, H - 430 - total_opts))
 
+    shown = len(q["o"]) if n_opts is None else n_opts
     for i, opt in enumerate(q["o"]):
+        if i >= shown:
+            break
         good = (i == q["a"])
         reveal = (phase == "reveal")
         border = GOLD if (reveal and good) else (60, 58, 54)
@@ -355,7 +360,15 @@ def draw_frame(theme, q, phase, count_left=None):
     if phase == "count":
         txt = str(count_left)
         f_c = ImageFont.truetype(FONT_SERIF_BOLD, 96)
-        d.text(((W - d.textlength(txt, font=f_c)) / 2, y + 40), txt, font=f_c, fill=GOLD)
+        d.text(((W - d.textlength(txt, font=f_c)) / 2, y + 30), txt, font=f_c, fill=GOLD)
+        if bar is not None:
+            bx0, bx1 = x0 + 60, W - x0 - 60
+            by = y + 150
+            d.rounded_rectangle([bx0, by, bx1, by + 12], radius=6,
+                                fill=tuple(int(c * 0.28) for c in GOLD))
+            filled = bx0 + int((bx1 - bx0) * max(0.0, min(1.0, bar)))
+            if filled > bx0 + 6:
+                d.rounded_rectangle([bx0, by, filled, by + 12], radius=6, fill=GOLD)
     elif phase == "reveal":
         f_r = ImageFont.truetype(FONT_SERIF_BOLD, 42)
         rt = q["r"]
@@ -416,9 +429,21 @@ def build_video(theme, q, out_path, music=None):
         frames.append((p, seconds))
         n += 1
 
-    dump(draw_frame(theme, q, "question"), SEC_QUESTION)
-    for c in range(SEC_COUNT, 0, -1):
-        dump(draw_frame(theme, q, "count", c), 1)
+    # Apparition progressive : le verset seul, puis les options une a une.
+    # Un plan totalement fixe est mal distribue sur TikTok/Reels ; ces
+    # changements donnent du mouvement sans trahir la sobriete de la marque.
+    intro = min(3.0, SEC_QUESTION / 3.0)
+    step = intro / 3.0
+    for k in range(3):
+        dump(draw_frame(theme, q, "question", n_opts=k), step)
+    dump(draw_frame(theme, q, "question"), SEC_QUESTION - intro)
+
+    # Compte a rebours : demi-secondes, avec barre de progression qui se vide.
+    total = SEC_COUNT
+    for i in range(total * 2):
+        left = total - i / 2.0
+        dump(draw_frame(theme, q, "count", math.ceil(left), bar=left / total), 0.5)
+
     dump(draw_frame(theme, q, "reveal"), SEC_REVEAL)
 
     listfile = os.path.join(tmp, "list.txt")
@@ -430,7 +455,14 @@ def build_video(theme, q, out_path, music=None):
     cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", listfile]
     if music:
         cmd += ["-i", music]
-    cmd += ["-vf", f"fps={FPS},format=yuv420p", "-c:v", "libx264",
+    # Leger zoom continu (~4% sur toute la duree) : le flux ne parait jamais
+    # fige, ce qui aide la distribution sur les plateformes video.
+    frames_total = FPS * TOTAL_SEC
+    zoom = (f"fps={FPS},scale={W * 2}:{H * 2},"
+            f"zoompan=z='min(1+0.04*on/{frames_total},1.04)'"
+            f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
+            f":d=1:s={W}x{H}:fps={FPS}")
+    cmd += ["-vf", f"{zoom},format=yuv420p", "-c:v", "libx264",
             "-preset", "medium", "-crf", "22", "-movflags", "+faststart"]
     if music:
         fade_out = max(0, TOTAL_SEC - 2)
