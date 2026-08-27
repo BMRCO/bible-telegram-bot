@@ -68,8 +68,8 @@ QUIZ_URL = f"{APP_URL}/quiz"
 
 W, H = 1080, 1920
 FPS = 30
-SEC_QUESTION = 14     # lecture du verset + des trois options
-SEC_COUNT = 8         # temps de reflexion (compte a rebours)
+SEC_QUESTION = 18     # lecture du verset + des trois options, sans pression
+SEC_COUNT = 8         # compte a rebours : court, il cree la tension
 SEC_REVEAL = 8        # revelation de la reponse
 TOTAL_SEC = SEC_QUESTION + SEC_COUNT + SEC_REVEAL
 
