@@ -2,12 +2,12 @@ name: Publication automatique
 
 on:
   schedule:
-    - cron: '7 3 * * *'     # 03h07 UTC - Protection (reel)
-    - cron: '9 5 * * *'     # 05h09 UTC - Promesses
-    - cron: '7 8 * * *'     # 08h07 UTC - Proverbes
-    - cron: '45 11 * * *'   # 11h45 UTC - Jesus
-    - cron: '41 15 * * *'   # 15h41 UTC - Propheties
-    - cron: '8 17 * * *'    # 17h08 UTC - Psaumes (reel)
+    - cron: '37 3 * * *'    # 03h37 UTC - Protection (reel)
+    - cron: '29 5 * * *'    # 05h29 UTC - Promesses
+    - cron: '33 8 * * *'    # 08h33 UTC - Proverbes
+    - cron: '47 11 * * *'   # 11h47 UTC - Jesus
+    - cron: '43 15 * * *'   # 15h43 UTC - Propheties
+    - cron: '34 17 * * *'   # 17h34 UTC - Psaumes (reel)
   workflow_dispatch:
     inputs:
       mode:
@@ -98,12 +98,12 @@ jobs:
           # usa o horario agendado, nao a hora de execucao).
           if [ -n "$SCHEDULE" ]; then
             case "$SCHEDULE" in
-              "7 3 * * *")   CAT="protection" ;;
-              "9 5 * * *")   CAT="promise" ;;
-              "7 8 * * *")   CAT="proverbe" ;;
-              "45 11 * * *") CAT="jesus" ;;
-              "41 15 * * *") CAT="prophetie" ;;
-              "8 17 * * *")  CAT="psaume" ;;
+              "37 3 * * *")   CAT="protection" ;;
+              "29 5 * * *")   CAT="promise" ;;
+              "33 8 * * *")   CAT="proverbe" ;;
+              "47 11 * * *") CAT="jesus" ;;
+              "43 15 * * *") CAT="prophetie" ;;
+              "34 17 * * *")  CAT="psaume" ;;
             esac
           fi
 

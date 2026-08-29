@@ -3,7 +3,7 @@ on:
   schedule:
     # 16h13 UTC  18h13 FR (verao). Com o atraso do GitHub Actions deve cair a noite.
     # AJUSTA este horario depois de veres a que horas cai na realidade.
-    - cron: '13 16 * * *'
+    - cron: '27 16 * * *'
   workflow_dispatch:
     inputs:
       theme:

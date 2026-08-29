@@ -2,7 +2,7 @@ name: Meditation Psaume YouTube
 
 on:
   schedule:
-    - cron: '11 4 * * *'   # 04h11 UTC - Meditation Psaume (manha cedo)
+    - cron: '39 4 * * *'      # 04h39 UTC - Meditation Psaume (manha cedo)
   workflow_dispatch:
     inputs:
       psaume:

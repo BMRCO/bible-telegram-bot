@@ -5,7 +5,7 @@ on:
     # 12h00 heure de France (ete) = 10h00 UTC.
     # Avance de 2h comme le reste du projet, pour compenser les retards
     # frequents des runners GitHub Actions -> 08h04 UTC.
-    - cron: "4 8 * * *"
+    - cron: "44 8 * * *"
   workflow_dispatch:
     inputs:
       theme:
