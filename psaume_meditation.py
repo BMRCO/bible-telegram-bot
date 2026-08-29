@@ -76,6 +76,31 @@ PSAUME_THEMES = _load_map(THEMES_FILE)   # {"1": "La Voie des Justes", ...}
 PSAUME_TITRES = _load_map(TITLES_FILE)   # {"1": "Heureux l'homme", ...}
 
 
+
+def _too_similar(a, b):
+    """Le theme editorial et la phrase d'ouverture disent-ils la meme chose ?
+
+    Certains Psaumes ont un theme tire du verset lui-meme : le Psaume 91
+    affichait « A l'Ombre du Tres-Haut » puis « Sous l'abri du Tres-Haut »,
+    deux fois la meme idee sur la meme carte. 22 Psaumes sur 59 etaient dans
+    ce cas. Quand c'est trop proche, on n'en garde qu'un seul.
+    """
+    import unicodedata as _u
+
+    def words(x):
+        x = _u.normalize("NFD", (x or "").lower())
+        x = "".join(c for c in x if _u.category(c) != "Mn")
+        stop = {"de", "du", "la", "le", "les", "des", "a", "au", "aux", "et",
+                "en", "l", "d", "un", "une", "mon", "ma", "ta", "ton", "sa",
+                "son", "qui", "que", "est", "je", "tu", "il", "ce", "se"}
+        return {w for w in re.sub(r"[^a-z ]", " ", x).split() if w not in stop}
+
+    wa, wb = words(a), words(b)
+    if not wa or not wb:
+        return False
+    return len(wa & wb) / min(len(wa), len(wb)) >= 0.5
+
+
 def get_psaume_theme(num):
     """Tema editorial do Salmo (título/caption), ou None."""
     return PSAUME_THEMES.get(str(num)) or None
@@ -296,6 +321,9 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     theme_lines = wrap(d_tmp, card_theme, f_theme, W - BORDER * 2 - 220) if card_theme else []
 
     phrase = get_psaume_titre(num)
+    # Eviter de dire deux fois la meme chose sur la carte d'ouverture.
+    if phrase and card_theme and _too_similar(card_theme, phrase):
+        phrase = None
     phrase_lines = wrap(d_tmp, f"« {phrase} »", f_phrase, W - BORDER * 2 - 260) if phrase else []
 
     for f in range(TOTAL):
@@ -650,13 +678,24 @@ def _next_psaume(progress):
     decoupe en parties.
     """
     num = int(progress.get("next_psaume", 1) or 1)
-    if num < 1 or num > 150:
+
+    # Cycle termine : on ne republie pas, on s'arrete et on echoue
+    # volontairement pour declencher l'e-mail automatique de GitHub Actions.
+    # Pour repartir : remettre "next_psaume" a 1 dans progress_meditation.json.
+    if num > 150:
+        print("🏁 Les 150 Psaumes ont ete publies — le cycle est termine.")
+        print("   Aucune publication aujourd'hui.")
+        print("   Pour recommencer : remettre \"next_psaume\": 1 "
+              "dans progress_meditation.json.")
+        sys.exit(1)
+
+    if num < 1:
         num = 1
 
     suivant = num + 1
     if suivant > 150:
-        suivant = 1
-        print("🔁 Les 150 Psaumes ont ete publies — retour au Psaume 1.")
+        print("🏁 Psaume 150 : dernier du cycle. "
+              "Les prochaines executions s'arreteront jusqu'a remise a 1.")
 
     progress["next_psaume"] = suivant
     # Nettoyage des cles issues de la version melangee (abandonnee).
