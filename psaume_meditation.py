@@ -87,13 +87,16 @@ def _too_similar(a, b):
     """
     import unicodedata as _u
 
+    stop = {"de", "du", "la", "le", "les", "des", "a", "au", "aux", "et",
+            "en", "l", "d", "un", "une", "mon", "ma", "ta", "ton", "sa",
+            "son", "qui", "que", "est", "je", "tu", "il", "ce", "se"}
+
     def words(x):
         x = _u.normalize("NFD", (x or "").lower())
         x = "".join(c for c in x if _u.category(c) != "Mn")
-        stop = {"de", "du", "la", "le", "les", "des", "a", "au", "aux", "et",
-                "en", "l", "d", "un", "une", "mon", "ma", "ta", "ton", "sa",
-                "son", "qui", "que", "est", "je", "tu", "il", "ce", "se"}
-        return {w for w in re.sub(r"[^a-z ]", " ", x).split() if w not in stop}
+        # sans regex : ce module n'importe pas `re`
+        x = "".join(c if "a" <= c <= "z" else " " for c in x)
+        return {w for w in x.split() if w not in stop}
 
     wa, wb = words(a), words(b)
     if not wa or not wb:
