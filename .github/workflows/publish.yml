@@ -167,4 +167,9 @@ jobs:
           git pull --rebase --autostash || true
           git add progress.json
           git diff --staged --quiet || git commit -m "Update progress [skip ci]"
-          git push || true
+          for i in 1 2 3; do
+            git push && break
+            echo "Push refuse (tentative $i) — rebase puis nouvel essai."
+            git pull --rebase --autostash origin main || true
+            sleep 5
+          done

@@ -78,7 +78,20 @@ jobs:
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add progress_quiz.json
             git commit -m "Quiz du jour — progression"
-            git push
+
+            # Un commit peut arriver pendant l'execution du workflow : sans
+            # rebase prealable, le push est rejete (« fetch first ») et l'etape
+            # echoue alors meme que le quiz a bien ete publie.
+            for i in 1 2 3; do
+              if git push; then
+                echo "Progression enregistree."
+                exit 0
+              fi
+              echo "Push refuse (tentative $i) — rebase puis nouvel essai."
+              git pull --rebase --autostash origin main || true
+              sleep 5
+            done
+            echo "::warning::Progression non enregistree apres 3 tentatives."
           else
             echo "Aucun changement de progression."
           fi
