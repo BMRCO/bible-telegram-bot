@@ -324,6 +324,11 @@ def next_question(bank, forced=None):
     """
     Rotation sequentielle des themes ; a l'interieur d'un theme, on avance
     dans la liste sans repeter, puis on repart au debut.
+
+    La progression n'est PAS ecrite ici : l'etat calcule est renvoye au
+    programme principal, qui l'enregistre seulement apres une publication
+    reussie. Une execution qui echoue ne « brule » donc plus la question
+    du jour, meme lancee a la main hors de GitHub Actions.
     """
     prog = load_json(PROGRESS_FILE, {}) or {}
     if forced:
@@ -341,9 +346,7 @@ def next_question(bank, forced=None):
     q = qs[i]
     used[theme] = i + 1
 
-    if not forced:
-        save_json(PROGRESS_FILE, prog)
-    return theme, q, i + 1, len(qs)
+    return theme, q, i + 1, len(qs), prog
 
 
 # ---------------------------------------------------------------
@@ -757,13 +760,15 @@ if __name__ == "__main__":
         print(f"❌ Thème inconnu : {forced}. Choix : {', '.join(bank.keys())}")
         sys.exit(1)
 
-    theme, q, pos, total = next_question(bank, forced)
+    theme, q, pos, total, prog = next_question(bank, forced)
     print(f"🎯 {bank[theme]['label']} — question {pos}/{total}")
     print(f"   {q['q'][:70]}…")
     print(f"   réponse : {q['o'][q['a']][:60]}  ({q['r']})")
 
     video = "/tmp/quiz_du_jour.mp4"
-    seed = (load_json(PROGRESS_FILE, {}) or {}).get("theme_idx", 0) + pos
+    # Meme valeur qu'avant : "prog" contient deja le theme_idx incremente
+    # (rotation) ou celui du fichier (theme force).
+    seed = prog.get("theme_idx", 0) + pos
     music = pick_music(seed)
     if music:
         print(f"🎵 {os.path.basename(music)}")
@@ -814,6 +819,13 @@ if __name__ == "__main__":
         pinterest_pin(reveal_png, pin_title, pin_desc)
     except Exception as e:
         print("⚠️ Pinterest:", e)
+
+    # ─── Progression (uniquement apres publication reussie) ───
+    # Un theme force est un tir ponctuel : il ne fait pas avancer la rotation.
+    if not forced:
+        save_json(PROGRESS_FILE, prog)
+        print(f"💾 Progression enregistree — prochain thème : "
+              f"{ROTATION[prog.get('theme_idx', 0) % len(ROTATION)]}")
 
     print("✅ Quiz du jour publié.")
     print("\n" + "─" * 56)
