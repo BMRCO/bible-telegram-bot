@@ -711,6 +711,10 @@ def _next_psaume(progress):
 def main():
     # ─── Parse args ───
     args = sys.argv[1:]
+    # Rempli uniquement en mode automatique. La progression n'est ecrite
+    # qu'apres une publication reussie (voir la fin de main()) : une execution
+    # qui echoue ne « brule » plus le Psaume du jour.
+    progress = None
     if args:
         # Modo manual: psaume_meditation.py 23  |  psaume_meditation.py 119 1-22
         num = int(args[0])
@@ -733,8 +737,6 @@ def main():
         num = _next_psaume(progress)
         part_label = None
         vfrom = vto = None
-
-        save_json(PROGRESS_FILE, progress)
 
     print(f"🎵 Méditation — {_meditation_head(num, part_label)}")
 
@@ -760,6 +762,12 @@ def main():
     # ─── Telegram + Facebook ───
     post_to_telegram(video_path, num, part_label)
     post_to_facebook(video_path, num, part_label)
+
+    # ─── Progression (uniquement apres publication reussie) ───
+    if progress is not None:
+        save_json(PROGRESS_FILE, progress)
+        print(f"💾 Progression enregistree — prochain Psaume : "
+              f"{progress.get('next_psaume')}")
 
     print("✅ Terminé (méditation).")
 
