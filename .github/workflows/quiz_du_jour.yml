@@ -20,6 +20,12 @@ on:
 permissions:
   contents: write
 
+# Groupe distinct par run : une execution retardee n'est plus annulee par la
+# suivante (meme regle que les autres workflows du projet).
+concurrency:
+  group: quiz-post-${{ github.event.schedule || github.run_id }}
+  cancel-in-progress: false
+
 jobs:
   quiz:
     runs-on: ubuntu-latest
@@ -73,25 +79,26 @@ jobs:
 
       - name: Enregistrer la progression
         run: |
-          if [ -n "$(git status --porcelain progress_quiz.json)" ]; then
-            git config user.name  "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add progress_quiz.json
-            git commit -m "Quiz du jour — progression"
-
-            # Un commit peut arriver pendant l'execution du workflow : sans
-            # rebase prealable, le push est rejete (« fetch first ») et l'etape
-            # echoue alors meme que le quiz a bien ete publie.
-            for i in 1 2 3; do
-              if git push; then
-                echo "Progression enregistree."
-                exit 0
-              fi
-              echo "Push refuse (tentative $i) — rebase puis nouvel essai."
-              git pull --rebase --autostash origin main || true
-              sleep 5
-            done
-            echo "::warning::Progression non enregistree apres 3 tentatives."
-          else
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add progress_quiz.json
+          if git diff --staged --quiet; then
             echo "Aucun changement de progression."
+            exit 0
           fi
+          git commit -m "Quiz du jour — progression"
+          # Un commit peut arriver pendant l'execution du workflow : sans rebase
+          # prealable le push est rejete (« fetch first »). On reessaie 3 fois.
+          for i in 1 2 3; do
+            if git push; then
+              echo "Progression enregistree."
+              exit 0
+            fi
+            echo "Push refuse (tentative $i) — rebase puis nouvel essai."
+            git pull --rebase origin main || true
+            sleep 5
+          done
+          # Echec silencieux interdit : sans progression enregistree, la meme
+          # question serait republiee. Sortie en erreur -> e-mail GitHub.
+          echo "::error::Progression NON enregistree apres 3 tentatives."
+          exit 1

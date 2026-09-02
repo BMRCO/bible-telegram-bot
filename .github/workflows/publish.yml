@@ -164,12 +164,24 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase --autostash || true
           git add progress.json
-          git diff --staged --quiet || git commit -m "Update progress [skip ci]"
+          if git diff --staged --quiet; then
+            echo "Aucun changement de progression."
+            exit 0
+          fi
+          git commit -m "Update progress [skip ci]"
+          # Un commit peut arriver pendant l'execution du workflow : sans rebase
+          # prealable le push est rejete (« fetch first »). On reessaie 3 fois.
           for i in 1 2 3; do
-            git push && break
+            if git push; then
+              echo "Progression enregistree."
+              exit 0
+            fi
             echo "Push refuse (tentative $i) — rebase puis nouvel essai."
-            git pull --rebase --autostash origin main || true
+            git pull --rebase origin main || true
             sleep 5
           done
+          # Echec silencieux interdit : la progression perdue republierait le
+          # meme contenu demain. On sort en erreur -> e-mail GitHub Actions.
+          echo "::error::Progression NON enregistree apres 3 tentatives."
+          exit 1
