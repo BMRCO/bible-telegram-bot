@@ -2,7 +2,7 @@
 holy_week.py — Publications spéciales Semaine Sainte 2026
 Publie images + reels en extra (en plus des publications normales)
 """
-import os, json, datetime, hashlib, math, subprocess, requests, shutil
+import os, json, re, unicodedata, datetime, hashlib, math, subprocess, requests, shutil
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
@@ -587,16 +587,34 @@ def upload_to_imgbb(path):
         time.sleep(5); return r.json()["data"]["url"]
     return None
 
-def post_telegram_photo(path, caption):
-    markup = json.dumps({"inline_keyboard":[[{"text":"📖 Lire dans LaBible.app","url":MINI_APP_URL}]]})
+def miniapp_markup(ref=None):
+    """Bouton du canal. Avec une reference ('Jean 3:16'), la Mini App s'ouvre
+    directement sur le passage publie ; sinon sur la page d'accueil.
+    Telegram n'accepte que [A-Za-z0-9_-] dans ?startapp= : le ':' du verset est
+    donc remplace par '_' (l'application refait la conversion a l'ouverture)."""
+    url = MINI_APP_URL
+    m = re.match(r"^(.+?)\s+(\d+)(?::(\d+))?", (ref or "").strip())
+    if m:
+        book = unicodedata.normalize("NFD", m.group(1))
+        book = "".join(c for c in book if unicodedata.category(c) != "Mn")
+        book = re.sub(r"[^a-z0-9-]", "", book.lower().replace(" ", "-"))
+        if book:
+            sp = f"{book}-{m.group(2)}"
+            if m.group(3):
+                sp += f"_{m.group(3)}"
+            url = f"{MINI_APP_URL}?startapp={sp}"
+    return json.dumps({"inline_keyboard":[[{"text":"📖 Lire dans LaBible.app","url":url}]]})
+
+def post_telegram_photo(path, caption, ref=None):
+    markup = miniapp_markup(ref)
     with open(path,"rb") as f:
         r = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendPhoto",
                           data={"chat_id":CHANNEL,"caption":caption,"parse_mode":"HTML","reply_markup":markup},
                           files={"photo":f}, timeout=30)
     r.raise_for_status(); print("✅ Telegram image publié")
 
-def post_telegram_video(path, caption):
-    markup = json.dumps({"inline_keyboard":[[{"text":"📖 Lire dans LaBible.app","url":MINI_APP_URL}]]})
+def post_telegram_video(path, caption, ref=None):
+    markup = miniapp_markup(ref)
     with open(path,"rb") as f:
         r = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendVideo",
                           data={"chat_id":CHANNEL,"caption":caption,"parse_mode":"HTML","reply_markup":markup},
@@ -731,7 +749,7 @@ def main():
     # ── IMAGE ──
     print("🖼️  Génération image...")
     img = make_holy_week_image(day)
-    post_telegram_photo(img, caption_tg)
+    post_telegram_photo(img, caption_tg, day['ref'])
     post_facebook_photo(img, caption_social)
     post_instagram_image(img, caption_social)
     post_threads(img, caption_social)
@@ -739,7 +757,7 @@ def main():
     # ── REEL ──
     print("\n🎬 Génération reel...")
     reel = make_holy_week_reel(day)
-    post_telegram_video(reel, caption_tg)
+    post_telegram_video(reel, caption_tg, day['ref'])
     post_facebook_reel(reel, caption_social)
     post_instagram_reel(reel, caption_social)
     post_youtube(reel, day)

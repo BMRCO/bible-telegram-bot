@@ -780,7 +780,7 @@ if __name__ == "__main__":
     ref = q["r"]
 
     try:
-        send_video(video, tg)
+        send_video(video, tg, ref)
     except Exception as e:
         print("⚠️ Telegram:", e)
 

@@ -139,7 +139,7 @@ def main_pentecote():
 
     if mode == "image":
         img = make_image(text, ref)
-        send_photo(img, caption)
+        send_photo(img, caption, ref)
         post_to_facebook(img, ref, text, cat, cat_name)
         post_to_instagram(img, ref, text, cat, cat_name)
         post_to_pinterest(img, ref, text, cat, cat_name)
@@ -155,7 +155,7 @@ def main_pentecote():
             except Exception as e:
                 print(f"⚠️ Logo : {e}")
         video = make_reel_video(text, ref, progress)
-        send_video(video, caption)
+        send_video(video, caption, ref)
         post_reel_to_facebook(video, ref, text, cat, cat_name)
         post_reel_to_instagram(video, ref, text, cat, cat_name)
         post_to_youtube(video, ref, text, cat, cat_name, hour_utc)

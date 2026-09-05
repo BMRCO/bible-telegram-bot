@@ -31,6 +31,7 @@ from PIL import Image, ImageDraw, ImageFont
 from bot import (
     load_json, save_json, clean_text, strip_rubric,
     post_reel_to_instagram, post_reel_to_threads, make_thumbnail,
+    telegram_markup,
     BIBLE_FILE, APP_URL, WATERMARK, parse_ref_to_chapter_url,
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
 )
@@ -433,9 +434,8 @@ def post_to_telegram(video_path, theme_key, verses):
         f"\U0001f4d6 {theme_url}\n\n"
         f"#LaBibleApp #{th['tag']} #M\u00e9ditation #LSG1910"
     )
-    reply_markup = json.dumps({"inline_keyboard": [[
-        {"text": "\U0001f4d6 Lire dans LaBible.app", "url": "https://t.me/BIBLE_APP_BOT/labible"}
-    ]]})
+    # Le bouton ouvre la Mini App sur le premier passage de la meditation.
+    reply_markup = telegram_markup(verses[0][0] if verses else None)
     try:
         with open(video_path, "rb") as f:
             r = requests.post(

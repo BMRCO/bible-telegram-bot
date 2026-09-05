@@ -36,14 +36,19 @@ if ONLY_PLATFORM in ("", "all"):
 
 # Categories publiees sur le canal Telegram public.
 #
-# Telegram n'est pas un fil : chaque message declenche une notification sur
-# le telephone de l'abonne. Huit par jour fatiguent — le canal a perdu des
-# abonnes et les vues sont tombees a 2-5 par message pour 132 inscrits.
-# On garde donc les deux rendez-vous les plus utiles ; les autres
-# plateformes continuent de tout recevoir.
+# Par defaut : TOUTES. Le canal recoit chaque publication, comme les autres
+# plateformes.
 #
-# Vider la variable (TELEGRAM_CATEGORIES="") retablit toutes les categories.
-_tg_cats = os.environ.get("TELEGRAM_CATEGORIES", "proverbe,psaume")
+# Historique : la liste avait ete reduite a "proverbe,psaume" parce que
+# Telegram n'est pas un fil — chaque message declenche une notification, et
+# huit par jour semblaient fatiguer le canal. La restriction n'a rien change
+# au nombre d'abonnes ; elle est donc levee.
+#
+# Pour restreindre a nouveau, definir la variable d'environnement dans le
+# workflow, p. ex. TELEGRAM_CATEGORIES="proverbe,psaume". Les categories
+# possibles sont celles de CATEGORIES : promise, jesus, psaume, proverbe,
+# prophetie, protection. Une valeur vide = aucune restriction.
+_tg_cats = os.environ.get("TELEGRAM_CATEGORIES", "")
 TELEGRAM_CATEGORIES = {c.strip().lower() for c in _tg_cats.split(",") if c.strip()}
 
 
@@ -92,6 +97,35 @@ def parse_ref_to_chapter_url(ref: str) -> str:
         return APP_URL
     book, ch = m.group(1), m.group(2)
     return f"{APP_URL}/lsg/{slugify_book(book)}/{ch}"
+
+
+def miniapp_start_param(ref: str) -> str:
+    """'Jean 3:16' -> 'jean-3_16' ; 'Psaumes 91' -> 'psaumes-91'.
+
+    Telegram n'accepte que [A-Za-z0-9_-] dans ?startapp= : le ':' du verset est
+    donc remplace par '_'. Chaine vide si la reference n'est pas reconnue, pour
+    que le bouton retombe sur la page d'accueil plutot que sur un lien casse."""
+    m = re.match(r"^(.+?)\s+(\d+)(?::(\d+))?", (ref or "").strip())
+    if not m:
+        return ""
+    slug = f"{slugify_book(m.group(1))}-{m.group(2)}"
+    if m.group(3):
+        slug += f"_{m.group(3)}"
+    return slug
+
+
+def miniapp_url(ref: str = None) -> str:
+    """Lien vers la Mini App. Avec une reference, l'application s'ouvre
+    directement sur le passage publie au lieu de sa page d'accueil."""
+    sp = miniapp_start_param(ref) if ref else ""
+    return f"{MINI_APP_URL}?startapp={sp}" if sp else MINI_APP_URL
+
+
+def telegram_markup(ref: str = None) -> str:
+    """Bouton unique place sous chaque publication du canal Telegram."""
+    return json.dumps({"inline_keyboard": [[
+        {"text": "📖 Lire dans LaBible.app", "url": miniapp_url(ref)},
+    ]]})
 
 
 HASHTAGS_BASE_IG = [
@@ -607,11 +641,12 @@ def load_verse(book_name, chapter, verse):
 # ---------------------------------------------------
 # TELEGRAM
 # ---------------------------------------------------
-def send_photo(path, caption):
+def send_photo(path, caption, ref=None):
+    """`ref` ('Jean 3:16') fait pointer le bouton sur ce passage precis."""
     if not should_post("telegram"):
         print("⏭️  Telegram skip (filtro)")
         return
-    reply_markup = json.dumps({"inline_keyboard": [[{"text": "📖 Lire dans LaBible.app", "url": MINI_APP_URL}]]})
+    reply_markup = telegram_markup(ref)
     with open(path, "rb") as f:
         r = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendPhoto",
             data={"chat_id": CHANNEL, "caption": caption, "parse_mode": "HTML", "disable_web_page_preview": True, "reply_markup": reply_markup},
@@ -620,11 +655,12 @@ def send_photo(path, caption):
     print("✅ Telegram publié")
 
 
-def send_video(path, caption):
+def send_video(path, caption, ref=None):
+    """`ref` ('Jean 3:16') fait pointer le bouton sur ce passage precis."""
     if not should_post("telegram"):
         print("⏭️  Telegram skip (filtro)")
         return
-    reply_markup = json.dumps({"inline_keyboard": [[{"text": "📖 Lire dans LaBible.app", "url": MINI_APP_URL}]]})
+    reply_markup = telegram_markup(ref)
     with open(path, "rb") as f:
         r = requests.post(f"https://api.telegram.org/bot{TOKEN}/sendVideo",
             data={"chat_id": CHANNEL, "caption": caption, "parse_mode": "HTML", "disable_web_page_preview": True, "reply_markup": reply_markup},
@@ -1646,7 +1682,7 @@ def main_parabole():
     first_ref = verses[0][0] if verses else ""
     parabole_url = parse_ref_to_chapter_url(first_ref)
     caption = f"✝️ <b>{title}</b>\n{first_ref}\n\n📲 Partagez cette parabole avec quelqu'un qui en a besoin 🙏\n📖 {parabole_url}\n\n#LaBibleApp #LSG1910 #ParaboleDeJésus"
-    send_video(video, caption)
+    send_video(video, caption, first_ref)
 
     # Publier sur les plateformes
     cat = CATEGORIES["jesus"]
@@ -1701,7 +1737,7 @@ def main():
     img = make_image(text, ref, cat_name)
     chapter_url = parse_ref_to_chapter_url(ref)
     caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n📖 {chapter_url}\n\n#LaBibleApp #LSG1910 #VersetDuJour {cat['tag']}"
-    send_photo(img, caption)
+    send_photo(img, caption, ref)
     post_to_facebook(img, ref, text, cat, cat_name)
     # Instagram : toujours un reel — les images fixes n'ont quasiment aucune portée sur IG,
     # alors que les reels sont distribués bien plus largement.
@@ -1737,7 +1773,7 @@ def main_reel():
     video = make_reel_video(text, ref, progress, cat_name)
     chapter_url = parse_ref_to_chapter_url(ref)
     caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n📖 {chapter_url}\n\n#LaBibleApp #LSG1910 #VersetDuJour {cat['tag']}"
-    send_video(video, caption)
+    send_video(video, caption, ref)
     post_reel_to_facebook(video, ref, text, cat, cat_name)
     post_reel_to_instagram(video, ref, text, cat, cat_name)
     post_to_youtube(video, ref, text, cat, cat_name, hour_utc)
