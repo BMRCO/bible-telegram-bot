@@ -657,14 +657,115 @@ HASHTAGS_TIKTOK = ("#bible #versetdujour #quizbiblique #foi #chretien "
                    "#parolededieu #louissegond #dieu #priere #jesus")
 
 
-def hook_for(q, seed):
-    """Variante choisie a partir de la reference du verset : deterministe
-    (meme question -> meme accroche) mais bien repartie, contrairement a un
-    simple compteur qui retomberait toujours sur la meme variante pour un
-    type donne."""
+# Formulation de reference par type de question. C'est TOUT ce que le modele
+# recoit : ni le verset, ni les options, ni la reference. Il ne peut donc pas
+# reveler ce qu'il ne voit pas — la garantie anti-spoiler est structurelle,
+# pas declarative.
+ASK_BY_TYPE = {
+    "suite":  "quelle est la suite de ce verset",
+    "debut":  "par quoi commence ce verset",
+    "livre":  "dans quel livre se trouve ce verset",
+    "psaume": "de quel Psaume vient ce verset",
+}
+
+_QUIZ_HOOK_CACHE = {}
+
+
+def _hook_fixe(q, seed):
+    """Repli : rotation dans les 3 variantes ecrites a la main du type voulu.
+    Deterministe par question (meme question -> meme accroche) mais bien
+    repartie, contrairement a un simple compteur."""
     variants = HOOKS.get(q.get("t"), HOOKS["suite"])
     h = sum(ord(c) for c in q.get("r", "")) + seed
     return variants[h % len(variants)]
+
+
+def generate_quiz_hook_ai(q):
+    """Reformule la question d'accroche. Retourne None en cas d'echec —
+    ne leve JAMAIS : un souci d'API ne doit pas bloquer la publication."""
+    if not bot.ANTHROPIC_API_KEY:
+        return None
+    ask = ASK_BY_TYPE.get(q.get("t"))
+    if not ask:
+        return None
+    try:
+        prompt = (
+            "Tu reformules la question d'accroche d'un quiz biblique quotidien "
+            "(LaBible.app).\n\n"
+            f"Formulation de reference : « {ask} ? »\n\n"
+            "Ecris UNE autre maniere de poser exactement la meme question.\n\n"
+            "Regles strictes :\n"
+            "- Francais, vouvoiement si la phrase s'adresse au lecteur.\n"
+            "- Ton sobre et serieux. Aucun clickbait, aucune exageration, "
+            "aucune promesse, aucune flatterie.\n"
+            "- Tu ne connais pas le verset : n'ecris rien sur son contenu.\n"
+            "- Aucun nom de livre biblique, aucun nom propre, aucun chiffre.\n"
+            "- 10 mots maximum. Termine par un point d'interrogation.\n"
+            "- Reponds UNIQUEMENT avec la question, sans guillemets."
+        )
+        r = requests.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": bot.ANTHROPIC_API_KEY,
+                     "anthropic-version": "2023-06-01",
+                     "content-type": "application/json"},
+            json={"model": bot.ANTHROPIC_MODEL, "max_tokens": 60,
+                  "messages": [{"role": "user", "content": prompt}]},
+            timeout=10,
+        )
+        if r.status_code != 200:
+            print(f"⚠️  Accroche quiz IA ({r.status_code}) : {r.text[:150]}")
+            return None
+        txt = "".join(b.get("text", "") for b in r.json().get("content", [])
+                      if b.get("type") == "text").strip().strip('"').strip("«»").strip()
+        # Garde-fous : question courte, sans chiffre (un numero de Psaume
+        # fuiterait), et qui ne contient aucun mot de la reponse.
+        # 10 mots + « ? » au maximum, comme demande dans le prompt.
+        if not txt or not txt.endswith("?") or len(txt) > 70 or len(txt.split()) > 11:
+            print(f"⚠️  Accroche quiz rejetee (forme) : {txt[:60]!r}")
+            return None
+        if any(c.isdigit() for c in txt):
+            print(f"⚠️  Accroche quiz rejetee (chiffre) : {txt[:60]!r}")
+            return None
+        # « Quiz : » est ajoute par le code ; sinon on obtiendrait « Quiz : quiz... ».
+        if txt.lower().startswith("quiz"):
+            print(f"⚠️  Accroche quiz rejetee (repete « Quiz ») : {txt[:60]!r}")
+            return None
+        # Meme liste de formules interdites que les accroches de versets.
+        if bot._HOOK_INTERDIT.search(txt):
+            print(f"⚠️  Accroche quiz rejetee (formule interdite) : {txt[:60]!r}")
+            return None
+        bas = txt.lower()
+        interdits = set()
+        for mot in (q.get("r", "") + " " + q["o"][q["a"]]).replace(":", " ").split():
+            if len(mot) > 3:
+                interdits.add(mot.lower().strip(",.;!?"))
+        if any(m in bas for m in interdits):
+            print(f"⚠️  Accroche quiz rejetee (mot de la reponse) : {txt[:60]!r}")
+            return None
+        return txt
+    except Exception as e:
+        print(f"⚠️  Accroche quiz indisponible : {str(e)[:150]}")
+        return None
+
+
+def hook_for(q, seed):
+    """Accroche du quiz : « 📖 Quiz : <question> ».
+
+    Les 12 formulations ecrites a la main servaient 2032 questions — qui suit
+    le canal voyait la meme phrase tous les jours. L'IA en propose une autre a
+    chaque publication ; le pool fixe reste le repli.
+    Mise en cache : hook_for est appele deux fois (legendes + titre Pinterest)."""
+    cle = (q.get("r", ""), q.get("t", ""), seed)
+    if cle in _QUIZ_HOOK_CACHE:
+        return _QUIZ_HOOK_CACHE[cle]
+    phrase = None
+    if bot.USE_AI_HOOK:
+        phrase = generate_quiz_hook_ai(q)
+        if phrase:
+            print(f"✍️  Accroche quiz IA : {phrase}")
+    hook = f"📖 Quiz : {phrase[0].lower()}{phrase[1:]}" if phrase else _hook_fixe(q, seed)
+    _QUIZ_HOOK_CACHE[cle] = hook
+    return hook
 
 
 def captions(theme, q, seed=0):

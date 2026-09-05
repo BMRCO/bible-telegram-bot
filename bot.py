@@ -1603,7 +1603,10 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
         youtube = build("youtube", "v3", credentials=creds)
         title = build_yt_title(cat_name, cat, ref, hour_utc)
         chapter_url = parse_ref_to_chapter_url(ref)
-        description = (f"« {text} »\n"
+        # Meme accroche que les autres plateformes (meme cache, aucun appel
+        # supplementaire). Sur YouTube elle sert de premiere ligne sous le titre.
+        description = (f"{hook_for(ref, text, cat_name)}\n\n"
+            f"« {text} »\n"
             f"— {ref} (LSG 1910)\n\n"
             f"{ref} en français — texte de la Bible Louis Segond 1910, domaine public.\n\n"
             f"📖 Lire le chapitre entier, gratuitement et sans compte :\n{chapter_url}\n"
@@ -1873,7 +1876,10 @@ def main_parabole():
             youtube = build("youtube", "v3", credentials=creds)
             ref_range = parabole.get("ref_range", verses[0][0] if verses else "")
             yt_title = f"✝️ {title} — {ref_range} | Bible LSG1910"[:100]
-            description = (f"✝️ {title}\n\n"
+            _ref0 = verses[0][0] if verses else ""
+            _txt0 = verses[0][1] if verses else ""
+            description = (f"{hook_for(_ref0, _txt0, 'jesus')}\n\n"
+                + f"✝️ {title}\n\n"
                 + "\n".join([f"{r} — {t}" for r, t in verses])
                 + f"\n\n📖 Lire le passage complet : {parabole_url}\n"
                 + f"🔔 Abonnez-vous pour plus de paraboles 🙏\n\n"
