@@ -222,6 +222,7 @@ def yt_upload(video_path, theme, q, seed):
         # devoiler la reponse dans l'apercu.
         description = (
             f"{q['q']}\n\n"
+            f"Testez votre connaissance biblique. "
             f"Saurez-vous répondre avant la fin de la vidéo ?\n\n"
             f"Thème : {label} — Bible Louis Segond 1910.\n\n"
             f"📖 Le quiz complet, en six thèmes, gratuit et sans compte :\n"
@@ -280,9 +281,12 @@ def make_quiz_thumb(theme, q):
                fill=tuple(int(BG[i] + (max(0, BG[i] - 8) - BG[i]) * t) for i in range(3)))
     d.rounded_rectangle([26, 26, TW - 26, TH_ - 26], radius=20, outline=GOLD, width=4)
 
-    f_k = ImageFont.truetype(FONT_SANS, 30)
-    kick = "QUIZ BIBLIQUE"
-    d.text(((TW - d.textlength(kick, font=f_k)) / 2, 70), kick, font=f_k, fill=GOLD)
+    f_k = ImageFont.truetype(FONT_SERIF_BOLD, 46)
+    kw = _tracked(d, "QUIZ", f_k, 58, GOLD, tracking=12, largeur=TW)
+    ly = 58 + 46 * 0.40
+    ecart = kw / 2 + 34
+    d.line([(TW / 2 - ecart - 70, ly), (TW / 2 - ecart, ly)], fill=GOLD, width=3)
+    d.line([(TW / 2 + ecart, ly), (TW / 2 + ecart + 70, ly)], fill=GOLD, width=3)
 
     prompt = q.get("p", "Quelle est la suite de ce verset ?")
     f_p = ImageFont.truetype(FONT_SANS, 40)
@@ -388,6 +392,18 @@ def fit_font(draw, text, path, max_w, max_h, start, minimum=30, line_gap=16):
     return f, wrap(draw, text, f, max_w)
 
 
+def _tracked(d, text, font, y, fill, tracking=0, largeur=None):
+    """Mot avec interlettrage, centre. PIL ne gere pas le letter-spacing :
+    on dessine caractere par caractere. Retourne la largeur totale."""
+    L = largeur or W
+    total = sum(d.textlength(c, font=font) for c in text) + tracking * (len(text) - 1)
+    x = (L - total) / 2
+    for c in text:
+        d.text((x, y), c, font=font, fill=fill)
+        x += d.textlength(c, font=font) + tracking
+    return total
+
+
 def draw_frame(theme, q, phase, count_left=None, n_opts=None, bar=None):
     """phase : 'question' | 'count' | 'reveal'
     n_opts : n'afficher que les n premieres options (apparition progressive)
@@ -404,10 +420,16 @@ def draw_frame(theme, q, phase, count_left=None, n_opts=None, bar=None):
     inner = W - 2 * M - 120
     x0 = M + 60
 
-    # bandeau haut
-    f_kick = ImageFont.truetype(FONT_SANS, 30)
-    kick = "TESTEZ VOTRE CONNAISSANCE BIBLIQUE"
-    d.text(((W - d.textlength(kick, font=f_kick)) / 2, 150), kick, font=f_kick, fill=GOLD)
+    # Bandeau haut : le mot « QUIZ » seul, traite comme un logo.
+    # « Testez votre connaissance biblique » est passe dans la legende : dans
+    # l'image, une ligne de 34 caracteres en petit ne se lisait pas au defilement
+    # et volait la place au theme.
+    f_kick = ImageFont.truetype(FONT_SERIF_BOLD, 62)
+    kw = _tracked(d, "QUIZ", f_kick, 100, GOLD, tracking=16)
+    ly = 100 + 62 * 0.40
+    ecart = kw / 2 + 44
+    d.line([(W / 2 - ecart - 92, ly), (W / 2 - ecart, ly)], fill=GOLD, width=3)
+    d.line([(W / 2 + ecart, ly), (W / 2 + ecart + 92, ly)], fill=GOLD, width=3)
 
     f_theme = ImageFont.truetype(FONT_SERIF_BOLD, 40)
     lbl = bank[theme]["label"]
@@ -448,9 +470,13 @@ def draw_frame(theme, q, phase, count_left=None, n_opts=None, bar=None):
     lh = size + 12
     boxes = [max(130, len(x) * lh + 52) for x in wrapped]
 
-    # bloc d'options centre dans l'espace restant
+    # Bloc d'options centre dans l'espace restant.
+    # Le plafond etait a 870 : sur les questions courtes, tout le bas de la
+    # carte restait vide (un cinquieme de l'image). Descendu a 1010 — la borne
+    # « H - 430 - total_opts » continue de remonter le bloc quand les options
+    # sont longues, et de reserver la place du decompte et de la barre.
     total_opts = sum(boxes) + 26 * (len(boxes) - 1)
-    y = max(y + 50, min(870, H - 430 - total_opts))
+    y = max(y + 50, min(1010, H - 430 - total_opts))
 
     shown = len(q["o"]) if n_opts is None else n_opts
     for i, opt in enumerate(q["o"]):
@@ -647,19 +673,21 @@ def captions(theme, q, seed=0):
     hook = hook_for(q, seed)
     plain = hook.replace("📖 ", "")
 
-    fb = (f"{hook}\n\n{head}\n\n"
+    fb = (f"{hook}\n\nTestez votre connaissance biblique.\n\n{head}\n\n"
           f"La réponse apparaît à la fin de la vidéo.\n\n"
           f"Thème du jour : {label}. Le quiz complet, en six thèmes, est disponible ici :\n"
           f"{QUIZ_URL}\n\nGratuit, sans compte, sans publicité.\n\n"
           f"#Bible #LouisSegond #LaBibleApp #QuizBiblique #Foi")
-    ig = (f"{head}\n\n{plain}\n\nLa réponse apparaît à la fin.\n\n"
+    ig = (f"{head}\n\n{plain}\nTestez votre connaissance biblique.\n\n"
+          f"La réponse apparaît à la fin.\n\n"
           f"Thème du jour : {label}.\n\n📖 Quiz complet — lien en bio\n\n"
           f"#Bible #LouisSegond #LaBibleApp #QuizBiblique #VersetDuJour #Foi #Chrétien")
-    tg = (f"📖 <b>{plain}</b>\n\n{head}\n\n"
+    tg = (f"📖 <b>{plain}</b>\n\nTestez votre connaissance biblique.\n\n{head}\n\n"
           f"La réponse apparaît à la fin de la vidéo.\n\n"
           f"Thème du jour : {label}.\n\n"
           f"👉 <a href=\"{QUIZ_URL}\">Le quiz complet sur labible.app</a>")
-    th = (f"{head}\n\n{plain}\n\nLa réponse à la fin de la vidéo.\n\n"
+    th = (f"{head}\n\n{plain}\nTestez votre connaissance biblique.\n\n"
+          f"La réponse à la fin de la vidéo.\n\n"
           f"Thème du jour : {label}.\n\n👉 labible.app/quiz")
     tt = (f"{plain}\n\n{head}\n\nRéponse à la fin 🙏\n\n"
           f"Quiz complet sur labible.app/quiz\n\n{HASHTAGS_TIKTOK}")
