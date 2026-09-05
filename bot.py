@@ -323,36 +323,92 @@ def pick_cta_by_keywords(verse_text):
 
 
 # ---------------------------------------------------
-# OPTION B — CTA généré par l'API Claude (prêt, désactivé par défaut)
-# Pour activer : mettre le secret USE_AI_CTA=true (en plus de ANTHROPIC_API_KEY).
+# ACCROCHE — premiere ligne generee par l'API Claude
 # ---------------------------------------------------
-USE_AI_CTA = os.environ.get("USE_AI_CTA", "").strip().lower() in ("1", "true", "yes")
+# Pourquoi la premiere ligne et pas la cloture : sur Instagram, Threads et
+# Facebook, c'est la seule ligne visible avant le « ... plus ». La cloture,
+# elle, reste fixe et ecrite a la main (SOCIAL_CLOSERS / TG_CLOSERS).
+#
+# Registre retenu (« B ») : gagner l'attention par le CONTEXTE reel du passage
+# — a qui il s'adresse, quand, dans quelle situation — jamais par une promesse
+# ni un superlatif. Le prompt interdit explicitement d'inventer une date, un
+# auteur ou une circonstance : c'est le seul risque reel de ce registre, et le
+# repli fixe couvre le cas ou le modele n'a rien de sur a dire.
+#
+# ACTIVE par defaut. Pour couper sans toucher au code : definir la variable
+# USE_AI_HOOK a "false" dans le workflow (ou en secret).
+# Sans ANTHROPIC_API_KEY dans le workflow (meditation, thematique, pentecote,
+# semaine sainte), l'appel est simplement saute : repli fixe, aucune erreur.
+# Une panne d'API ne bloque jamais un post.
+USE_AI_HOOK = os.environ.get("USE_AI_HOOK", "true").strip().lower() not in ("0", "false", "no", "off")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 
+# Repli : vrai, sobre, sans fait historique a verifier.
+HOOK_FALLBACK = {
+    "promise": [
+        "Une promesse, pas un encouragement.",
+        "Ce verset n'invite pas : il engage Dieu.",
+    ],
+    "jesus": [
+        "Les paroles de Jésus, sans commentaire ajouté.",
+        "Jésus parle ici. Le texte n'ajoute rien.",
+    ],
+    "psaume": [
+        "Une prière écrite pour être chantée.",
+        "Un psaume : une prière, pas un traité.",
+    ],
+    "proverbe": [
+        "La sagesse des Proverbes tient en une phrase.",
+        "Un proverbe se lit vite et se médite longtemps.",
+    ],
+    "prophetie": [
+        "Annoncé longtemps avant d'être accompli.",
+        "Une parole annoncée, puis accomplie.",
+    ],
+    "protection": [
+        "Ce que Dieu dit à ceux qui ont peur.",
+        "Une assurance donnée, pas une consolation.",
+    ],
+}
+HOOK_FALLBACK_DEFAULT = ["Un verset de la Bible Louis Segond 1910."]
 
-def generate_cta_ai(verse_text, ref, cat_name):
-    """
-    CTA généré par l'API Claude, adapté au texte exact du verset (pas seulement
-    à la catégorie). Retourne None en cas d'échec — ne lève JAMAIS d'exception :
-    un souci d'API ne doit jamais bloquer une publication.
-    """
+# Formules a rejeter : promesse creuse, statistique inventee, flatterie.
+_HOOK_INTERDIT = re.compile(
+    r"(%|\bva changer\b|\bchangera\b|\bpersonne ne\b|\bincroyable\b|\bsecret\b"
+    r"|\bvous ne (croirez|devinerez)\b|\bla plupart des\b|\bjamais expliqu)", re.I)
+
+# Une seule generation par publication : social_caption est appele une fois par
+# plateforme ; sans cache on paierait 4 appels ET on publierait 4 accroches
+# differentes pour le meme verset le meme jour.
+_HOOK_CACHE = {}
+
+
+def generate_hook_ai(verse_text, ref, cat_name):
+    """Premiere ligne generee. Retourne None en cas d'echec — ne leve JAMAIS :
+    un souci d'API ne doit pas bloquer une publication."""
     if not ANTHROPIC_API_KEY:
         return None
     try:
         prompt = (
-            "Tu écris un seul CTA (appel à l'action) court en français pour un post "
-            "Instagram/Facebook/Threads de LaBible.app, une app biblique gratuite (LSG 1910).\n\n"
+            "Tu ecris UNE seule phrase d'accroche en francais, placee juste avant "
+            "un verset biblique, pour un post Instagram/Facebook/Threads de "
+            "LaBible.app (Bible Louis Segond 1910, gratuite).\n\n"
             f"Verset ({ref}) : « {verse_text} »\n\n"
-            "Règles strictes :\n"
-            "- Vouvoiement obligatoire (jamais \"tu\").\n"
-            "- Ton sérieux, sobre, contemplatif. La foi est une certitude, pas une émotion. "
-            "Aucun clickbait, aucune exagération.\n"
-            "- Le CTA doit inviter à PARTAGER ce verset précis, en lien avec son contenu/thème "
-            "(pas une phrase générique interchangeable).\n"
-            "- Une seule phrase courte, maximum 15 mots.\n"
-            "- Termine par l'emoji 🙏\n"
-            "- Réponds UNIQUEMENT avec la phrase, sans guillemets, sans explication."
+            "But : donner envie de lire le verset en eclairant SON CONTEXTE reel "
+            "— a qui il s'adresse, dans quelle situation, a quelle distance de son "
+            "accomplissement.\n\n"
+            "Regles strictes :\n"
+            "- Vouvoiement. Ton sobre et serieux. La foi est une certitude, pas "
+            "une emotion.\n"
+            "- INTERDIT d'inventer une date, un auteur, un lieu ou une "
+            "circonstance. N'utilise qu'un contexte certain et largement atteste. "
+            "Dans le doute, appuie-toi uniquement sur ce que dit le verset.\n"
+            "- Aucune promesse (« va changer votre vie »), aucun superlatif, "
+            "aucune statistique, aucune flatterie.\n"
+            "- Ne cite pas le verset : il est affiche juste en dessous.\n"
+            "- Une phrase, 14 mots maximum. Pas d'emoji, pas de hashtag.\n"
+            "- Reponds UNIQUEMENT avec la phrase, sans guillemets."
         )
         r = requests.post(
             "https://api.anthropic.com/v1/messages",
@@ -363,42 +419,60 @@ def generate_cta_ai(verse_text, ref, cat_name):
             },
             json={
                 "model": ANTHROPIC_MODEL,
-                "max_tokens": 60,
+                "max_tokens": 80,
                 "messages": [{"role": "user", "content": prompt}],
             },
             timeout=10,
         )
         if r.status_code != 200:
-            print(f"⚠️  CTA IA ({r.status_code}) : {r.text[:150]}")
+            print(f"⚠️  Accroche IA ({r.status_code}) : {r.text[:150]}")
             return None
         data = r.json()
-        cta = "".join(
-            block.get("text", "") for block in data.get("content", [])
-            if block.get("type") == "text"
+        hook = "".join(
+            b.get("text", "") for b in data.get("content", [])
+            if b.get("type") == "text"
         ).strip().strip('"').strip("«»").strip()
-        if not cta or len(cta) > 140:
-            print(f"⚠️  CTA IA rejeté (vide ou trop long) : {cta[:50]!r}")
+        if not hook or len(hook) > 120 or len(hook.split()) > 18:
+            print(f"⚠️  Accroche IA rejetee (vide ou trop longue) : {hook[:60]!r}")
             return None
-        return cta
+        if _HOOK_INTERDIT.search(hook):
+            print(f"⚠️  Accroche IA rejetee (formule interdite) : {hook[:60]!r}")
+            return None
+        return hook
     except Exception as e:
-        print(f"⚠️  CTA IA indisponible : {str(e)[:150]}")
+        print(f"⚠️  Accroche IA indisponible : {str(e)[:150]}")
         return None
+
+
+def hook_for(ref, verse_text, cat_name):
+    """Accroche de la publication. IA si activee, sinon repli fixe.
+    Mise en cache : une seule accroche (et un seul appel) par verset."""
+    cle = (ref, cat_name)
+    if cle in _HOOK_CACHE:
+        return _HOOK_CACHE[cle]
+    hook = None
+    if USE_AI_HOOK and verse_text:
+        hook = generate_hook_ai(verse_text, ref, cat_name)
+        if hook:
+            print(f"✍️  Accroche IA : {hook}")
+    if not hook:
+        pool = HOOK_FALLBACK.get(cat_name, HOOK_FALLBACK_DEFAULT)
+        hook = _rotate(pool, f"{ref}|{cat_name}")
+    _HOOK_CACHE[cle] = hook
+    return hook
 
 
 def cta_for(cat_name, verse_text=None, ref=None):
     """
-    CTA final, nesta ordem de prioridade :
-    1. Option B (IA) — só se USE_AI_CTA=true nos secrets. Desligada por omissão.
-    2. Option A (palavras-chave) — se o texto do verset bater com um grupo temático,
+    Phrase de fond de la cloture, par ordre de priorite :
+    1. Palavras-chave — se o texto do verset bater com um grupo temático,
        usa uma frase ao calhas de entre 3-4 variantes desse grupo.
-    3. CTA fixo da categoria (o que já tínhamos).
-    4. Frase genérica, último recurso.
-    """
-    if USE_AI_CTA and verse_text:
-        ai_cta = generate_cta_ai(verse_text, ref, cat_name)
-        if ai_cta:
-            return ai_cta
+    2. CTA fixo da categoria.
+    3. Frase genérica, último recurso.
 
+    L'IA n'intervient PAS ici : la cloture est volontairement fixe et ecrite a
+    la main. Ce qui est genere, c'est l'accroche (voir hook_for).
+    """
     if verse_text:
         kw_cta = pick_cta_by_keywords(verse_text)
         if kw_cta:
@@ -466,12 +540,15 @@ def social_caption(ref, text, cat, cat_name, chapter_url=None, reseau="fb"):
     reseau : "fb" (hashtags Facebook), "ig" (Instagram, lien en bio),
              "threads" (hashtags courts + lien)."""
     fin = closing_line(cat_name, text, ref, SOCIAL_CLOSERS)
+    # Premiere ligne : seule visible avant le « ... plus ». Pas sur Telegram —
+    # l'abonne y est deja, une accroche n'y serait que du bruit.
+    tete = hook_for(ref, text, cat_name)
     if reseau == "ig":
-        return (f"« {text} »\n— {cat['emoji']} {ref}\n\n"
+        return (f"{tete}\n\n« {text} »\n— {cat['emoji']} {ref}\n\n"
                 f"📖 Bible complète et gratuite — lien en bio\n\n"
                 f"{fin}\n\n{build_hashtags_ig(cat_name)}")
     tags = build_hashtags_fb(cat_name) if reseau == "fb" else build_hashtags_ig(cat_name)
-    return (f"{cat['emoji']} {ref}\n\n« {text} »\n\n"
+    return (f"{tete}\n\n{cat['emoji']} {ref}\n\n« {text} »\n\n"
             f"📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n"
             f"{fin}\n\n{tags}")
 
