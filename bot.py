@@ -328,6 +328,7 @@ def pick_cta_by_keywords(verse_text):
 # Pourquoi la premiere ligne et pas la cloture : sur Instagram, Threads et
 # Facebook, c'est la seule ligne visible avant le « ... plus ». La cloture,
 # elle, reste fixe et ecrite a la main (SOCIAL_CLOSERS / TG_CLOSERS).
+# L'accroche sert les QUATRE plateformes, Telegram compris.
 #
 # Registre retenu (« B ») : gagner l'attention par le CONTEXTE reel du passage
 # — a qui il s'adresse, quand, dans quelle situation — jamais par une promesse
@@ -540,8 +541,7 @@ def social_caption(ref, text, cat, cat_name, chapter_url=None, reseau="fb"):
     reseau : "fb" (hashtags Facebook), "ig" (Instagram, lien en bio),
              "threads" (hashtags courts + lien)."""
     fin = closing_line(cat_name, text, ref, SOCIAL_CLOSERS)
-    # Premiere ligne : seule visible avant le « ... plus ». Pas sur Telegram —
-    # l'abonne y est deja, une accroche n'y serait que du bruit.
+    # Premiere ligne : seule visible avant le « ... plus ».
     tete = hook_for(ref, text, cat_name)
     if reseau == "ig":
         return (f"{tete}\n\n« {text} »\n— {cat['emoji']} {ref}\n\n"
@@ -554,10 +554,16 @@ def social_caption(ref, text, cat, cat_name, chapter_url=None, reseau="fb"):
 
 
 def telegram_caption(ref, text, cat, cat_name, chapter_url):
-    """Legende du canal. Pas de hashtags : sur Telegram une hashtag ne cherche
-    que dans la conversation courante, elle n'apporte aucune decouverte."""
+    """Legende du canal.
+
+    Pas de hashtags : sur Telegram une hashtag ne cherche que dans la
+    conversation courante, elle n'apporte aucune decouverte.
+
+    L'accroche, elle, est presente comme sur les autres reseaux — meme
+    generation, meme cache : un seul appel API sert les quatre plateformes."""
     fin = closing_line(cat_name, text, ref, TG_CLOSERS)
-    return (f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n"
+    tete = hook_for(ref, text, cat_name)
+    return (f"{tete}\n\n{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n"
             f"{fin}\n📖 {chapter_url}")
 
 
