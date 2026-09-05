@@ -5,6 +5,7 @@ import re
 import unicodedata
 import datetime
 import math
+import hashlib
 import subprocess
 import requests
 import numpy as np
@@ -405,6 +406,84 @@ def cta_for(cat_name, verse_text=None, ref=None):
 
     return CTA_BY_CATEGORY.get(cat_name, CTA_DEFAULT)
 
+
+# ---------------------------------------------------
+# CLOTURE DES LEGENDES
+# ---------------------------------------------------
+# Toutes les variantes de CTA_BY_CATEGORY / THEMED_CTA se terminaient par
+# « Partagez ... 🙏 ». La variation n'existait donc qu'a moitie : la phrase de
+# fond changeait, mais le lecteur voyait la meme injonction a chaque
+# publication. On garde la phrase de fond et on fait tourner la cloture a part.
+_SHARE_CLAUSE = re.compile(r"\s*Partage[^.]*$")
+
+# Clotures reseaux (Facebook, Instagram, Threads).
+SOCIAL_CLOSERS = [
+    "Partagez-le avec celui qui en a besoin.",
+    "Transmettez cette parole autour de vous.",
+    "Gardez ce verset avec vous.",
+    "Offrez cette parole à quelqu'un.",
+    "Le chapitre entier vous attend sur LaBible.app.",
+    "Prenez un instant pour le relire.",
+]
+
+# Clotures Telegram. Sur Telegram, le geste qui porte le nom de la chaine est
+# le TRANSFERT, pas la copie : le vocabulaire suit.
+TG_CLOSERS = [
+    "Transférez ce verset à quelqu'un qui en a besoin.",
+    "Transmettez cette parole à un proche.",
+    "Gardez ce verset avec vous.",
+    "Le chapitre entier est à un clic.",
+    "Prenez un instant pour le relire.",
+]
+
+
+def _strip_share_clause(line: str) -> str:
+    """« Il console ceux qui pleurent. Partagez ce reconfort 🙏 »
+    -> « Il console ceux qui pleurent. »"""
+    return _SHARE_CLAUSE.sub("", (line or "").strip()).strip()
+
+
+def _rotate(pool, seed_text: str):
+    """Rotation stable : la meme reference le meme jour donne toujours la meme
+    cloture (logs reproductibles), mais elle change d'une publication a
+    l'autre. Pas de random : une reprise de run ne changerait pas le texte."""
+    h = int(hashlib.md5(seed_text.encode("utf-8")).hexdigest(), 16)
+    return pool[h % len(pool)]
+
+
+def closing_line(cat_name, text, ref, pool):
+    """Phrase de fond (variable par theme) + cloture (variable par publication)."""
+    base = _strip_share_clause(cta_for(cat_name, text, ref))
+    closer = _rotate(pool, f"{ref}|{datetime.date.today().isoformat()}|{cat_name}")
+    return f"{base} {closer}".strip() if base else closer
+
+
+def social_caption(ref, text, cat, cat_name, chapter_url=None, reseau="fb"):
+    """Legende unique pour Facebook, Instagram et Threads.
+
+    Le meme texte etait recopie a six endroits ; une correction devait donc
+    etre faite six fois. Ici, une seule.
+    reseau : "fb" (hashtags Facebook), "ig" (Instagram, lien en bio),
+             "threads" (hashtags courts + lien)."""
+    fin = closing_line(cat_name, text, ref, SOCIAL_CLOSERS)
+    if reseau == "ig":
+        return (f"« {text} »\n— {cat['emoji']} {ref}\n\n"
+                f"📖 Bible complète et gratuite — lien en bio\n\n"
+                f"{fin}\n\n{build_hashtags_ig(cat_name)}")
+    tags = build_hashtags_fb(cat_name) if reseau == "fb" else build_hashtags_ig(cat_name)
+    return (f"{cat['emoji']} {ref}\n\n« {text} »\n\n"
+            f"📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n"
+            f"{fin}\n\n{tags}")
+
+
+def telegram_caption(ref, text, cat, cat_name, chapter_url):
+    """Legende du canal. Pas de hashtags : sur Telegram une hashtag ne cherche
+    que dans la conversation courante, elle n'apporte aucune decouverte."""
+    fin = closing_line(cat_name, text, ref, TG_CLOSERS)
+    return (f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n"
+            f"{fin}\n📖 {chapter_url}")
+
+
 # ---------------------------------------------------
 # ROTATION PAR HEURE UTC — alignée avec publish.yml
 # 05h UTC → 07h France — image → psaume  (Matin)
@@ -472,7 +551,7 @@ def category_label(cat_name, hour_utc=None):
 
 def build_yt_title(cat_name, cat, ref, hour_utc):
     label = category_label(cat_name, hour_utc)
-    title = f"{ref} — {cat['emoji']} {label} | Bible LSG1910"
+    title = f"{ref} — {label} | Bible Louis Segond 1910"
     if len(title) > 100:
         title = title[:97] + "..."
     return title
@@ -681,7 +760,7 @@ def post_to_facebook(image_path, ref, text, cat, cat_name, link_override=None):
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    msg = f"{cat['emoji']} {ref}\n\n« {text} »\n\n\U0001f4d6 Lisez le chapitre complet gratuitement \u2192 {chapter_url}\n\n👇 {cta_for(cat_name, text, ref)}\n\n{build_hashtags_fb(cat_name)}"
+    msg = social_caption(ref, text, cat, cat_name, chapter_url, "fb")
     with open(image_path, "rb") as f:
         r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/photos",
             data={"message": msg, "access_token": FB_PAGE_TOKEN}, files={"source": f}, timeout=60)
@@ -699,7 +778,7 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name, link_override=No
         print("⚠️  FB_PAGE_TOKEN non défini.")
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    desc = f"{cat['emoji']} {ref}\n\n« {text} »\n\n\U0001f4d6 Lisez le chapitre complet gratuitement \u2192 {chapter_url}\n\n👇 {cta_for(cat_name, text, ref)}\n\n{build_hashtags_fb(cat_name)}"
+    desc = social_caption(ref, text, cat, cat_name, chapter_url, "fb")
     with open(video_path, "rb") as f:
         r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
             data={"description": desc, "access_token": FB_PAGE_TOKEN}, files={"source": f}, timeout=120)
@@ -779,7 +858,7 @@ def post_to_instagram(image_path, ref, text, cat, cat_name, link_override=None):
     if "cloudinary.com" in image_url:
         image_url = image_url.replace("/upload/", "/upload/f_jpg/")
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    caption = f"« {text} »\n— {cat['emoji']} {ref}\n\n📖 Bible complète et gratuite — lien en bio\n\n👇 {cta_for(cat_name, text, ref)}\n\n{build_hashtags_ig(cat_name)}"
+    caption = social_caption(ref, text, cat, cat_name, chapter_url, "ig")
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"image_url": image_url, "caption": caption, "access_token": FB_PAGE_TOKEN}, timeout=60)
     if r.status_code != 200:
@@ -817,7 +896,7 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=N
     if not video_url:
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    caption = f"« {text} »\n— {cat['emoji']} {ref}\n\n📖 Bible complète et gratuite — lien en bio\n\n👇 {cta_for(cat_name, text, ref)}\n\n{build_hashtags_ig(cat_name)}"
+    caption = social_caption(ref, text, cat, cat_name, chapter_url, "ig")
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"media_type": "REELS", "video_url": video_url, "caption": caption, "access_token": FB_PAGE_TOKEN, "thumb_offset": "7500"}, timeout=60)
     if r.status_code != 200:
@@ -863,8 +942,14 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
                     "protection": "Protection Divine"}
     payload = {
         "board_id": PINTEREST_BOARD_ID,
-        "title": f"{ref} — {cat['emoji']} {pin_keywords.get(cat_name, 'Verset Biblique')} | LaBible.app",
-        "description": f"{cat['emoji']} « {text} »\n\n— {ref} (LSG 1910)\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n#Bible #VersetDuJour #LaBibleApp #LSG1910 #Foi",
+        # Pinterest indexe le titre et la description comme du texte : les
+        # mots-cles y valent plus que les hashtags, que la plateforme ignore
+        # largement. Emoji retire du titre (100 caracteres utiles).
+        "title": f"{ref} — {pin_keywords.get(cat_name, 'Verset biblique')} | Bible Louis Segond 1910"[:100],
+        "description": (f"« {text} »\n— {ref} (Bible Louis Segond 1910)\n\n"
+                        f"{pin_keywords.get(cat_name, 'Verset biblique')} en français. "
+                        f"Lisez le chapitre entier gratuitement, sans compte et sans publicité, "
+                        f"sur LaBible.app :\n{chapter_url}"),
         # Page reelle et crawlable (meilleure pour l'apercu Pinterest qu'un lien
         # #hash, que son robot ne peut pas rendre cote client).
         "link": chapter_url,
@@ -904,7 +989,7 @@ def post_to_threads(image_path, ref, text, cat, cat_name, link_override=None):
     if "cloudinary.com" in image_url:
         image_url = image_url.replace("/upload/", "/upload/f_jpg/")
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n👇 {cta_for(cat_name, text, ref)}\n\n{build_hashtags_ig(cat_name)}"
+    caption = social_caption(ref, text, cat, cat_name, chapter_url, "threads")
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "IMAGE", "image_url": image_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
@@ -925,7 +1010,7 @@ def post_reel_to_threads(video_path, ref, text, cat, cat_name, link_override=Non
         print("❌ Threads — upload vidéo échoué")
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
-    caption = f"{cat['emoji']} {ref}\n\n« {text} »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n👇 {cta_for(cat_name, text, ref)}\n\n{build_hashtags_ig(cat_name)}"
+    caption = social_caption(ref, text, cat, cat_name, chapter_url, "threads")
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "VIDEO", "video_url": video_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
@@ -1437,8 +1522,9 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
         chapter_url = parse_ref_to_chapter_url(ref)
         description = (f"« {text} »\n"
             f"— {ref} (LSG 1910)\n\n"
-            f"📖 Lire le chapitre complet : {chapter_url}\n"
-            f"🔔 Abonnez-vous pour un verset chaque jour 🙏\n\n"
+            f"{ref} en français — texte de la Bible Louis Segond 1910, domaine public.\n\n"
+            f"📖 Lire le chapitre entier, gratuitement et sans compte :\n{chapter_url}\n"
+            f"🔔 Un verset chaque jour.\n\n"
             f"🔗 {APP_URL}/liens\n\n"
             f"#LaBibleApp #Bible #VersetDuJour #ParoleDeDieu #LSG1910 #Shorts #{cat['tag'].lstrip('#')}")
         body = {"snippet": {"title": title, "description": description,
@@ -1681,7 +1767,8 @@ def main_parabole():
     # Caption court pour Telegram/Instagram
     first_ref = verses[0][0] if verses else ""
     parabole_url = parse_ref_to_chapter_url(first_ref)
-    caption = f"✝️ <b>{title}</b>\n{first_ref}\n\n📲 Partagez cette parabole avec quelqu'un qui en a besoin 🙏\n📖 {parabole_url}\n\n#LaBibleApp #LSG1910 #ParaboleDeJésus"
+    caption = (f"✝️ <b>{title}</b>\n{first_ref}\n\n"
+               f"{_rotate(TG_CLOSERS, first_ref + title)}\n📖 {parabole_url}")
     send_video(video, caption, first_ref)
 
     # Publier sur les plateformes
@@ -1736,7 +1823,7 @@ def main():
     print(f"📖 Image — {ref} [{cat_name}]")
     img = make_image(text, ref, cat_name)
     chapter_url = parse_ref_to_chapter_url(ref)
-    caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n📖 {chapter_url}\n\n#LaBibleApp #LSG1910 #VersetDuJour {cat['tag']}"
+    caption = telegram_caption(ref, text, cat, cat_name, chapter_url)
     send_photo(img, caption, ref)
     post_to_facebook(img, ref, text, cat, cat_name)
     # Instagram : toujours un reel — les images fixes n'ont quasiment aucune portée sur IG,
@@ -1772,7 +1859,7 @@ def main_reel():
             print(f"⚠️ Logo : {e}")
     video = make_reel_video(text, ref, progress, cat_name)
     chapter_url = parse_ref_to_chapter_url(ref)
-    caption = f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n📲 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n📖 {chapter_url}\n\n#LaBibleApp #LSG1910 #VersetDuJour {cat['tag']}"
+    caption = telegram_caption(ref, text, cat, cat_name, chapter_url)
     send_video(video, caption, ref)
     post_reel_to_facebook(video, ref, text, cat, cat_name)
     post_reel_to_instagram(video, ref, text, cat, cat_name)

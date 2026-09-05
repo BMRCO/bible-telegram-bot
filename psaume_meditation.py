@@ -31,7 +31,7 @@ from PIL import Image, ImageDraw, ImageFont
 from bot import (
     load_json, save_json, load_verse, clean_text, strip_rubric, is_rubric,
     make_thumbnail,
-    telegram_markup,
+    telegram_markup, _rotate, TG_CLOSERS,
     BIBLE_FILE, APP_URL, WATERMARK,
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
 )
@@ -525,12 +525,14 @@ def post_to_telegram(video_path, num, part_label=None):
         return
     head = _meditation_head(num, part_label)
     chapter_url = f"{APP_URL}/lsg/psaumes/{num}"
+    # Pas de hashtags : sur Telegram elles ne cherchent que dans la
+    # conversation courante et n'apportent aucune decouverte.
     caption = (
         f"🎵 <b>{head}</b>\n"
         f"Bible Louis Segond 1910\n\n"
         f"{PSAUME_CTA}\n\n"
-        f"📖 {chapter_url}\n\n"
-        f"#LaBibleApp #Psaumes #Méditation #LSG1910"
+        f"{_rotate(TG_CLOSERS, f'psaume-{num}')}\n"
+        f"📖 {chapter_url}"
     )
     # Le bouton ouvre la Mini App directement sur le Psaume publie.
     reply_markup = telegram_markup(f"Psaumes {num}")

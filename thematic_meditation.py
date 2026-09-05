@@ -31,7 +31,7 @@ from PIL import Image, ImageDraw, ImageFont
 from bot import (
     load_json, save_json, clean_text, strip_rubric,
     post_reel_to_instagram, post_reel_to_threads, make_thumbnail,
-    telegram_markup,
+    telegram_markup, _rotate, TG_CLOSERS,
     BIBLE_FILE, APP_URL, WATERMARK, parse_ref_to_chapter_url,
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
 )
@@ -430,9 +430,9 @@ def post_to_telegram(video_path, theme_key, verses):
         f"{th['emoji']} <b>{th['title']}</b>\n"
         f"Bible Louis Segond 1910\n\n"
         f"{_refs_line(verses)}\n\n"
-        f"Prenez un moment pour m\u00e9diter la Parole. \U0001f64f\n\n"
-        f"\U0001f4d6 {theme_url}\n\n"
-        f"#LaBibleApp #{th['tag']} #M\u00e9ditation #LSG1910"
+        f"Prenez un moment pour m\u00e9diter la Parole.\n\n"
+        f"{_rotate(TG_CLOSERS, theme_key)}\n"
+        f"\U0001f4d6 {theme_url}"
     )
     # Le bouton ouvre la Mini App sur le premier passage de la meditation.
     reply_markup = telegram_markup(verses[0][0] if verses else None)
