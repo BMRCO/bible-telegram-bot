@@ -527,10 +527,24 @@ def _rotate(pool, seed_text: str):
 
 
 def closing_line(cat_name, text, ref, pool):
-    """Phrase de fond (variable par theme) + cloture (variable par publication)."""
+    """Phrase de fond (variable par theme) + cloture (variable par publication).
+
+    Si la cloture tiree reprend le verbe qui ouvre la phrase de fond
+    (« Gardez esperance... Gardez ce verset... »), on passe a la suivante du
+    pool. Les mots de 3 lettres ou moins sont exemptes : « Le chapitre entier »
+    serait sinon ecarte a chaque fois."""
     base = _strip_share_clause(cta_for(cat_name, text, ref))
-    closer = _rotate(pool, f"{ref}|{datetime.date.today().isoformat()}|{cat_name}")
-    return f"{base} {closer}".strip() if base else closer
+    graine = f"{ref}|{datetime.date.today().isoformat()}|{cat_name}"
+    depart = int(hashlib.md5(graine.encode("utf-8")).hexdigest(), 16) % len(pool)
+    if not base:
+        return pool[depart]
+    bas = base.lower()
+    for k in range(len(pool)):
+        cand = pool[(depart + k) % len(pool)]
+        tete = cand.split()[0].lower().strip(",.;:")
+        if len(tete) <= 3 or tete not in bas:
+            return f"{base} {cand}"
+    return f"{base} {pool[depart]}"
 
 
 def social_caption(ref, text, cat, cat_name, chapter_url=None, reseau="fb"):
@@ -563,8 +577,12 @@ def telegram_caption(ref, text, cat, cat_name, chapter_url):
     generation, meme cache : un seul appel API sert les quatre plateformes."""
     fin = closing_line(cat_name, text, ref, TG_CLOSERS)
     tete = hook_for(ref, text, cat_name)
+    # Les hashtags ne servent a rien SUR Telegram — mais la legende du canal est
+    # recopiee a la main vers TikTok, ou elles comptent. Elles restent donc en
+    # fin de message, apres le lien, hors du chemin de lecture.
     return (f"{tete}\n\n{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n"
-            f"{fin}\n📖 {chapter_url}")
+            f"{fin}\n📖 {chapter_url}\n\n"
+            f"#LaBibleApp #LSG1910 #VersetDuJour {cat['tag']}")
 
 
 # ---------------------------------------------------
@@ -1854,7 +1872,8 @@ def main_parabole():
     first_ref = verses[0][0] if verses else ""
     parabole_url = parse_ref_to_chapter_url(first_ref)
     caption = (f"✝️ <b>{title}</b>\n{first_ref}\n\n"
-               f"{_rotate(TG_CLOSERS, first_ref + title)}\n📖 {parabole_url}")
+               f"{_rotate(TG_CLOSERS, first_ref + title)}\n📖 {parabole_url}\n\n"
+               f"#LaBibleApp #LSG1910 #ParaboleDeJésus")
     send_video(video, caption, first_ref)
 
     # Publier sur les plateformes

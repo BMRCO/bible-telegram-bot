@@ -532,7 +532,8 @@ def post_to_telegram(video_path, num, part_label=None):
         f"Bible Louis Segond 1910\n\n"
         f"{PSAUME_CTA}\n\n"
         f"{_rotate(TG_CLOSERS, f'psaume-{num}')}\n"
-        f"📖 {chapter_url}"
+        f"📖 {chapter_url}\n\n"
+        f"#LaBibleApp #Psaumes #Méditation #LSG1910"
     )
     # Le bouton ouvre la Mini App directement sur le Psaume publie.
     reply_markup = telegram_markup(f"Psaumes {num}")
