@@ -17,7 +17,7 @@ const LS = {
 };
 
 const DATA_URL     = "/data/lsg1910.json";
-const DATA_URL_CDN = "https://cdn.jsdelivr.net/gh/BMRCO/labible@main/data/lsg1910.json";
+const DATA_URL_CDN = "https://cdn.jsdelivr.net/gh/BMRCO/labible.app@main/data/lsg1910.json";
 
 const state = {
   bible:         null,
@@ -29,7 +29,8 @@ const state = {
   vddRef:        null,
   selectedVerse: null,
   explications:  null,
-  versetsThemes: null
+  versetsThemes: null,
+  crossrefs:     null
 };
 
 /* ---------- helpers ---------- */
@@ -116,20 +117,30 @@ function showVerseActions(bookName, chapter, verse, text, el){
 
 async function loadExplications(){
   if(state.explications) return state.explications;
+  // En cas d'echec (hors ligne, 404), on NE met rien en cache : un objet
+  // vide est "truthy" et desactiverait la fonctionnalite pour toute la
+  // session, meme apres le retour du reseau. On renvoie {} sans le stocker,
+  // pour que la prochaine tentative refasse la requete.
   try{
     const res = await fetch("/data/explications.json");
-    state.explications = res.ok ? await res.json() : {};
-  } catch { state.explications = {}; }
+    if(!res.ok) return {};
+    state.explications = await res.json();
+  } catch { return {}; }
   return state.explications;
 }
 
 /* ---------- vue "Versets" (thèmes) — intégrée à l'app ---------- */
 async function loadVersetsThemes(){
   if(state.versetsThemes) return state.versetsThemes;
+  // En cas d'echec (hors ligne, 404), on NE met rien en cache : un objet
+  // vide est "truthy" et desactiverait la fonctionnalite pour toute la
+  // session, meme apres le retour du reseau. On renvoie {} sans le stocker,
+  // pour que la prochaine tentative refasse la requete.
   try{
     const res = await fetch("/data/versets_themes.json");
-    state.versetsThemes = res.ok ? await res.json() : {};
-  } catch { state.versetsThemes = {}; }
+    if(!res.ok) return {};
+    state.versetsThemes = await res.json();
+  } catch { return {}; }
   return state.versetsThemes;
 }
 
@@ -231,10 +242,15 @@ function attachExplication(bar, refKey){
 
 async function loadCrossRefs(){
   if(state.crossrefs) return state.crossrefs;
+  // En cas d'echec (hors ligne, 404), on NE met rien en cache : un objet
+  // vide est "truthy" et desactiverait la fonctionnalite pour toute la
+  // session, meme apres le retour du reseau. On renvoie {} sans le stocker,
+  // pour que la prochaine tentative refasse la requete.
   try{
     const res = await fetch("/data/crossrefs.json");
-    state.crossrefs = res.ok ? await res.json() : {};
-  } catch { state.crossrefs = {}; }
+    if(!res.ok) return {};
+    state.crossrefs = await res.json();
+  } catch { return {}; }
   return state.crossrefs;
 }
 
@@ -655,13 +671,18 @@ function updateFavButtonState(){
   if(btn) btn.textContent = getFavs().some(f => f.type==="ref" && f.ref===ref) ? "✅ Favori" : "🔖 Favori";
 }
 
+// Limite unique pour la liste de favoris. Deux valeurs differentes (120 et 200)
+// coexistaient sur la MEME liste : ajouter un chapitre en favori tronquait a 120
+// et supprimait silencieusement des versets deja enregistres.
+const FAV_MAX = 200;
+
 function toggleFavCurrent(){
   const ref  = currentRefString();
   const favs = getFavs();
   const idx  = favs.findIndex(f => f.type==="ref" && f.ref===ref);
   if(idx >= 0){ favs.splice(idx,1); toast("Favori supprimé."); }
   else { favs.unshift({ type:"ref", ref, at: nowIso() }); toast("Favori ajouté."); }
-  setFavs(favs.slice(0, 120));
+  setFavs(favs.slice(0, FAV_MAX));
   updateFavButtonState();
   renderLibrary();
 }
@@ -672,7 +693,7 @@ function toggleFavVerse(bookName, chapter, verse, text){
   const idx  = favs.findIndex(f => f.type==="verse" && f.ref===ref);
   if(idx >= 0){ favs.splice(idx,1); toast("Verset retiré."); }
   else { favs.unshift({ type:"verse", ref, text: String(text||""), at: nowIso() }); toast("Verset ajouté ⭐"); }
-  setFavs(favs.slice(0, 200));
+  setFavs(favs.slice(0, FAV_MAX));
   renderLibrary();
 }
 
