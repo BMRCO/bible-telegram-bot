@@ -273,8 +273,13 @@ CTA_KEYWORD_GROUPS = [
         "Vous n'êtes jamais seul : il reste avec vous. Partagez cette présence 🙏",
         "Il ne vous abandonnera jamais. Partagez cette promesse 🙏",
     ]),
+    # « enfants » retire : il apparait surtout dans des comparaisons (« Comme
+    # un père a compassion de ses enfants », Psaumes 103:13) et dans des
+    # instructions aux parents. Sur 34 versets qui declenchaient ce groupe, 31
+    # ne le faisaient que par ce mot, et presque aucun ne parle du foyer.
+    # Les 3 autres passent toujours ; le reste retombe sur le CTA de categorie.
     ("famille", [
-        "famille", "enfants", "foyer", "époux", "épouse",
+        "famille", "foyer", "époux", "épouse",
     ], [
         "La sagesse de Dieu pour le foyer. Partagez avec votre famille 🙏",
         "Ses instructions bâtissent des familles fortes. Partagez cette parole 🙏",
@@ -379,6 +384,17 @@ _HOOK_INTERDIT = re.compile(
     r"(%|\bva changer\b|\bchangera\b|\bpersonne ne\b|\bincroyable\b|\bsecret\b"
     r"|\bvous ne (croirez|devinerez)\b|\bla plupart des\b|\bjamais expliqu)", re.I)
 
+# Marques d'un contexte que le modele ne connait pas et devine : hesitation
+# entre deux circonstances (« dans l'exil ou l'epreuve ») ou adverbe de doute.
+# S'il hesite, c'est qu'il n'en sait rien — on prend le repli fixe.
+# Note : les motifs ne contiennent QUE des mots non accentues (« face a » ne
+# matcherait pas « face à »), et « ou » ne peut pas matcher « ou » accentue.
+_HOOK_HESITE = re.compile(
+    r"((?:\bdans\b|\bdurant\b|\bpendant\b|\blors\b|\bface\b|\btemps\b"
+    r"|\bmilieu\b|\bheure\b|\bmoment\b)[^.]{0,45}\bou\b"
+    r"|peut-\w{2,5}re|\bsans doute\b|\bprobablement\b|\bsemble\b"
+    r"|\bvraisemblablement\b|\bsupposer\b|\bcertains pensent\b)", re.I)
+
 # Une seule generation par publication : social_caption est appele une fois par
 # plateforme ; sans cache on paierait 4 appels ET on publierait 4 accroches
 # differentes pour le meme verset le meme jour.
@@ -403,8 +419,16 @@ def generate_hook_ai(verse_text, ref, cat_name):
             "- Vouvoiement. Ton sobre et serieux. La foi est une certitude, pas "
             "une emotion.\n"
             "- INTERDIT d'inventer une date, un auteur, un lieu ou une "
-            "circonstance. N'utilise qu'un contexte certain et largement atteste. "
-            "Dans le doute, appuie-toi uniquement sur ce que dit le verset.\n"
+            "circonstance. N'utilise qu'un contexte certain et largement atteste.\n"
+            "- Beaucoup de passages ne donnent NI auteur NI situation : la "
+            "plupart des Psaumes, les Proverbes, l'Ecclesiaste. Dans ce cas, "
+            "n'en invente pas. Parle de ce que le verset AFFIRME, ou de ce "
+            "qu'est le texte (une priere, une sentence de sagesse).\n"
+            "- Si tu hesites entre deux contextes, c'est que tu n'en connais "
+            "aucun : n'ecris ni l'un ni l'autre. Jamais de « dans l'exil ou "
+            "l'epreuve », jamais de « peut-etre », jamais de « sans doute ».\n"
+            "- Phrase declarative au present. Le verset AFFIRME, il ne demande "
+            "pas : n'ecris pas « demande a Dieu » quand le texte declare.\n"
             "- Aucune promesse (« va changer votre vie »), aucun superlatif, "
             "aucune statistique, aucune flatterie.\n"
             "- Ne cite pas le verset : il est affiche juste en dessous.\n"
@@ -438,6 +462,9 @@ def generate_hook_ai(verse_text, ref, cat_name):
             return None
         if _HOOK_INTERDIT.search(hook):
             print(f"⚠️  Accroche IA rejetee (formule interdite) : {hook[:60]!r}")
+            return None
+        if _HOOK_HESITE.search(hook):
+            print(f"⚠️  Accroche IA rejetee (contexte incertain) : {hook[:60]!r}")
             return None
         return hook
     except Exception as e:
