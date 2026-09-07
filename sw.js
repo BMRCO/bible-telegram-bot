@@ -1,11 +1,11 @@
-const CACHE_NAME = 'labible-v42';
+const CACHE_NAME = 'labible-v46';
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/offline.html',
-  '/styles.css?v=4',
-  '/app.v2.js',
+  '/styles.css?v=5',
+  '/app.v2.js?v=43',
   '/footer.js',
   '/header.js',
   '/data/explications.json',
@@ -15,11 +15,22 @@ const STATIC_ASSETS = [
   '/legal.html',
   '/installer.html',
   '/liens.html',
+  '/louis-segond.html',
+  '/conditions.html',
+  '/confidentialite.html',
+  '/quiz.html',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
 ];
 
 const BIBLE_DATA = '/data/lsg1910.json';
+
+// data/crossrefs.json (2,4 Mo) n'est DELIBEREMENT pas pre-charge ici : il
+// augmenterait de ~30% le poids de l'installation, sur un public souvent en
+// donnees mobiles couteuses. Il est mis en cache par staleWhileRevalidate des
+// la premiere consultation des references croisees, et reste ensuite hors ligne.
+// Pour le rendre disponible des l'installation : ajouter '/data/crossrefs.json'
+// a STATIC_ASSETS ci-dessus.
 
 self.addEventListener('install', event => {
   event.waitUntil(
