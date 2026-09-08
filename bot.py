@@ -1103,16 +1103,22 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
     pin_keywords = {"promise": "Promesses de Dieu", "jesus": "Paroles de Jésus",
                     "psaume": "Psaumes Bibliques", "proverbe": "Sagesse Biblique", "prophetie": "Prophéties Bibliques",
                     "protection": "Protection Divine"}
+    # L'accroche manquait ici : Pinterest etait le seul reseau a construire sa
+    # description sans passer par hook_for(). Meme cache que les autres, donc
+    # aucun appel API supplementaire.
+    tete = hook_for(ref, text, cat_name)
+    description = (f"{tete}\n\n« {text} »\n— {ref} (Bible Louis Segond 1910)\n\n"
+                   f"{pin_keywords.get(cat_name, 'Verset biblique')} en français. "
+                   f"Lisez le chapitre entier gratuitement, sans compte et sans publicité, "
+                   f"sur LaBible.app :\n{chapter_url}")
     payload = {
         "board_id": PINTEREST_BOARD_ID,
         # Pinterest indexe le titre et la description comme du texte : les
         # mots-cles y valent plus que les hashtags, que la plateforme ignore
         # largement. Emoji retire du titre (100 caracteres utiles).
         "title": f"{ref} — {pin_keywords.get(cat_name, 'Verset biblique')} | Bible Louis Segond 1910"[:100],
-        "description": (f"« {text} »\n— {ref} (Bible Louis Segond 1910)\n\n"
-                        f"{pin_keywords.get(cat_name, 'Verset biblique')} en français. "
-                        f"Lisez le chapitre entier gratuitement, sans compte et sans publicité, "
-                        f"sur LaBible.app :\n{chapter_url}"),
+        # 800 caracteres maximum cote API ; on coupe par securite.
+        "description": description[:800],
         # Page reelle et crawlable (meilleure pour l'apercu Pinterest qu'un lien
         # #hash, que son robot ne peut pas rendre cote client).
         "link": chapter_url,
@@ -1998,7 +2004,12 @@ def main():
     post_to_facebook(img, ref, text, cat, cat_name)
     # Instagram : toujours un reel — les images fixes n'ont quasiment aucune portée sur IG,
     # alors que les reels sont distribués bien plus largement.
-    if should_post("instagram"):
+    #
+    # YouTube recoit LE MEME reel. Auparavant la video etait produite ici puis
+    # jetee apres Instagram : les jours ou la categorie sortait en image,
+    # YouTube ne recevait rien du tout. La video est deja calculee, l'envoi ne
+    # coute donc qu'un upload.
+    if should_post("instagram") or should_post("youtube"):
         if not os.path.exists("logo.png"):
             try:
                 r = requests.get("https://labible.app/icons/icon-512x512.png", timeout=10)
@@ -2009,6 +2020,7 @@ def main():
                 print(f"⚠️ Logo : {e}")
         video_ig = make_reel_video(text, ref, progress, cat_name)
         post_reel_to_instagram(video_ig, ref, text, cat, cat_name)
+        post_to_youtube(video_ig, ref, text, cat, cat_name, hour_utc)
     post_to_pinterest(img, ref, text, cat, cat_name)
     post_to_threads(img, ref, text, cat, cat_name)
     save_json(PROGRESS_FILE, progress)
