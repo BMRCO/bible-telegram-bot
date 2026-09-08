@@ -395,6 +395,21 @@ _HOOK_HESITE = re.compile(
     r"|peut-\w{2,5}re|\bsans doute\b|\bprobablement\b|\bsemble\b"
     r"|\bvraisemblablement\b|\bsupposer\b|\bcertains pensent\b)", re.I)
 
+# Classe distincte de la precedente : ici le modele n'hesite pas, il ENCADRE.
+# Il presente l'Ecriture comme un recit transmis, compile ou attribue — un
+# cadre historico-critique qui la traite comme du folklore. Constate sur
+# Genese 1:1 : « Moise rapporte le recit de la creation tel que transmis dans
+# la tradition israelite ancienne. » Les deux filtres precedents laissaient
+# passer : aucune hesitation, aucun adverbe de doute.
+#
+# Note sur les accents, differente de _HOOK_HESITE : ces mots-la en portent
+# par nature. On ecrit les radicaux sans accent quand c'est possible
+# (attribu-, compil-, transmis, tradition) et [ee] la ou il en faut.
+_HOOK_TRADITION = re.compile(
+    r"(\btradition\w*\b|\btransmis\w*\b|\battribu[ée]?\w*\b|\bcompil\w*\b"
+    r"|\br[ée]dacteur\w*\b|\br[ée]daction\b|\bl[ée]gende\w*\b|\bmythe\w*\b"
+    r"|\bfolklore\b|\brecueil\b|\bmis par ecrit\b|\bmis par écrit\b)", re.I)
+
 # Une seule generation par publication : social_caption est appele une fois par
 # plateforme ; sans cache on paierait 4 appels ET on publierait 4 accroches
 # differentes pour le meme verset le meme jour.
@@ -419,6 +434,14 @@ def generate_hook_ai(verse_text, ref, cat_name):
             "- Vouvoiement. Ton sobre et serieux. La foi est une certitude, pas "
             "une emotion.\n"
             "- INTERDIT d'inventer une date, un auteur, un lieu ou une "
+            "\n"
+            "CADRE. Tu ecris pour un lectorat evangelique francophone. L'Ecriture "
+            "est la Parole de Dieu : on la donne a lire, on ne discute pas son "
+            "origine. N'importe aucune grille exterieure au texte — historico-"
+            "critique, politique, sociologique, ideologique. Chaque affirmation "
+            "repose sur ce que le passage DIT, ou sur ce qu'une autre page de "
+            "l'Ecriture dit clairement de lui. Rien d'autre.\n"
+            "\n"
             "circonstance. N'utilise qu'un contexte certain et largement atteste.\n"
             "- Beaucoup de passages ne donnent NI auteur NI situation : la "
             "plupart des Psaumes, les Proverbes, l'Ecclesiaste. Dans ce cas, "
@@ -429,6 +452,15 @@ def generate_hook_ai(verse_text, ref, cat_name):
             "l'epreuve », jamais de « peut-etre », jamais de « sans doute ».\n"
             "- Phrase declarative au present. Le verset AFFIRME, il ne demande "
             "pas : n'ecris pas « demande a Dieu » quand le texte declare.\n"
+            "- NE NOMME JAMAIS UN AUTEUR QUE LE LIVRE NE NOMME PAS. La Genese, "
+            "Josue, les Juges, Hebreux et la plupart des Psaumes sont anonymes : "
+            "n'ecris pas « Moise rapporte », « Salomon enseigne », « l'auteur de "
+            "l'epitre ». Nomme un auteur seulement quand le texte lui-meme le "
+            "designe (Paul, Pierre, Jean, Esaie, David quand le titre le porte).\n"
+            "- L'Ecriture n'est pas presentee comme un recit transmis. Jamais de "
+            "« tradition », « transmis », « attribue a », « redacteur », "
+            "« compile », « legende », « mythe ». Le texte est la Parole, pas un "
+            "document dont on discute l'origine.\n"
             "- Aucune promesse (« va changer votre vie »), aucun superlatif, "
             "aucune statistique, aucune flatterie.\n"
             "- Ne cite pas le verset : il est affiche juste en dessous.\n"
@@ -465,6 +497,9 @@ def generate_hook_ai(verse_text, ref, cat_name):
             return None
         if _HOOK_HESITE.search(hook):
             print(f"⚠️  Accroche IA rejetee (contexte incertain) : {hook[:60]!r}")
+            return None
+        if _HOOK_TRADITION.search(hook):
+            print(f"⚠️  Accroche IA rejetee (cadre de tradition) : {hook[:60]!r}")
             return None
         return hook
     except Exception as e:
