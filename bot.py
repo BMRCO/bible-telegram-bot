@@ -384,7 +384,28 @@ USE_AI_HOOK = os.environ.get("USE_AI_HOOK", "true").strip().lower() not in ("0",
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"
 
-# Repli : vrai, sobre, sans fait historique a verifier.
+# Repli : vrai, sobre, sans fait a verifier.
+#
+# ⚠️ REGLE DE CONSTRUCTION, revue le 9 septembre. Un repli sert la CATEGORIE
+# entiere, jamais un verset precis. Il doit donc etre vrai pour CHACUN des
+# passages de cette categorie — sinon il affirme un fait faux, ce qui est pire
+# que de ne rien dire. Quatre replis ont ete remplaces pour cette raison :
+#
+#  · « Une priere ecrite pour etre chantee » (psaume) — sortie le 9 septembre
+#    sur Psaumes 112:1, qui ne porte AUCUN titre musical : c'est un psaume
+#    alphabetique, de facture sapientiale. La phrase affirmait du texte quelque
+#    chose qu'il ne dit pas. C'est BC qui l'a reperee dans le canal.
+#  · « La sagesse des Proverbes… » et « Un proverbe se lit vite… » (proverbe) —
+#    la categorie ne contient que 53 % de Proverbes ; les 87 autres passages
+#    viennent de Romains, Jacques, Ephesiens, Matthieu, Esaie, Job, Josue…
+#    Annoncer « les Proverbes » devant un verset de Romains est faux.
+#  · « Une parole annoncee, puis accomplie » (prophetie) — plusieurs passages
+#    de la categorie ne sont PAS accomplis (Apocalypse 21:4, « il n'y aura plus
+#    ni deuil »). Le repli ne doit pas trancher sur l'accomplissement.
+#
+# Ce qui reste sur : le STATUT du texte (une promesse, une parole de Jesus, une
+# assurance) et le geste de lecture. Pas le genre litteraire, pas la datation,
+# pas l'accomplissement, pas le livre d'origine.
 HOOK_FALLBACK = {
     "promise": [
         "Une promesse, pas un encouragement.",
@@ -392,22 +413,22 @@ HOOK_FALLBACK = {
     ],
     "jesus": [
         "Les paroles de Jésus, sans commentaire ajouté.",
-        "Jésus parle ici. Le texte n'ajoute rien.",
+        "Le texte est donné tel quel, sans glose.",
     ],
     "psaume": [
-        "Une prière écrite pour être chantée.",
-        "Un psaume : une prière, pas un traité.",
+        "À lire lentement, puis à relire.",
+        "Ces mots se prient autant qu'ils se lisent.",
     ],
     "proverbe": [
-        "La sagesse des Proverbes tient en une phrase.",
-        "Un proverbe se lit vite et se médite longtemps.",
+        "La sagesse biblique tient en peu de mots.",
+        "Une phrase courte, à porter toute la journée.",
     ],
     "prophetie": [
-        "Annoncé longtemps avant d'être accompli.",
-        "Une parole annoncée, puis accomplie.",
+        "Une parole annoncée. Dieu tient ce qu'il dit.",
+        "Ce qui est annoncé ici vient de Dieu.",
     ],
     "protection": [
-        "Ce que Dieu dit à ceux qui ont peur.",
+        "Ce que Dieu déclare aux siens.",
         "Une assurance donnée, pas une consolation.",
     ],
 }
@@ -542,8 +563,13 @@ def generate_hook_ai(verse_text, ref, cat_name):
             "confondre le sujet d'un verbe est une erreur de fait.\n"
             "- Beaucoup de passages ne donnent NI auteur NI situation : la "
             "plupart des Psaumes, les Proverbes, l'Ecclesiaste. Dans ce cas, "
-            "n'en invente pas. Parle de ce que le verset AFFIRME, ou de ce "
-            "qu'est le texte (une priere, une sentence de sagesse).\n"
+            "n'en invente pas — et ne te rabats PAS sur le genre du texte. "
+            "« Une priere ecrite pour etre chantee » ne dit rien de CE verset : "
+            "la meme phrase servirait pour cent cinquante psaumes. Parle de ce "
+            "que le passage affirme, sans recopier ses mots.\n"
+            "- TEST AVANT DE REPONDRE : ta phrase servirait-elle telle quelle "
+            "devant un autre passage ? Si oui, elle ne dit rien de celui-ci. "
+            "Recommence.\n"
             "- Si tu hesites entre deux contextes, c'est que tu n'en connais "
             "aucun : n'ecris ni l'un ni l'autre. Jamais de « dans l'exil ou "
             "l'epreuve », jamais de « peut-etre », jamais de « sans doute ».\n"
