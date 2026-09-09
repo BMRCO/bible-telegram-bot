@@ -783,10 +783,32 @@ def captions(theme, q, seed=0):
           f"La réponse apparaît à la fin.\n\n"
           f"Thème du jour : {label}.\n\n📖 Quiz complet — lien en bio\n\n"
           f"#Bible #LouisSegond #LaBibleApp #QuizBiblique #VersetDuJour #Foi #Chrétien")
+    # ---------------------------------------------------------------
+    # Telegram — c'est la legende SOURCE, pas seulement celle du canal.
+    # ---------------------------------------------------------------
+    # BC la recopie a la main vers TikTok, WhatsApp et X. Elle doit donc
+    # survivre a un copier-coller, ce qui impose deux choses :
+    #
+    # 1. HASHTAGS. Elles ne servent a rien SUR Telegram — une hashtag n'y
+    #    cherche que dans la conversation courante — mais elles comptent sur
+    #    TikTok et sur X. Elles restent en fin de message, APRES le lien, hors
+    #    du chemin de lecture. Le quiz n'en avait aucune alors que les six
+    #    publications de bot.py en portent depuis le 6 septembre : dans le
+    #    canal, une publication sur neuf sortait sans. Quatre, pas plus : c'est
+    #    la limite au-dela de laquelle X penalise.
+    #
+    # 2. LIEN EN TEXTE BRUT. Le lien etait masque dans un <a href>. Sur
+    #    Telegram il s'affiche bien, mais un copier-coller n'emporte QUE le
+    #    texte visible — « Le quiz complet sur labible.app » arrivait sur
+    #    TikTok et WhatsApp sans aucune URL derriere. bot.py ecrit l'URL en
+    #    clair pour cette raison exacte ; le quiz fait pareil desormais.
+    #    Ne pas « ameliorer » ceci en remettant un lien masque.
+    tg_tags = bot.CATEGORIES[CAT_MAP[theme]]["tag"]
     tg = (f"📖 <b>{plain}</b>\n\nTestez votre connaissance biblique.\n\n{head}\n\n"
           f"La réponse apparaît à la fin de la vidéo.\n\n"
           f"Thème du jour : {label}.\n\n"
-          f"👉 <a href=\"{QUIZ_URL}\">Le quiz complet sur labible.app</a>")
+          f"👉 Le quiz complet, en six thèmes :\n{QUIZ_URL}\n\n"
+          f"#LaBibleApp #LSG1910 #QuizBiblique {tg_tags}")
     th = (f"{head}\n\n{plain}\nTestez votre connaissance biblique.\n\n"
           f"La réponse à la fin de la vidéo.\n\n"
           f"Thème du jour : {label}.\n\n👉 labible.app/quiz")
