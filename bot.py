@@ -230,12 +230,25 @@ CTA_KEYWORD_GROUPS = [
         "Soyez fort et courageux : il est avec vous. Partagez cette assurance 🙏",
         "Sa puissance se déploie dans votre faiblesse. Partagez cette vérité 🙏",
     ]),
+    # « sage » est ancre (=) : en sous-chaine il attrapait viSAGE, mesSAGEr et
+    # uSAGE. Constate sur Esaie 53:3 — la prophetie du Serviteur souffrant se
+    # terminait par une phrase sur la sagesse, parce que le verset dit
+    # « visage ». Voir aussi Esaie 25:8, 50:6, Malachie 3:1, Proverbes 15:13,
+    # Hebreux 5:14.
+    #
+    # « conseil » a ete RETIRE (9 septembre), pour la meme raison que
+    # « enfants » l'avait ete du groupe famille : le mot apparait surtout dans
+    # un sens contraire. Psaumes 1:1 dit « le conseil des mechants » — le
+    # psaume enseigne a le REJETER — et Ephesiens 1:11 « le conseil de sa
+    # volonte », qui est le decret de Dieu, pas un avis sage. Les Proverbes
+    # legitimes (11:14, 15:22, 20:18, 27:9) ne perdent rien : ils retombent sur
+    # le CTA de categorie, « La sagesse de la Parole pour votre journee ».
     ("sagesse", [
-        "sagesse", "sage", "discernement", "intelligence", "instruction", "conseil",
+        "sagesse", "=sage", "discernement", "intelligence", "instruction",
     ], [
         "La sagesse de la Parole pour votre journée. Partagez-la 🙏",
         "Sa sagesse dépasse toute compréhension humaine. Partagez cette lumière 🙏",
-        "Demandez, et la sagesse vous sera donnée. Partagez cet encouragement 🙏",
+        "Sa Parole instruit celui qui l'écoute. Partagez cet encouragement 🙏",
     ]),
     ("priere", [
         "prie", "prière", "invoque", "supplication",
@@ -310,19 +323,40 @@ CTA_KEYWORD_GROUPS = [
 ]
 
 
+def _kw_present(kw, low):
+    """Un mot-cle ordinaire est cherche en SOUS-CHAINE : c'est voulu, cela
+    couvre les accords francais sans lister aime/aime/aimez/aimait.
+
+    Mais la sous-chaine se retourne contre les mots courts : « sage » est
+    dans visage, message et usage ; « paix » ne l'est dans rien, « foi » est
+    dans fois et foie. Un mot-cle prefixe de « = » exige donc une frontiere
+    de mot a GAUCHE, tout en gardant les suffixes a droite : « =sage »
+    attrape sage, sages et sagesse, mais plus visage.
+    """
+    if kw.startswith("="):
+        return re.search(r"\b" + re.escape(kw[1:]) + r"\w*", low) is not None
+    return kw in low
+
+
 def pick_cta_by_keywords(verse_text):
     """
     Cherche le premier groupe thématique dont un mot-clé apparaît dans le
-    texte du verset (recherche insensible à la casse, sous-chaîne simple —
-    couvre les variantes d'accord en français : aime/aimé/aimez...).
+    texte du verset (recherche insensible à la casse ; sous-chaîne par défaut,
+    mot entier pour les clés préfixées de « = » — voir _kw_present).
     Retourne une phrase au hasard parmi les variantes du groupe, ou None
     si aucun groupe ne correspond.
+
+    ⚠️ Le premier groupe qui correspond gagne : l'ORDRE de CTA_KEYWORD_GROUPS
+    est significatif. Avant d'ajouter un mot-clé, mesurer sur les ~914
+    passages publiables combien de versets il déclenche, et LIRE ceux qu'il
+    attrape. Deux mots ont déjà dû être retirés pour avoir attrapé le sens
+    contraire : « enfants » et « conseil ».
     """
     if not verse_text:
         return None
     low = verse_text.lower()
     for _name, keywords, phrases in CTA_KEYWORD_GROUPS:
-        if any(kw in low for kw in keywords):
+        if any(_kw_present(kw, low) for kw in keywords):
             return random.choice(phrases)
     return None
 
@@ -410,8 +444,51 @@ _HOOK_TRADITION = re.compile(
     r"|\br[ée]dacteur\w*\b|\br[ée]daction\b|\bl[ée]gende\w*\b|\bmythe\w*\b"
     r"|\bfolklore\b|\brecueil\b|\bmis par ecrit\b|\bmis par écrit\b)", re.I)
 
+# Cinquieme defense : l'accroche qui recopie le verset.
+#
+# Le defaut n'est pas une faute, c'est un gachis : la premiere ligne est la
+# SEULE visible avant « ... plus », et elle sert a redire ce que le lecteur
+# va lire deux lignes plus bas. Constate le 9 septembre sur Psaumes 1:1-3 :
+# « Celui qui rejette le conseil des mechants prospere comme un arbre aupres
+# de l'eau. » — conseil, mechants, arbre, eau : tout vient du verset.
+#
+# LIMITE CONNUE, a garder en tete : cette mesure est LEXICALE. Elle attrape la
+# recopie, pas la paraphrase par synonymes. « Dieu satisfait celui qui a soif »
+# devant « il a satisfait l'ame alteree » ne marque que 20 % et passe. C'est
+# le prompt qui doit traiter ce cas ; ce filtre n'est que le dernier grillage.
+_REFORM_STOP = set("""au aux avec ce ces dans de des du elle en et eux il ils je
+la le les leur lui ma mais me meme mes moi mon ne nos notre nous on ou par pas
+pour qu que qui sa se ses son sur ta te tes toi ton tu un une vos votre vous
+ete etee etees etes etant suis est sommes sont sera serai seras serons seront
+avons avez ont aura auras aurons auront comme si plus tout tous toute toutes
+cela celui celle ceux car donc or ni lorsque quand alors ainsi aussi bien
+encore deja jamais toujours etre avoir faire dire leurs""".split())
+
+
+def _mots_de_contenu(txt):
+    s = unicodedata.normalize("NFD", txt.lower())
+    s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+    return [w for w in re.findall(r"[a-z]+", s)
+            if len(w) > 3 and w not in _REFORM_STOP]
+
+
+def taux_de_recopie(hook, verse_text):
+    """Part des mots de contenu de l'accroche deja presents dans le verset.
+    Comparaison sur les 5 premieres lettres, pour que « satisfait » et
+    « satisfaire » comptent comme le meme mot."""
+    h = _mots_de_contenu(hook)
+    if not h:
+        return 0.0
+    v = {w[:5] for w in _mots_de_contenu(verse_text)}
+    return sum(1 for w in h if w[:5] in v) / len(h)
+
+
+# 0,45 : mesure sur des cas reels. Les accroches saines tombent entre 0 et 29 %,
+# la recopie constatee a 50 %. Le seuil laisse donc une marge des deux cotes.
+HOOK_RECOPIE_MAX = 0.45
+
 # Une seule generation par publication : social_caption est appele une fois par
-# plateforme ; sans cache on paierait 4 appels ET on publierait 4 accroches
+# plateforme ; sans cache on paierait 6 appels ET on publierait 6 accroches
 # differentes pour le meme verset le meme jour.
 _HOOK_CACHE = {}
 
@@ -426,23 +503,43 @@ def generate_hook_ai(verse_text, ref, cat_name):
             "Tu ecris UNE seule phrase d'accroche en francais, placee juste avant "
             "un verset biblique, pour un post Instagram/Facebook/Threads de "
             "LaBible.app (Bible Louis Segond 1910, gratuite).\n\n"
+            "CADRE. Tu ecris pour un lectorat evangelique francophone. L'Ecriture "
+            "est la Parole de Dieu : on la donne a lire, on ne discute pas son "
+            "origine. N'applique aucune grille exterieure au texte — historico-"
+            "critique, politique, sociologique, ideologique. Chaque affirmation "
+            "repose sur ce que le passage DIT, ou sur ce qu'une autre page de "
+            "l'Ecriture dit clairement de lui. Rien d'autre.\n\n"
             f"Verset ({ref}) : « {verse_text} »\n\n"
             "But : donner envie de lire le verset en eclairant SON CONTEXTE reel "
             "— a qui il s'adresse, dans quelle situation, a quelle distance de son "
             "accomplissement.\n\n"
             "Regles strictes :\n"
+            "- NE REFORMULE PAS LE VERSET. Le lecteur le lit juste en dessous. "
+            "Redire son contenu avec d'autres mots ne lui apprend rien et gache "
+            "la seule ligne visible avant « ... plus ». Devant « il a satisfait "
+            "l'ame alteree », ecrire « Dieu satisfait celui qui a soif » est un "
+            "echec, meme si c'est vrai. Un synonyme reste une reformulation.\n"
+            "- L'accroche apporte ce que le verset SEUL ne donne pas : qui parle, "
+            "a qui, ce qui precede dans le chapitre, ou ce qu'une autre page de "
+            "l'Ecriture affirme clairement de ce passage.\n"
+            "- VISE LE CENTRE DU PASSAGE, PAS SA PREMIERE CLAUSE. Beaucoup de "
+            "textes commencent par ce qu'il ne faut PAS faire, puis basculent "
+            "sur « Mais » : le sujet est apres le « Mais ». Le Psaume 1 n'a pas "
+            "pour sujet le conseil des mechants ; il a pour sujet le plaisir "
+            "pris a la loi de l'Eternel, meditee jour et nuit. Prendre la partie "
+            "negative pour le sujet, c'est inverser le passage.\n"
+            "- Ne relie pas deux elements du texte par un lien de cause que le "
+            "texte n'etablit pas. Dans le Psaume 1, l'arbre plante pres de l'eau "
+            "ne decoule pas du refus des mechants, mais de la loi meditee.\n"
             "- Vouvoiement. Ton sobre et serieux. La foi est une certitude, pas "
             "une emotion.\n"
             "- INTERDIT d'inventer une date, un auteur, un lieu ou une "
-            "\n"
-            "CADRE. Tu ecris pour un lectorat evangelique francophone. L'Ecriture "
-            "est la Parole de Dieu : on la donne a lire, on ne discute pas son "
-            "origine. N'importe aucune grille exterieure au texte — historico-"
-            "critique, politique, sociologique, ideologique. Chaque affirmation "
-            "repose sur ce que le passage DIT, ou sur ce qu'une autre page de "
-            "l'Ecriture dit clairement de lui. Rien d'autre.\n"
-            "\n"
             "circonstance. N'utilise qu'un contexte certain et largement atteste.\n"
+            "- N'invente aucune circonstance de lieu ni de mouvement que le "
+            "chapitre ne donne pas : pas de « en descendant de », « en sortant "
+            "de », « sur le chemin de », « au bord du lac » si le texte ne le "
+            "dit pas. Et verifie QUI accomplit l'action avant de l'ecrire : "
+            "confondre le sujet d'un verbe est une erreur de fait.\n"
             "- Beaucoup de passages ne donnent NI auteur NI situation : la "
             "plupart des Psaumes, les Proverbes, l'Ecclesiaste. Dans ce cas, "
             "n'en invente pas. Parle de ce que le verset AFFIRME, ou de ce "
@@ -500,6 +597,10 @@ def generate_hook_ai(verse_text, ref, cat_name):
             return None
         if _HOOK_TRADITION.search(hook):
             print(f"⚠️  Accroche IA rejetee (cadre de tradition) : {hook[:60]!r}")
+            return None
+        taux = taux_de_recopie(hook, verse_text)
+        if taux >= HOOK_RECOPIE_MAX:
+            print(f"⚠️  Accroche IA rejetee (recopie du verset, {taux:.0%}) : {hook[:60]!r}")
             return None
         return hook
     except Exception as e:
