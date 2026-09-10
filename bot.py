@@ -552,12 +552,74 @@ HOOK_RECOPIE_MAX = 0.40
 _HOOK_CACHE = {}
 
 
+# 6000 caracteres ~ 1500 tokens : 90 % des chapitres publies passent entiers
+# (median 2983, p90 5752). Au-dessus, on decoupe — voir plus bas.
+CONTEXTE_MAX_CAR = 6000
+
+
+def contexte_du_chapitre(ref):
+    """Le chapitre d'ou vient le verset, numerote, pour le donner au modele.
+
+    POURQUOI. Jusqu'au 10 septembre, le prompt ne recevait QUE le verset isole.
+    Toutes les inventions constatees viennent de la : le modele avait besoin de
+    contexte, n'en avait aucun, et l'a fabrique.
+
+      · « en descendant de Zachee » (Luc 19:10) — c'est Zachee qui descend, le
+        chapitre le dit deux fois.
+      · « des eglises habitees depuis des annees » (Romains 8:31) — une seule
+        eglise, que Paul n'avait jamais visitee ; Romains 1 le dit.
+      · « celui qui rejette le conseil des mechants prospere » (Psaumes 1) — le
+        « Mais » du verset 2 donne la vraie cause, il etait hors du champ.
+
+    Les trois etaient verifiables dans le chapitre. Le modele ne l'avait pas.
+
+    Retourne "" si le chapitre est introuvable : le prompt fonctionne sans,
+    exactement comme avant. Ce n'est jamais bloquant.
+
+    Les chapitres tres longs (Psaumes 119, 13 000 caracteres) sont ramenes a
+    une fenetre autour du verset : au-dela, on paie des tokens pour du texte
+    qui n'eclaire plus le passage.
+    """
+    mm = re.match(r"^(.+?)\s+(\d+):(\d+)", ref.strip())
+    if not mm:
+        return ""
+    book, ch, v0 = mm.group(1), mm.group(2), int(mm.group(3))
+    try:
+        index = get_bible_index()
+        real = BOOK_NAME_MAP.get(book, book)
+        versets = index.get(real, {}).get(ch)
+        if not versets:
+            return ""
+        tous = sorted(int(n) for n in versets)
+        entier = sum(len(versets[str(n)]) for n in tous)
+        if entier <= CONTEXTE_MAX_CAR:
+            nums = tous
+        else:
+            # Fenetre autour du verset, PLUS les deux premiers versets du
+            # chapitre : c'est la qu'une epitre nomme ses destinataires et
+            # qu'un recit plante la scene. Sans eux, on retombe pile dans
+            # l'erreur de Romains 8:31, ou le destinataire a ete invente.
+            fen = {n for n in tous if v0 - 12 <= n <= v0 + 12}
+            nums = sorted(fen | set(tous[:2]))
+        lignes, precedent = [], None
+        for n in nums:
+            if precedent is not None and n > precedent + 1:
+                lignes.append("[...]")
+            lignes.append(f"{n}. {clean_text(strip_rubric(versets[str(n)]))}")
+            precedent = n
+        return f"{book} {ch}\n" + "\n".join(lignes)
+    except Exception as e:
+        print(f"⚠️  Contexte du chapitre indisponible : {str(e)[:100]}")
+        return ""
+
+
 def generate_hook_ai(verse_text, ref, cat_name):
     """Premiere ligne generee. Retourne None en cas d'echec — ne leve JAMAIS :
     un souci d'API ne doit pas bloquer une publication."""
     if not ANTHROPIC_API_KEY:
         return None
     try:
+        contexte = contexte_du_chapitre(ref)
         prompt = (
             "Tu ecris UNE seule phrase d'accroche en francais, placee juste avant "
             "un verset biblique, pour un post Instagram/Facebook/Threads de "
@@ -568,7 +630,11 @@ def generate_hook_ai(verse_text, ref, cat_name):
             "critique, politique, sociologique, ideologique. Chaque affirmation "
             "repose sur ce que le passage DIT, ou sur ce qu'une autre page de "
             "l'Ecriture dit clairement de lui. Rien d'autre.\n\n"
-            f"Verset ({ref}) : « {verse_text} »\n\n"
+            + (f"LE CHAPITRE, pour que tu n'aies rien a deviner. C'est la SEULE "
+               f"source de contexte autorisee : si un fait n'y est pas, il "
+               f"n'existe pas pour cette accroche.\n\n{contexte}\n\n"
+               if contexte else "")
+            + f"LE VERSET A ANNONCER ({ref}) : « {verse_text} »\n\n"
             "But : donner envie de lire le verset en eclairant SON CONTEXTE reel "
             "— a qui il s'adresse, dans quelle situation, a quelle distance de son "
             "accomplissement.\n\n"
