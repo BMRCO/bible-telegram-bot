@@ -465,7 +465,29 @@ _HOOK_TRADITION = re.compile(
     r"|\br[ée]dacteur\w*\b|\br[ée]daction\b|\bl[ée]gende\w*\b|\bmythe\w*\b"
     r"|\bfolklore\b|\brecueil\b|\bmis par ecrit\b|\bmis par écrit\b)", re.I)
 
-# Cinquieme defense : l'accroche qui recopie le verset.
+# Cinquieme defense : la duree inventee.
+#
+# Constate le 10 septembre sur Romains 8:31 : « Paul ecrit a des eglises
+# habitees par l'Esprit Saint depuis des annees. » Le texte ne donne aucune
+# duree, et l'epitre elle-meme dit le contraire de ce que la phrase suppose :
+# Paul n'etait JAMAIS alle a Rome (Romains 1:13, « j'ai souvent forme le projet
+# d'aller vous voir, mais j'en ai ete empeche jusqu'ici »).
+#
+# Une duree vague est le raccourci le plus courant pour fabriquer du contexte :
+# elle sonne informee, ne coute rien a ecrire, et n'est verifiable nulle part
+# dans le passage. Aucun des quatre filtres precedents ne l'attrapait — la
+# phrase n'hesite pas, ne recopie pas, ne parle pas de tradition.
+#
+# On vise la FORME « depuis / pendant / cela fait + quantite vague ». Une
+# duree precise donnee par le texte lui-meme (« quarante ans », « trois
+# jours ») passe, et c'est voulu : celle-la, le texte la dit.
+_HOOK_DUREE = re.compile(
+    r"((depuis|pendant|apr[eè]s)\s+(de\s+)?(tr[eè]s\s+)?"
+    r"(longtemps|des\s+(ann[ée]es|mois|jours|si[eè]cles|d[ée]cennies|g[ée]n[ée]rations))"
+    r"|cela fait des\s+(ann[ée]es|mois|si[eè]cles)"
+    r"|de\s+longue\s+date|de\s+longues\s+ann[ée]es)", re.I)
+
+# Sixieme defense : l'accroche qui recopie le verset.
 #
 # Le defaut n'est pas une faute, c'est un gachis : la premiere ligne est la
 # SEULE visible avant « ... plus », et elle sert a redire ce que le lecteur
@@ -561,6 +583,15 @@ def generate_hook_ai(verse_text, ref, cat_name):
             "de », « sur le chemin de », « au bord du lac » si le texte ne le "
             "dit pas. Et verifie QUI accomplit l'action avant de l'ecrire : "
             "confondre le sujet d'un verbe est une erreur de fait.\n"
+            "- AUCUNE DUREE. Jamais « depuis des annees », « depuis "
+            "longtemps », « de longue date ». Ces formules sonnent informees et "
+            "ne reposent sur rien. N'ecris une duree que si le passage la "
+            "donne lui-meme.\n"
+            "- LES DESTINATAIRES : ce que la lettre dit d'eux, rien de plus. "
+            "Romains s'adresse a UNE eglise, celle de Rome (Romains 1:7), que "
+            "Paul n'avait jamais visitee (Romains 1:13). Ecrire « des eglises » "
+            "au pluriel, ou leur preter une histoire, est une erreur de fait. "
+            "Si tu n'es pas certain du destinataire, ne le mentionne pas.\n"
             "- Beaucoup de passages ne donnent NI auteur NI situation : la "
             "plupart des Psaumes, les Proverbes, l'Ecclesiaste. Dans ce cas, "
             "n'en invente pas — et ne te rabats PAS sur le genre du texte. "
@@ -623,6 +654,9 @@ def generate_hook_ai(verse_text, ref, cat_name):
             return None
         if _HOOK_TRADITION.search(hook):
             print(f"⚠️  Accroche IA rejetee (cadre de tradition) : {hook[:60]!r}")
+            return None
+        if _HOOK_DUREE.search(hook):
+            print(f"⚠️  Accroche IA rejetee (duree inventee) : {hook[:60]!r}")
             return None
         taux = taux_de_recopie(hook, verse_text)
         if taux >= HOOK_RECOPIE_MAX:
