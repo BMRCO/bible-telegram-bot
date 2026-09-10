@@ -419,9 +419,15 @@ HOOK_FALLBACK = {
         "À lire lentement, puis à relire.",
         "Ces mots se prient autant qu'ils se lisent.",
     ],
+    # ⚠️ « Une phrase courte, a porter toute la journee » a ete retiree le
+    # 10 septembre — ecrite la veille par moi, en corrigeant justement des
+    # replis qui affirmaient des faits faux. Elle annonce la LONGUEUR du
+    # verset, et 39 des 189 passages de la categorie depassent 25 mots :
+    # elle est sortie devant Josue 1:8 (44 mots), et Psaumes 1:1 en fait 79.
+    # Un repli ne decrit pas le verset — il ne peut pas le voir.
     "proverbe": [
-        "La sagesse biblique tient en peu de mots.",
-        "Une phrase courte, à porter toute la journée.",
+        "La sagesse de la Parole, donnée à lire.",
+        "À garder avec vous aujourd'hui.",
     ],
     "prophetie": [
         "Une parole annoncée. Dieu tient ce qu'il dit.",
@@ -526,9 +532,19 @@ def taux_de_recopie(hook, verse_text):
     return sum(1 for w in h if w[:5] in v) / len(h)
 
 
-# 0,45 : mesure sur des cas reels. Les accroches saines tombent entre 0 et 29 %,
-# la recopie constatee a 50 %. Le seuil laisse donc une marge des deux cotes.
-HOOK_RECOPIE_MAX = 0.45
+# 0,40 — abaisse de 0,45 le 10 septembre.
+#
+# A 0,45, une reformulation est passee : sur Genese 1:27 (« Dieu crea l'homme a
+# son image… il crea l'homme et la femme »), l'accroche « Au commencement, Dieu
+# etablit l'homme et la femme dans sa propre ressemblance » marque 43 % et est
+# sortie. C'est bien une reformulation : etablit = crea, ressemblance = image.
+#
+# Mesure sur les cas connus : les accroches saines tombent entre 0 et 17 %, les
+# reformulations a 43 % et 50 %. Le trou est large ; 0,40 tombe dedans avec
+# 23 points de marge sous la meilleure accroche saine. Ne pas descendre plus
+# bas sans remesurer : sur un verset court, une bonne accroche partage
+# fatalement quelques mots avec lui.
+HOOK_RECOPIE_MAX = 0.40
 
 # Une seule generation par publication : social_caption est appele une fois par
 # plateforme ; sans cache on paierait 6 appels ET on publierait 6 accroches

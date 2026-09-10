@@ -17,6 +17,7 @@ Usage :
 """
 
 import os
+import re
 import sys
 import json
 import math
@@ -700,6 +701,9 @@ def generate_quiz_hook_ai(q):
             "aucune promesse, aucune flatterie.\n"
             "- Tu ne connais pas le verset : n'ecris rien sur son contenu.\n"
             "- Aucun nom de livre biblique, aucun nom propre, aucun chiffre.\n"
+            "- Les trois reponses proposees sont des GROUPES de mots, jamais "
+            "un mot isole. N'ecris donc jamais « quel mot » : la question ne "
+            "correspondrait pas aux reponses affichees.\n"
             "- 10 mots maximum. Termine par un point d'interrogation.\n"
             "- Reponds UNIQUEMENT avec la question, sans guillemets."
         )
@@ -725,6 +729,14 @@ def generate_quiz_hook_ai(q):
             return None
         if any(c.isdigit() for c in txt):
             print(f"⚠️  Accroche quiz rejetee (chiffre) : {txt[:60]!r}")
+            return None
+        # « mot » au singulier : les trois options sont des groupes de mots,
+        # jamais un mot isole. Sorti le 10 septembre — « Quiz : quel mot ouvre
+        # ce verset ? » au-dessus de trois options du genre « Le soir, le
+        # matin, et a midi ». La question ne correspondait pas aux reponses.
+        # Le pluriel passe : « par quels mots s'ouvre ce verset ? » est juste.
+        if re.search(r"\bmot\b", txt, re.I):
+            print(f"⚠️  Accroche quiz rejetee (« mot » au singulier) : {txt[:60]!r}")
             return None
         # « Quiz : » est ajoute par le code ; sinon on obtiendrait « Quiz : quiz... ».
         if txt.lower().startswith("quiz"):
