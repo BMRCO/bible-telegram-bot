@@ -187,20 +187,34 @@ CTA_DEFAULT = "Partagez ce verset avec quelqu'un qui en a besoin 🙏"
 # ---------------------------------------------------
 CTA_KEYWORD_GROUPS = [
     ("protection", [
-        "refuge", "forteresse", "rocher", "bouclier", "rempart", "abri",
+        "refuge", "forteresse", "=rocher", "bouclier", "rempart", "abri",
         "protèg", "protégera", "veille sur", "gardera", "gardien", "te garde",
     ], [
         "Dieu est votre refuge en toute circonstance. Partagez cette protection 🙏",
         "Sous sa garde, rien ne vous atteint sans qu'il le permette. Partagez cette assurance 🙏",
         "Il est votre rocher et votre forteresse. Partagez cette confiance 🙏",
         "L'Éternel veille sur les siens à chaque instant. Partagez cette vérité 🙏",
+    ], [
+        # C'est l'HOMME qui garde, pas Dieu qui protege.
+        "veille sur sa bouche", "gardera ma parole", "gardez mes commandements",
     ]),
     ("peur", [
-        "crains", "crainte", "peur", "effroi", "trembl", "épouvant",
+        "crains", "crainte", "=peur", "effroi", "trembl", "épouvant",
     ], [
         "N'ayez crainte : il marche avec vous. Partagez cette parole avec quelqu'un qui a peur 🙏",
         "La peur recule devant sa présence. Partagez cet encouragement 🙏",
         "Il chasse toute crainte du cœur qui se confie en lui. Partagez cette paix 🙏",
+    ], [
+        # LA FAUTE LA PLUS GRAVE DU LOT. « La crainte de l'Eternel est le
+        # commencement de la sagesse » : le verset COMMANDE cette crainte, et
+        # la phrase de cloture disait que Dieu la chasse. Elle contredisait le
+        # texte qu'elle accompagnait. Dix passages touches — Proverbes 1:7,
+        # 9:10, 15:33, 22:4, 23:17, 2:1-5, Psaumes 111:10, Job 28:28,
+        # Esaie 11:2-3, Ecclesiaste 12:13.
+        "crainte de l'éternel", "crainte du seigneur", "crains l'éternel",
+        "crains dieu", "crainte des hommes", "ont eu de la crainte",
+        # « de peur que » = afin que ne pas. Aucun rapport avec la peur.
+        "de peur que",
     ]),
     ("paix", [
         "paix", "tranquille", "tranquillité", "calme", "apaise",
@@ -208,6 +222,15 @@ CTA_KEYWORD_GROUPS = [
         "Recevez cette paix qui dépasse toute intelligence. Partagez-la 🙏",
         "Que ce verset apporte le calme à votre journée. Partagez-le 🙏",
         "Sa paix surpasse toute agitation. Partagez cette tranquillité 🙏",
+    ], [
+        # Esaie 53:5 : « Le chatiment qui nous donne la paix est tombe sur
+        # lui. » La paix y est le fruit de la croix, pas le calme d'une
+        # journee. Idem pour le Prince de la paix (Esaie 9:6).
+        "châtiment qui nous donne la paix", "prince de la paix",
+        # Ici la paix est COMMANDEE au lecteur, pas donnee.
+        "recherchez la paix", "procurent la paix",
+        # « calme la fureur », « la querelle s'apaise » : rien a voir.
+        "calme la fureur", "querelle s'apaise", "esprit calme",
     ]),
     ("amour", [
         "aime", "amour", "aimé", "charité", "tendresse",
@@ -215,6 +238,14 @@ CTA_KEYWORD_GROUPS = [
         "L'amour de Dieu ne s'épuise jamais. Partagez cette vérité 🙏",
         "Vous êtes aimé au-delà de ce que vous imaginez. Partagez cet amour 🙏",
         "Son amour est fidèle, jour après jour. Partagez-le avec un proche 🙏",
+    ], [
+        # L'amour de l'argent n'est pas l'amour de Dieu.
+        "aime l'argent", "amour de l'argent", "aimera l'autre",
+        # « bien-aimes » est un vocatif — Paul s'adresse a ses freres. Le mot
+        # ne dit rien de l'amour de Dieu dans ces versets.
+        "bien-aimé",
+        # Ici l'amour est COMMANDE, pas recu.
+        "aimez vos ennemis",
     ]),
     ("esperance", [
         "espérance", "espère", "espérer", "espoir", "avenir",
@@ -222,13 +253,27 @@ CTA_KEYWORD_GROUPS = [
         "Gardez espérance — Dieu est fidèle à ses promesses. Partagez avec celui qui doute 🙏",
         "Il tient l'avenir entre ses mains. Partagez cette espérance 🙏",
         "L'espérance en Dieu ne déçoit jamais. Partagez-la aujourd'hui 🙏",
+    ], [
+        # Proverbes 31:25 parle de la femme vaillante, pas de l'esperance en Dieu.
+        "se rit de l'avenir",
     ]),
     ("force", [
-        "force", "fort", "forte", "courage", "fortifie", "puissance",
+        "force", "=fort", "forte", "courage", "fortifie", "puissance",
     ], [
         "Il renouvelle vos forces chaque jour. Partagez cet encouragement 🙏",
         "Soyez fort et courageux : il est avec vous. Partagez cette assurance 🙏",
         "Sa puissance se déploie dans votre faiblesse. Partagez cette vérité 🙏",
+    ], [
+        # La « puissance » du Fils de l'homme venant sur les nuees est celle du
+        # jugement, pas un encouragement quotidien. Matthieu 24:30 et 26:64,
+        # Marc 13:26, Luc 21:25-27, 2 Thessaloniciens 1:7-8.
+        "sur les nuées", "sur une nuée", "fils de l'homme venant",
+        # Proverbes 24:10 est un reproche : « Ta force n'est que detresse. »
+        "ta force n'est que", "peu de puissance",
+        # Esaie 11:2 : l'Esprit repose sur le CHRIST annonce, ce n'est pas un
+        # encouragement adresse au lecteur. Proverbes 31:25 decrit la femme
+        # vaillante, pas la force que Dieu donne.
+        "esprit de conseil et de force", "revêtue de force",
     ]),
     # « sage » est ancre (=) : en sous-chaine il attrapait viSAGE, mesSAGEr et
     # uSAGE. Constate sur Esaie 53:3 — la prophetie du Serviteur souffrant se
@@ -261,6 +306,10 @@ CTA_KEYWORD_GROUPS = [
     ], [
         "Son pardon efface tout, sans condition. Partagez cette bonne nouvelle 🙏",
         "La grâce de Dieu couvre toute faute. Partagez cette vérité 🙏",
+    ], [
+        # Colossiens 3:12 : la misericorde y est un vetement a REVETIR par le
+        # lecteur, pas le pardon que Dieu accorde.
+        "entrailles de miséricorde",
     ]),
     ("deuil", [
         "console", "consolation", "pleure", "larmes", "deuil", "chagrin", "quebranté", "quebrantés",
@@ -273,12 +322,22 @@ CTA_KEYWORD_GROUPS = [
     ], [
         "Il guérit ceux qui ont le cœur brisé. Partagez cette espérance 🙏",
         "Sa guérison touche le corps et l'âme. Partagez cette vérité 🙏",
+    ], [
+        # Esaie 53:5 : « par ses meurtrissures nous sommes gueris ». La
+        # guerison y est celle du peche, pas du corps. Y mettre « sa guerison
+        # touche le corps et l'ame » serait lire l'expiation comme une
+        # promesse de sante. Le verset retombe sur le CTA de sa categorie.
+        "meurtrissures",
     ]),
     ("combat", [
         "ennemi", "victoire", "vainc", "vainqueur", "combat", "armure", "diable", "satan",
     ], [
         "En Christ, vous êtes plus que vainqueur. Partagez cette victoire 🙏",
         "Aucune arme forgée contre vous ne prospérera. Partagez cette assurance 🙏",
+    ], [
+        # Proverbes 24:17 defend precisement de se rejouir de la chute de
+        # l'ennemi ; « vous etes plus que vainqueur » dirait le contraire.
+        "ne te réjouis pas de la chute",
     ]),
     ("solitude", [
         "abandonnera", "délaissera", "jamais seul",
@@ -314,6 +373,10 @@ CTA_KEYWORD_GROUPS = [
         "accompli", "prophète", "prophétie", "annoncé",
     ], [
         "Ce que Dieu annonce, il l'accomplit. Partagez cette vérité 🙏",
+    ], [
+        # 1 Jean 4:1 parle des FAUX prophetes ; Jacques 1:20 dit ce que la
+        # colere de l'homme N'accomplit PAS. Le mot est la, le sens est inverse.
+        "faux prophètes", "n'accomplit pas",
     ]),
     ("promesse", [
         "promesse", "promet",
@@ -354,10 +417,23 @@ def pick_cta_by_keywords(verse_text):
     """
     if not verse_text:
         return None
-    low = verse_text.lower()
-    for _name, keywords, phrases in CTA_KEYWORD_GROUPS:
-        if any(_kw_present(kw, low) for kw in keywords):
-            return random.choice(phrases)
+    # clean_text() pose des apostrophes TYPOGRAPHIQUES (U+2019) dans le texte
+    # biblique. Sans cette normalisation, un motif ecrit avec l'apostrophe
+    # droite ne matche jamais : « crainte de l'Eternel » passait au travers,
+    # et c'etait exactement le cas le plus grave de la liste.
+    low = verse_text.lower().replace("\u2019", "'")
+    for groupe in CTA_KEYWORD_GROUPS:
+        _name, keywords, phrases = groupe[0], groupe[1], groupe[2]
+        exclusions = groupe[3] if len(groupe) > 3 else ()
+        if not any(_kw_present(kw, low) for kw in keywords):
+            continue
+        # Le veto passe AVANT le choix de la phrase : un seul motif d'exclusion
+        # present et le groupe entier est ecarte. Le verset retombe alors sur le
+        # CTA de categorie, generique et toujours vrai. C'est voulu : devant un
+        # doute, mieux vaut une phrase large qu'une phrase fausse.
+        if any(x in low for x in exclusions):
+            continue
+        return random.choice(phrases)
     return None
 
 
