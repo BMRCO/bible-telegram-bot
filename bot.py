@@ -1052,8 +1052,34 @@ def generate_hook_ai(verse_text, ref, cat_name):
         return None
 
 
+# ===========================================================================
+# ACCROCHE — RETIREE DES PUBLICATIONS LE 11 SEPTEMBRE 2026
+#
+# Plus aucun chemin de publication n'appelle hook_for(). Les legendes sont
+# revenues a leur forme du 5 septembre, anterieure a l'accroche : la premiere
+# ligne est le verset (Instagram, Pinterest, YouTube) ou sa reference
+# (Facebook, Threads, Telegram). Aucun appel a l'API Anthropic n'a plus lieu
+# depuis bot.py.
+#
+# POURQUOI. L'accroche etait le SEUL texte du systeme que personne n'avait relu
+# avant publication. Neuf defauts distincts ont ete trouves entre le 7 et le 11
+# septembre — tous de la meme facon : BC lisant le canal, une publication a la
+# fois. Le dispositif qui les arrete existe et reste entier ci-dessous (dix
+# defenses, vingt-trois regles), mais c'est toujours une personne qui decouvre
+# le dixieme defaut. Par le §10 du cahier des charges, le temps est la
+# ressource rare : ce cout-la pesait plus que la ligne de contexte gagnee.
+#
+# RIEN N'A ETE SUPPRIME. generate_hook_ai, les dix filtres, le repli fixe et
+# test_accroches.py sont intacts et coherents entre eux. Le banc d'essai
+# fonctionne toujours : il peut servir a decider AVANT de remettre quoi que ce
+# soit. Pour remettre l'accroche, il suffit de replacer l'appel a hook_for()
+# aux cinq endroits d'ou il a ete retire — social_caption, telegram_caption,
+# post_to_pinterest, et les deux descriptions YouTube.
+# ===========================================================================
 def hook_for(ref, verse_text, cat_name):
-    """Accroche de la publication. IA si activee, sinon repli fixe.
+    """Accroche de la publication — PLUS APPELEE, voir la note ci-dessus.
+
+    IA si activee, sinon repli fixe.
     Mise en cache : une seule accroche (et un seul appel) par verset."""
     cle = (ref, cat_name)
     if cle in _HOOK_CACHE:
@@ -1162,14 +1188,12 @@ def social_caption(ref, text, cat, cat_name, chapter_url=None, reseau="fb"):
     reseau : "fb" (hashtags Facebook), "ig" (Instagram, lien en bio),
              "threads" (hashtags courts + lien)."""
     fin = closing_line(cat_name, text, ref, SOCIAL_CLOSERS)
-    # Premiere ligne : seule visible avant le « ... plus ».
-    tete = hook_for(ref, text, cat_name)
     if reseau == "ig":
-        return (f"{tete}\n\n« {text} »\n— {cat['emoji']} {ref}\n\n"
+        return (f"« {text} »\n— {cat['emoji']} {ref}\n\n"
                 f"📖 Bible complète et gratuite — lien en bio\n\n"
                 f"{fin}\n\n{build_hashtags_ig(cat_name)}")
     tags = build_hashtags_fb(cat_name) if reseau == "fb" else build_hashtags_ig(cat_name)
-    return (f"{tete}\n\n{cat['emoji']} {ref}\n\n« {text} »\n\n"
+    return (f"{cat['emoji']} {ref}\n\n« {text} »\n\n"
             f"📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n"
             f"{fin}\n\n{tags}")
 
@@ -1180,14 +1204,12 @@ def telegram_caption(ref, text, cat, cat_name, chapter_url):
     Pas de hashtags : sur Telegram une hashtag ne cherche que dans la
     conversation courante, elle n'apporte aucune decouverte.
 
-    L'accroche, elle, est presente comme sur les autres reseaux — meme
-    generation, meme cache : un seul appel API sert les quatre plateformes."""
+    Pas d'accroche non plus : voir la note au-dessus de hook_for()."""
     fin = closing_line(cat_name, text, ref, TG_CLOSERS)
-    tete = hook_for(ref, text, cat_name)
     # Les hashtags ne servent a rien SUR Telegram — mais la legende du canal est
     # recopiee a la main vers TikTok, ou elles comptent. Elles restent donc en
     # fin de message, apres le lien, hors du chemin de lecture.
-    return (f"{tete}\n\n{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n"
+    return (f"{cat['emoji']} <b>{ref}</b>\n\n« {text} »\n\n"
             f"{fin}\n📖 {chapter_url}\n\n"
             f"#LaBibleApp #LSG1910 #VersetDuJour {cat['tag']}")
 
@@ -1648,11 +1670,7 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
     pin_keywords = {"promise": "Promesses de Dieu", "jesus": "Paroles de Jésus",
                     "psaume": "Psaumes Bibliques", "proverbe": "Sagesse Biblique", "prophetie": "Prophéties Bibliques",
                     "protection": "Protection Divine"}
-    # L'accroche manquait ici : Pinterest etait le seul reseau a construire sa
-    # description sans passer par hook_for(). Meme cache que les autres, donc
-    # aucun appel API supplementaire.
-    tete = hook_for(ref, text, cat_name)
-    description = (f"{tete}\n\n« {text} »\n— {ref} (Bible Louis Segond 1910)\n\n"
+    description = (f"« {text} »\n— {ref} (Bible Louis Segond 1910)\n\n"
                    f"{pin_keywords.get(cat_name, 'Verset biblique')} en français. "
                    f"Lisez le chapitre entier gratuitement, sans compte et sans publicité, "
                    f"sur LaBible.app :\n{chapter_url}")
@@ -2234,10 +2252,7 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
         youtube = build("youtube", "v3", credentials=creds)
         title = build_yt_title(cat_name, cat, ref, hour_utc)
         chapter_url = parse_ref_to_chapter_url(ref)
-        # Meme accroche que les autres plateformes (meme cache, aucun appel
-        # supplementaire). Sur YouTube elle sert de premiere ligne sous le titre.
-        description = (f"{hook_for(ref, text, cat_name)}\n\n"
-            f"« {text} »\n"
+        description = (f"« {text} »\n"
             f"— {ref} (LSG 1910)\n\n"
             f"{ref} en français — texte de la Bible Louis Segond 1910, domaine public.\n\n"
             f"📖 Lire le chapitre entier, gratuitement et sans compte :\n{chapter_url}\n"
@@ -2510,8 +2525,7 @@ def main_parabole():
             yt_title = f"✝️ {title} — {ref_range} | Bible LSG1910"[:100]
             _ref0 = verses[0][0] if verses else ""
             _txt0 = verses[0][1] if verses else ""
-            description = (f"{hook_for(_ref0, _txt0, 'jesus')}\n\n"
-                + f"✝️ {title}\n\n"
+            description = (f"✝️ {title}\n\n"
                 + "\n".join([f"{r} — {t}" for r, t in verses])
                 + f"\n\n📖 Lire le passage complet : {parabole_url}\n"
                 + f"🔔 Abonnez-vous pour plus de paraboles 🙏\n\n"
