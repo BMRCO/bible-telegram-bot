@@ -493,6 +493,72 @@ _HOOK_DUREE = re.compile(
     r"|cela fait des\s+(ann[ée]es|mois|si[eè]cles)"
     r"|de\s+longue\s+date|de\s+longues\s+ann[ée]es)", re.I)
 
+# Septieme defense : la designation par la fonction.
+#
+# Constate le 11 septembre sur Romains 8:37 : « Avant la tribulation, la
+# persecution et la faim, l'Apotre affirme qui nous rend vainqueurs. »
+# Romains 8 — tout ce que le modele a sous les yeux — ne prononce pas une
+# seule fois le nom de Paul. C'est Romains 1:1 qui le donne. « L'Apotre » est
+# donc une etiquette de catechisme plaquee sur un chapitre qui ne nomme
+# personne : exactement la meme faute que « les apotres » sur Luc 24:46, mais
+# portee sur l'auteur au lieu du public.
+#
+# On rejette la fonction employee SEULE. « L'apotre Paul », « le prophete
+# Esaie » passent : le nom propre suit, et la phrase devient verifiable. Le
+# drapeau re.I ne doit pas atteindre le lookahead — sinon [A-Z] matcherait
+# aussi les minuscules et le filtre ne servirait a rien — d'ou le (?-i:...).
+_HOOK_TITRE = re.compile(
+    r"\b(l['\u2019]ap[o\u00f4]tre|le psalmiste|l['\u2019][e\u00e9]vang[e\u00e9]liste"
+    r"|le proph[e\u00e8]te|l['\u2019]auteur|l['\u2019][e\u00e9]crivain sacr"
+    r"|le narrateur|le l[e\u00e9]gislateur)"
+    r"(?!\s+(?-i:[A-Z\u00c9\u00c8\u00ca\u00c0\u00ce\u00d4\u00c2\u00db]))", re.I)
+
+# Huitieme defense : la personne absente du chapitre.
+#
+# Les filtres precedents traitent des FORMULES. Celui-ci traite d'un FAIT
+# verifiable : si l'accroche nomme quelqu'un, ce nom doit se trouver dans le
+# chapitre que le modele avait sous les yeux. C'est ce que trois regles du
+# prompt disent en prose depuis le 9 septembre, et que rien ne verifiait.
+#
+# Exemples reels : « Paul ecrit a des eglises... » devant Romains 8 — le
+# chapitre ne prononce pas ce nom, c'est Romains 1:1 qui le donne ; « l'Apotre
+# affirme... » devant Romains 8:37, meme faute.
+#
+# Les noms divins sont volontairement ABSENTS de la liste : Dieu, Jesus,
+# Christ, le Seigneur, l'Eternel, l'Esprit ne sont jamais du contexte invente,
+# et le prompt autorise a eclairer un passage par une autre page de l'Ecriture.
+#
+# Sans contexte de chapitre (livre indisponible), le controle est saute : on ne
+# refuse pas faute de pouvoir verifier.
+_PERSONNES = set("""apotre apotres psalmiste prophete prophetes evangeliste
+auteur narrateur legislateur disciple disciples foule pharisien pharisiens
+scribe scribes sacrificateur sacrificateurs anciens levites israelites
+moise josue david salomon esaie jeremie ezechiel daniel osee jonas
+paul pierre jean jacques matthieu marc luc timothee tite philemon barnabas
+abraham isaac jacob joseph samuel saul elie elisee noe adam eve
+marie marthe zachee lazare judas thomas etienne nicodeme pilate herode""".split())
+
+
+def _sans_accents(txt):
+    s = unicodedata.normalize("NFD", txt.lower())
+    return "".join(c for c in s if unicodedata.category(c) != "Mn")
+
+
+def personnes_hors_chapitre(hook, contexte):
+    """Personnes nommees dans l'accroche que le chapitre ne nomme pas.
+    Comparaison sur les 5 premieres lettres, pour que « apotre » et
+    « apotres » comptent comme le meme mot."""
+    if not contexte:
+        return []
+    dans = {w[:5] for w in re.findall(r"[a-z]+", _sans_accents(contexte))}
+    vues, manquantes = set(), []
+    for w in re.findall(r"[a-z]+", _sans_accents(hook)):
+        if w in _PERSONNES and w[:5] not in dans and w[:5] not in vues:
+            vues.add(w[:5])
+            manquantes.append(w)
+    return manquantes
+
+
 # Sixieme defense : l'accroche qui recopie le verset.
 #
 # Le defaut n'est pas une faute, c'est un gachis : la premiere ligne est la
@@ -613,6 +679,38 @@ def contexte_du_chapitre(ref):
         return ""
 
 
+def _verifier_hook(hook, verse_text, contexte=""):
+    """Passe l'accroche aux sept filtres. Retourne None si elle passe, sinon
+    le motif du refus — redige en francais, parce qu'il est renvoye tel quel
+    au modele pour sa seconde tentative."""
+    if not hook or len(hook) > 120 or len(hook.split()) > 18:
+        return "phrase vide ou trop longue : 14 mots maximum"
+    if _HOOK_INTERDIT.search(hook):
+        return "formule interdite : promesse, superlatif, statistique ou flatterie"
+    if _HOOK_HESITE.search(hook):
+        return ("contexte incertain : tu hesites entre deux circonstances, ou "
+                "tu emploies un adverbe de doute")
+    if _HOOK_TRADITION.search(hook):
+        return ("cadre de tradition : tu presentes l'Ecriture comme un recit "
+                "transmis, compile ou attribue")
+    if _HOOK_DUREE.search(hook):
+        return "duree inventee : le passage ne donne aucune duree"
+    if _HOOK_TITRE.search(hook):
+        return ("designation par la fonction (« l'apotre », « le psalmiste », "
+                "« l'auteur ») alors que le chapitre ne nomme personne")
+    absentes = personnes_hors_chapitre(hook, contexte)
+    if absentes:
+        noms = ", ".join(f"« {n} »" for n in absentes)
+        return (f"tu nommes {noms}, or ce mot ne figure nulle part dans le "
+                f"chapitre donne ci-dessus : ce n'est pas du contexte, c'est "
+                f"un souvenir")
+    taux = taux_de_recopie(hook, verse_text)
+    if taux >= HOOK_RECOPIE_MAX:
+        return (f"tu recopies le verset : {taux:.0%} de tes mots en viennent, "
+                f"or le lecteur le lit deux lignes plus bas")
+    return None
+
+
 def generate_hook_ai(verse_text, ref, cat_name):
     """Premiere ligne generee. Retourne None en cas d'echec — ne leve JAMAIS :
     un souci d'API ne doit pas bloquer une publication."""
@@ -643,7 +741,11 @@ def generate_hook_ai(verse_text, ref, cat_name):
             "Redire son contenu avec d'autres mots ne lui apprend rien et gache "
             "la seule ligne visible avant « ... plus ». Devant « il a satisfait "
             "l'ame alteree », ecrire « Dieu satisfait celui qui a soif » est un "
-            "echec, meme si c'est vrai. Un synonyme reste une reformulation.\n"
+            "echec, meme si c'est vrai. Un synonyme reste une reformulation : "
+            "devant « Il ne craint point les mauvaises nouvelles ; son coeur est "
+            "ferme », ecrire « Le juste ne s'effondre pas devant l'adversite : "
+            "son coeur tient ferme en Dieu » ne fait que traduire mot a mot. "
+            "Avant d'ecrire, demande-toi ce que ta phrase AJOUTE.\n"
             "- L'accroche apporte ce que le verset SEUL ne donne pas : qui parle, "
             "a qui, ce qui precede dans le chapitre, ou ce qu'une autre page de "
             "l'Ecriture affirme clairement de ce passage.\n"
@@ -701,6 +803,13 @@ def generate_hook_ai(verse_text, ref, cat_name):
             "n'ecris pas « Moise rapporte », « Salomon enseigne », « l'auteur de "
             "l'epitre ». Nomme un auteur seulement quand le texte lui-meme le "
             "designe (Paul, Pierre, Jean, Esaie, David quand le titre le porte).\n"
+            "- NE DESIGNE PERSONNE PAR SA FONCTION. « L'Apotre », « le "
+            "psalmiste », « le prophete », « l'auteur » sont des etiquettes "
+            "de catechisme, pas les mots du texte. Le chapitre que tu as sous "
+            "les yeux est TOUT ce que tu sais : Romains 8 ne prononce pas le "
+            "nom de Paul, donc cette accroche-la ne parle ni de Paul ni de "
+            "« l'Apotre ». Nomme quelqu'un seulement si CE chapitre le nomme ; "
+            "sinon, ecris ce que le passage AFFIRME, sans sujet humain.\n"
             "- L'Ecriture n'est pas presentee comme un recit transmis. Jamais de "
             "« tradition », « transmis », « attribue a », « redacteur », "
             "« compile », « legende », « mythe ». Le texte est la Parole, pas un "
@@ -711,48 +820,53 @@ def generate_hook_ai(verse_text, ref, cat_name):
             "- Une phrase, 14 mots maximum. Pas d'emoji, pas de hashtag.\n"
             "- Reponds UNIQUEMENT avec la phrase, sans guillemets."
         )
-        r = requests.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": ANTHROPIC_API_KEY,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": ANTHROPIC_MODEL,
-                "max_tokens": 80,
-                "messages": [{"role": "user", "content": prompt}],
-            },
-            timeout=10,
-        )
-        if r.status_code != 200:
-            print(f"⚠️  Accroche IA ({r.status_code}) : {r.text[:150]}")
-            return None
-        data = r.json()
-        hook = "".join(
-            b.get("text", "") for b in data.get("content", [])
-            if b.get("type") == "text"
-        ).strip().strip('"').strip("«»").strip()
-        if not hook or len(hook) > 120 or len(hook.split()) > 18:
-            print(f"⚠️  Accroche IA rejetee (vide ou trop longue) : {hook[:60]!r}")
-            return None
-        if _HOOK_INTERDIT.search(hook):
-            print(f"⚠️  Accroche IA rejetee (formule interdite) : {hook[:60]!r}")
-            return None
-        if _HOOK_HESITE.search(hook):
-            print(f"⚠️  Accroche IA rejetee (contexte incertain) : {hook[:60]!r}")
-            return None
-        if _HOOK_TRADITION.search(hook):
-            print(f"⚠️  Accroche IA rejetee (cadre de tradition) : {hook[:60]!r}")
-            return None
-        if _HOOK_DUREE.search(hook):
-            print(f"⚠️  Accroche IA rejetee (duree inventee) : {hook[:60]!r}")
-            return None
-        taux = taux_de_recopie(hook, verse_text)
-        if taux >= HOOK_RECOPIE_MAX:
-            print(f"⚠️  Accroche IA rejetee (recopie du verset, {taux:.0%}) : {hook[:60]!r}")
-            return None
-        return hook
+        # Deux tentatives au plus. Jusqu'au 10 septembre, un seul filtre qui
+        # se declenchait envoyait la publication au repli fixe — une phrase
+        # vraie de la CATEGORIE, donc muette sur le verset du jour. Renvoyer
+        # au modele sa phrase refusee et le motif coute un appel de plus sur
+        # les seules generations fautives, et rend le repli exceptionnel.
+        refuse, motif = "", None
+        for tentative in (1, 2):
+            corps = prompt if motif is None else (
+                prompt
+                + f"\n\nTA PHRASE PRECEDENTE A ETE REFUSEE : « {refuse} »\n"
+                + f"MOTIF DU REFUS : {motif}.\n"
+                + "Ecris une AUTRE phrase, qui ne repete pas ce defaut et qui "
+                + "ne soit pas une simple variante de la precedente. Ne "
+                + "commente pas ce refus : reponds uniquement par la nouvelle "
+                + "phrase."
+            )
+            r = requests.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": ANTHROPIC_API_KEY,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": ANTHROPIC_MODEL,
+                    "max_tokens": 80,
+                    "messages": [{"role": "user", "content": corps}],
+                },
+                timeout=10,
+            )
+            if r.status_code != 200:
+                print(f"⚠️  Accroche IA ({r.status_code}) : {r.text[:150]}")
+                return None
+            data = r.json()
+            hook = "".join(
+                b.get("text", "") for b in data.get("content", [])
+                if b.get("type") == "text"
+            ).strip().strip('"').strip("«»").strip()
+            motif = _verifier_hook(hook, verse_text, contexte)
+            if motif is None:
+                if tentative == 2:
+                    print("✅ Accroche IA obtenue a la seconde tentative.")
+                return hook
+            refuse = hook
+            print(f"⚠️  Accroche IA rejetee ({tentative}/2 — {motif}) : "
+                  f"{hook[:70]!r}")
+        return None
     except Exception as e:
         print(f"⚠️  Accroche IA indisponible : {str(e)[:150]}")
         return None
