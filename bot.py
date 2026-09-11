@@ -776,6 +776,41 @@ def verifier_apport(hook, apport, verse_text):
     return None
 
 
+# Dixieme defense : le contexte pris APRES le verset.
+#
+# Constate le 11 septembre sur Genese 2:18 : « L'homme a nomme tous les animaux,
+# mais aucun ne lui convint comme compagne. » Dans le chapitre, Dieu dit qu'il
+# n'est pas bon que l'homme soit seul au v.18 ; il forme les animaux au v.19 et
+# l'homme les nomme au v.20. L'accroche a donc presente la SUITE comme si elle
+# precedait — et a fabrique une cause que le texte n'etablit pas : comme si Dieu
+# avait decide a cause de l'echec de la recherche.
+#
+# Le chapitre est fourni NUMEROTE. On peut donc verifier mecaniquement une
+# partie du cas : si la ligne APPORT cite un numero de verset superieur a celui
+# qu'on annonce, ce n'est pas du contexte, c'est la suite. Les renvois a un
+# autre livre ou chapitre (« Romains 1:1 ») sont retires avant l'examen.
+# « les versets 3 et 4 », « versets 19-20 », « versets 2, 5 » : on capture
+# la suite entiere, pas seulement le premier nombre.
+_RX_VERSET_CITE = re.compile(
+    r"\bversets?\s+(\d+(?:\s*(?:,|et|a|\u00e0|-|\u2013)\s*\d+)*)"
+    r"|(?<![\w:])v\.?\s*(\d+)\b", re.I)
+_RX_RENVOI = re.compile(r"\b[1-3]?\s?[A-Z\u00c9\u00c8\u00c0][\w\u2019'-]+\s+\d+:\d+(?:-\d+)?")
+
+
+def versets_posterieurs(apport, ref):
+    """Numeros de versets cites dans la ligne APPORT qui viennent APRES le
+    passage annonce. Sur une plage (« Psaumes 1:1-3 »), la borne est la fin."""
+    m = re.match(r"^.+?\s+\d+:(\d+)(?:-(\d+))?", (ref or "").strip())
+    if not m or not apport:
+        return []
+    cible = int(m.group(2) or m.group(1))
+    nettoye = _RX_RENVOI.sub(" ", apport)
+    trouves = set()
+    for suite, seul in _RX_VERSET_CITE.findall(nettoye):
+        trouves.update(int(n) for n in re.findall(r"\d+", suite or seul))
+    return sorted(n for n in trouves if n > cible)
+
+
 def _verifier_hook(hook, verse_text, contexte="", apport=None, ref=""):
     """Passe l'accroche aux sept filtres. Retourne None si elle passe, sinon
     le motif du refus — redige en francais, parce qu'il est renvoye tel quel
@@ -799,6 +834,12 @@ def _verifier_hook(hook, verse_text, contexte="", apport=None, ref=""):
         motif = verifier_apport(hook, apport, verse_text)
         if motif:
             return motif
+        apres = versets_posterieurs(apport, ref)
+        if apres:
+            nums = ", ".join(str(n) for n in apres)
+            return (f"tu donnes comme contexte le verset {nums}, qui vient "
+                    f"APRES celui que tu annonces : ce n'est pas son contexte, "
+                    f"c'est sa suite")
     absentes = personnes_hors_chapitre(hook, contexte, ref)
     if absentes:
         noms = ", ".join(f"« {n} »" for n in absentes)
@@ -859,6 +900,15 @@ def generate_hook_ai(verse_text, ref, cat_name):
             "- Ne relie pas deux elements du texte par un lien de cause que le "
             "texte n'etablit pas. Dans le Psaume 1, l'arbre plante pres de l'eau "
             "ne decoule pas du refus des mechants, mais de la loi meditee.\n"
+            "- L'ORDRE DU CHAPITRE EST DONNE : RESPECTE-LE. Les versets sont "
+            "numerotes au-dessus. Si le fait que tu veux donner comme contexte "
+            "porte un numero SUPERIEUR a celui du verset annonce, ce n'est pas "
+            "son contexte : c'est sa suite, et t'en servir inverse le "
+            "chapitre. Dans Genese 2, Dieu dit qu'il n'est pas bon que l'homme "
+            "soit seul au verset 18 ; il forme les animaux au 19, et l'homme "
+            "les nomme au 20. Ecrire que l'homme avait deja nomme les animaux "
+            "renverse l'ordre et fabrique une cause que le texte ne donne pas : "
+            "la decision de Dieu PRECEDE la recherche, elle n'en decoule pas.\n"
             "- Vouvoiement. Ton sobre et serieux. La foi est une certitude, pas "
             "une emotion.\n"
             "- INTERDIT d'inventer une date, un auteur, un lieu ou une "
