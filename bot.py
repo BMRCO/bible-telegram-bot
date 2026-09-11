@@ -544,11 +544,40 @@ def _sans_accents(txt):
     return "".join(c for c in s if unicodedata.category(c) != "Mn")
 
 
-def personnes_hors_chapitre(hook, contexte):
+# Les livres du Nouveau Testament, pour distinguer un renvoi d'une invention.
+_LIVRES_NT = {"matthieu", "marc", "luc", "jean", "actes", "romains",
+              "corinthiens", "galates", "ephesiens", "philippiens",
+              "colossiens", "thessaloniciens", "timothee", "tite", "philemon",
+              "hebreux", "jacques", "pierre", "jude", "apocalypse"}
+
+_RX_CHRIST = re.compile(r"\bChrist\b|\bJ[ée]sus\b|\bMessie\b|Agneau de Dieu",
+                        re.I)
+
+
+def _est_ancien_testament(ref):
+    m = re.match(r"^((?:\d\s)?.+?)\s+\d+:", (ref or "").strip())
+    if not m:
+        return False
+    return _sans_accents(m.group(1)).split()[-1] not in _LIVRES_NT
+
+
+def personnes_hors_chapitre(hook, contexte, ref=""):
     """Personnes nommees dans l'accroche que le chapitre ne nomme pas.
     Comparaison sur les 5 premieres lettres, pour que « apotre » et
-    « apotres » comptent comme le meme mot."""
+    « apotres » comptent comme le meme mot.
+
+    EXCEPTION — le renvoi au Nouveau Testament. Devant un passage de l'Ancien
+    Testament, une accroche qui nomme le Christ fait ce que le prompt lui
+    demande : dire qui le passage annonce. Elle nomme alors legitimement le
+    temoin du Nouveau Testament qui etablit le lien — « l'Agneau de Dieu que
+    Jean-Baptiste designe » (Jean 1:29) devant Esaie 53. Ce filtre refusait
+    cette phrase parce qu'Esaie 53 ne prononce pas le nom de Jean ; il entrait
+    donc en contradiction directe avec la regle du prompt.
+    Le cas dangereux est l'inverse, et il reste couvert : pretendre que « Paul
+    ecrit » devant un chapitre de Romains qui ne le nomme pas."""
     if not contexte:
+        return []
+    if _RX_CHRIST.search(hook) and _est_ancien_testament(ref):
         return []
     dans = {w[:5] for w in re.findall(r"[a-z]+", _sans_accents(contexte))}
     vues, manquantes = set(), []
@@ -747,7 +776,7 @@ def verifier_apport(hook, apport, verse_text):
     return None
 
 
-def _verifier_hook(hook, verse_text, contexte="", apport=None):
+def _verifier_hook(hook, verse_text, contexte="", apport=None, ref=""):
     """Passe l'accroche aux sept filtres. Retourne None si elle passe, sinon
     le motif du refus — redige en francais, parce qu'il est renvoye tel quel
     au modele pour sa seconde tentative."""
@@ -770,7 +799,7 @@ def _verifier_hook(hook, verse_text, contexte="", apport=None):
         motif = verifier_apport(hook, apport, verse_text)
         if motif:
             return motif
-    absentes = personnes_hors_chapitre(hook, contexte)
+    absentes = personnes_hors_chapitre(hook, contexte, ref)
     if absentes:
         noms = ", ".join(f"« {n} »" for n in absentes)
         return (f"tu nommes {noms}, or ce mot ne figure nulle part dans le "
@@ -882,6 +911,18 @@ def generate_hook_ai(verse_text, ref, cat_name):
             "nom de Paul, donc cette accroche-la ne parle ni de Paul ni de "
             "« l'Apotre ». Nomme quelqu'un seulement si CE chapitre le nomme ; "
             "sinon, ecris ce que le passage AFFIRME, sans sujet humain.\n"
+            "- L'ACCOMPLISSEMENT EN CHRIST N'EST PAS UN CONTEXTE INVENTE, et "
+            "les deux regles ci-dessus ne l'interdisent pas. Quand une page du "
+            "Nouveau Testament cite ce passage et le rapporte a Jesus, dis-le. "
+            "Esaie 53 n'annonce pas « un serviteur souffrant » anonyme : c'est "
+            "le Christ, et Philippe, partant de ce chapitre, « lui annonca la "
+            "bonne nouvelle de Jesus » (Actes 8:35). L'agneau du verset 7 est "
+            "« l'Agneau de Dieu, qui ote le peche du monde » (Jean 1:29). De "
+            "meme Esaie 7:14 (Matthieu 1:23), Michee 5:1 (Matthieu 2:6), "
+            "Zacharie 9:9 (Matthieu 21:5), Psaume 22 (Matthieu 27:46). Decrire "
+            "ces passages sans nommer celui qu'ils annoncent est une faute "
+            "plus grave qu'une imprecision : c'est taire leur sujet. Ne le fais "
+            "que si tu es certain que le Nouveau Testament etablit ce lien.\n"
             "- L'Ecriture n'est pas presentee comme un recit transmis. Jamais de "
             "« tradition », « transmis », « attribue a », « redacteur », "
             "« compile », « legende », « mythe ». Le texte est la Parole, pas un "
@@ -945,8 +986,9 @@ def generate_hook_ai(verse_text, ref, cat_name):
             # A la seconde tentative on n'exige plus le format : si la phrase
             # passe les huit autres defenses, une ligne APPORT manquante ne
             # doit pas nous faire perdre une bonne accroche au profit du repli.
-            motif = _verifier_hook(hook, verse_text, contexte,
-                                   apport if tentative == 1 else (apport or None))
+            motif = _verifier_hook(
+                hook, verse_text, contexte,
+                apport if tentative == 1 else (apport or None), ref)
             if motif is None:
                 if tentative == 2:
                     print("✅ Accroche IA obtenue a la seconde tentative.")
