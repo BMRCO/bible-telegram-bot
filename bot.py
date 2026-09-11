@@ -679,7 +679,75 @@ def contexte_du_chapitre(ref):
         return ""
 
 
-def _verifier_hook(hook, verse_text, contexte=""):
+# Neuvieme defense : l'accroche doit DECLARER ce qu'elle apporte.
+#
+# Toutes les defenses precedentes sont lexicales ou factuelles. Il restait un
+# defaut qu'aucune ne voit : la paraphrase par synonymes. « Dieu satisfait
+# celui qui a soif » devant « il a satisfait l'ame alteree » (Psaumes 107:9,
+# publie) ne marque que 20 % de recopie et passe tout.
+#
+# On ne peut pas mesurer un synonyme ; on peut en revanche obliger le modele a
+# nommer, dans une seconde ligne, ce que sa phrase APPREND au lecteur. Une
+# paraphrase n'a rien a mettre dans cette ligne — ou elle y remet l'accroche,
+# ce qui se mesure. La ligne n'est jamais publiee.
+#
+# Cout : zero appel de plus. Le prix d'une generation est dans le chapitre
+# envoye en entree ; quarante tokens de sortie de plus ne se sentent pas.
+_RX_ACCROCHE = re.compile(r"^\s*ACCROCHE\s*:\s*(.+?)\s*$", re.I | re.M)
+_RX_APPORT = re.compile(r"^\s*APPORT\s*:\s*(.+?)\s*$", re.I | re.M)
+
+# L'aveu : le modele ecrit lui-meme qu'il n'apporte rien.
+_APPORT_AVEU = re.compile(
+    r"(reformul|\bredit\b|\bredis\b|r[ée]p[eè]te|la m[eê]me chose"
+    r"|rien de plus|rien de nouveau|rien a ajouter|aucun apport"
+    r"|paraphras|\br[ée]sume\b)", re.I)
+
+# 0,50 et 0,60 : deux seuils volontairement larges. Un refus ne coute plus une
+# publication — il declenche la seconde tentative — mais il ne faut pas
+# refuser une ligne APPORT honnete qui partage forcement quelques mots avec
+# l'accroche qu'elle explique.
+APPORT_RECOPIE_HOOK = 0.50
+APPORT_RECOPIE_VERSET = 0.60
+
+
+def _nettoyer_ligne(s):
+    return s.strip().strip('"').strip("«»").strip()
+
+
+def decouper_reponse(brut):
+    """Separe « ACCROCHE : ... » et « APPORT : ... ». Si le modele a repondu
+    une seule ligne — cela arrive —, cette ligne est prise pour l'accroche et
+    l'apport revient vide, ce qui declenche une seconde tentative."""
+    a = _RX_ACCROCHE.search(brut)
+    p = _RX_APPORT.search(brut)
+    if a:
+        hook = a.group(1)
+    else:
+        lignes = [l for l in (x.strip() for x in brut.splitlines()) if l]
+        hook = lignes[0] if lignes else ""
+        if hook.upper().startswith("APPORT"):
+            hook = ""
+    return _nettoyer_ligne(hook), _nettoyer_ligne(p.group(1) if p else "")
+
+
+def verifier_apport(hook, apport, verse_text):
+    """Retourne None si la ligne APPORT tient, sinon le motif du refus."""
+    if not apport or len(_mots_de_contenu(apport)) < 3:
+        return ("tu n'as rien mis dans la ligne APPORT : ton accroche "
+                "n'apprend donc rien que le verset ne dise deja")
+    if _APPORT_AVEU.search(apport):
+        return ("ta ligne APPORT reconnait elle-meme que l'accroche redit le "
+                "verset")
+    if taux_de_recopie(apport, hook) >= APPORT_RECOPIE_HOOK:
+        return ("ta ligne APPORT ne fait que recopier l'accroche : nomme la "
+                "SOURCE de ce que tu apportes, pas ta propre phrase")
+    if taux_de_recopie(apport, verse_text) >= APPORT_RECOPIE_VERSET:
+        return ("ce que tu presentes comme un apport sort du verset lui-meme : "
+                "le lecteur l'a deja sous les yeux")
+    return None
+
+
+def _verifier_hook(hook, verse_text, contexte="", apport=None):
     """Passe l'accroche aux sept filtres. Retourne None si elle passe, sinon
     le motif du refus — redige en francais, parce qu'il est renvoye tel quel
     au modele pour sa seconde tentative."""
@@ -698,6 +766,10 @@ def _verifier_hook(hook, verse_text, contexte=""):
     if _HOOK_TITRE.search(hook):
         return ("designation par la fonction (« l'apotre », « le psalmiste », "
                 "« l'auteur ») alors que le chapitre ne nomme personne")
+    if apport is not None:
+        motif = verifier_apport(hook, apport, verse_text)
+        if motif:
+            return motif
     absentes = personnes_hors_chapitre(hook, contexte)
     if absentes:
         noms = ", ".join(f"« {n} »" for n in absentes)
@@ -818,7 +890,18 @@ def generate_hook_ai(verse_text, ref, cat_name):
             "aucune statistique, aucune flatterie.\n"
             "- Ne cite pas le verset : il est affiche juste en dessous.\n"
             "- Une phrase, 14 mots maximum. Pas d'emoji, pas de hashtag.\n"
-            "- Reponds UNIQUEMENT avec la phrase, sans guillemets."
+            "\n"
+            "FORMAT DE REPONSE — exactement deux lignes, rien avant, rien "
+            "apres :\n"
+            "ACCROCHE : <la phrase, sans guillemets>\n"
+            "APPORT : <ce que cette phrase APPREND au lecteur et que le "
+            "verset ne dit pas lui-meme>\n\n"
+            "La ligne APPORT n'est pas publiee : elle sert a verifier ton "
+            "travail. Si tu ne trouves rien a y ecrire, c'est que ton "
+            "accroche redit le verset — recommence avant de repondre. Ne "
+            "recopie pas l'accroche dans l'APPORT : nomme la SOURCE de ce "
+            "que tu apportes (le verset qui precede, ce que le chapitre "
+            "etablit, a qui la parole est adressee)."
         )
         # Deux tentatives au plus. Jusqu'au 10 septembre, un seul filtre qui
         # se declenchait envoyait la publication au repli fixe — une phrase
@@ -833,8 +916,8 @@ def generate_hook_ai(verse_text, ref, cat_name):
                 + f"MOTIF DU REFUS : {motif}.\n"
                 + "Ecris une AUTRE phrase, qui ne repete pas ce defaut et qui "
                 + "ne soit pas une simple variante de la precedente. Ne "
-                + "commente pas ce refus : reponds uniquement par la nouvelle "
-                + "phrase."
+                + "commente pas ce refus : reponds dans le meme format, les "
+                + "deux lignes ACCROCHE puis APPORT, et rien d'autre."
             )
             r = requests.post(
                 "https://api.anthropic.com/v1/messages",
@@ -845,7 +928,7 @@ def generate_hook_ai(verse_text, ref, cat_name):
                 },
                 json={
                     "model": ANTHROPIC_MODEL,
-                    "max_tokens": 80,
+                    "max_tokens": 200,
                     "messages": [{"role": "user", "content": corps}],
                 },
                 timeout=10,
@@ -854,11 +937,16 @@ def generate_hook_ai(verse_text, ref, cat_name):
                 print(f"⚠️  Accroche IA ({r.status_code}) : {r.text[:150]}")
                 return None
             data = r.json()
-            hook = "".join(
+            brut = "".join(
                 b.get("text", "") for b in data.get("content", [])
                 if b.get("type") == "text"
-            ).strip().strip('"').strip("«»").strip()
-            motif = _verifier_hook(hook, verse_text, contexte)
+            ).strip()
+            hook, apport = decouper_reponse(brut)
+            # A la seconde tentative on n'exige plus le format : si la phrase
+            # passe les huit autres defenses, une ligne APPORT manquante ne
+            # doit pas nous faire perdre une bonne accroche au profit du repli.
+            motif = _verifier_hook(hook, verse_text, contexte,
+                                   apport if tentative == 1 else (apport or None))
             if motif is None:
                 if tentative == 2:
                     print("✅ Accroche IA obtenue a la seconde tentative.")
