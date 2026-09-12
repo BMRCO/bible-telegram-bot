@@ -2166,10 +2166,33 @@ def make_reel_video(text, ref, progress=None, cat_name=None):
     ]
     BG, GOLD, GR, WHITE, SIL = REEL_PALETTE_BY_CAT.get(cat_name) or REEL_PALETTES[seed % len(REEL_PALETTES)]
     CX1, CY1, CX2, CY2 = BORDER, BORDER, W-BORDER, H-BORDER
-    N_P = 30
+    # POUSSIERE D'ETOILES (12 septembre 2026)
+    #
+    # Les particules existaient deja, mais etaient invisibles. Deux freins se
+    # multipliaient : l'opacite plafonnait a 36/255 (14 %), et la couleur
+    # elle-meme passait par blend(GOLD, ...) — donc etait deja fondue dans le
+    # fond AVANT d'etre posee avec 14 % d'alpha. Sur un fond (10,10,10), le
+    # resultat etait une tache grise indistinguable, meme en eclaircissant
+    # l'image de 260 %.
+    #
+    # Ce qu'on veut est ce que donne le canvas du site : des points blancs
+    # nets, petits, quelques-uns avec un halo dore. D'ou :
+    #   - un COEUR blanc pose a pleine opacite (jusqu'a 235/255), sans blend ;
+    #   - un rayon plus PETIT (1,0 a 2,6 px, contre 2 a 5) : un point net se
+    #     lit, une grosse tache pale ne se lit pas ;
+    #   - trois fois plus de particules, puisqu'elles sont discretes ;
+    #   - un halo dore sur une particule sur trois, a 16 % — c'est lui qui
+    #     donne la chaleur sans salir le fond.
+    #
+    # Le mouvement n'a pas change : derive lente vers le haut, balancement
+    # sinusoidal, scintillement. Le ton reste sobre : ce sont des etoiles
+    # lointaines, pas des paillettes.
+    N_P = 90
     px = rng.uniform(CX1+20, CX2-20, N_P); py = rng.uniform(CY1+20, CY2-20, N_P)
-    ps = rng.uniform(0.2, 0.8, N_P); pr = rng.uniform(2, 5, N_P)
+    ps = rng.uniform(0.2, 0.8, N_P); pr = rng.uniform(1.0, 2.6, N_P)
     pa = rng.uniform(0, 2*math.pi, N_P)
+    pb = rng.uniform(0.45, 1.0, N_P)   # luminosite propre a chaque particule
+    pg = rng.uniform(0, 1, N_P)        # laquelle recoit un halo
     def ease(t): t = max(0, min(1, t)); return t*t*(3-2*t)
     def blend(base, a, bg=BG):
         a = max(0, min(1, a))
@@ -2197,11 +2220,18 @@ def make_reel_video(text, ref, progress=None, cat_name=None):
         pd = ImageDraw.Draw(pl)
         for i in range(N_P):
             tp = s * ps[i]
-            cx = int((px[i] + math.sin(tp*0.5+pa[i])*20) % W)
-            cy = int((py[i] - s*ps[i]*12) % H)
-            bright = (math.sin(tp+pa[i])+1)/2*0.3+0.1
-            a_p = int(bright*alpha*90)
-            pd.ellipse([(cx-int(pr[i]), cy-int(pr[i])), (cx+int(pr[i]), cy+int(pr[i]))], fill=(*blend(GOLD, bright*0.6), a_p))
+            cx = (px[i] + math.sin(tp*0.5+pa[i])*20) % W
+            cy = (py[i] - s*ps[i]*12) % H
+            scint = (math.sin(tp*1.7+pa[i]) + 1) / 2          # 0..1
+            bright = pb[i] * (0.55 + 0.45*scint)
+            a_core = int(bright * alpha * 235)
+            r = pr[i]
+            if pg[i] > 0.66:                                   # halo dore
+                rh = r * 3.2
+                pd.ellipse([(cx-rh, cy-rh), (cx+rh, cy+rh)],
+                           fill=(*GOLD, int(a_core * 0.16)))
+            pd.ellipse([(cx-r, cy-r), (cx+r, cy+r)],
+                       fill=(*WHITE, a_core))
         img = Image.alpha_composite(img.convert("RGBA"), pl).convert("RGB")
         draw = ImageDraw.Draw(img)
         for i, line in enumerate(verse_lines):
