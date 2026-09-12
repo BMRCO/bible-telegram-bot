@@ -448,13 +448,18 @@ def draw_frame(theme, q, phase, count_left=None, n_opts=None, bar=None):
                         radius=14, outline=GOLD, width=2)
     d.text(((W - pw) / 2, py), prompt, font=f_p, fill=GOLD)
 
-    # question
+    # LE VERSET. Mesure avant d'etre dessine : sa position depend de celle des
+    # options, calculee juste apres.
+    #
+    # Corps de depart porte de 60 a 76 px (12 septembre). Sur une question
+    # courte — « ... le royaume de Dieu est au milieu de vous » — le bloc tenait
+    # sur deux lignes de 60 px et laissait 452 px de vide entre lui et la
+    # premiere option : un quart de la carte. La hauteur maximale (460) borne
+    # toujours les questions longues, qui redescendent d'elles-memes.
     head = q["q"]
-    f_q, q_lines = fit_font(d, head, FONT_SERIF, inner, 400, 60, 34, 18)
-    y = py + f_p.size + 78
-    for ln in q_lines:
-        d.text(((W - d.textlength(ln, font=f_q)) / 2, y), ln, font=f_q, fill=TXT)
-        y += f_q.size + 18
+    f_q, q_lines = fit_font(d, head, FONT_SERIF, inner, 460, 76, 34, 18)
+    haut_q = py + f_p.size + 78
+    hauteur_q = len(q_lines) * (f_q.size + 18)
 
     # options — police commune, la plus grande qui fasse tenir les 3 en entier
     f_key = ImageFont.truetype(FONT_SANS, 34)
@@ -471,13 +476,22 @@ def draw_frame(theme, q, phase, count_left=None, n_opts=None, bar=None):
     lh = size + 12
     boxes = [max(130, len(x) * lh + 52) for x in wrapped]
 
-    # Bloc d'options centre dans l'espace restant.
-    # Le plafond etait a 870 : sur les questions courtes, tout le bas de la
-    # carte restait vide (un cinquieme de l'image). Descendu a 1010 — la borne
-    # « H - 430 - total_opts » continue de remonter le bloc quand les options
-    # sont longues, et de reserver la place du decompte et de la barre.
+    # Bloc d'options : aussi bas que possible, la borne « H - 430 - total_opts »
+    # reservant la place du decompte et de la barre de la phase « count ».
+    # Le plafond de 1010 empeche le bloc de descendre trop sur les questions
+    # tres courtes.
     total_opts = sum(boxes) + 26 * (len(boxes) - 1)
-    y = max(y + 50, min(1010, H - 430 - total_opts))
+    y = max(haut_q + hauteur_q + 50, min(1010, H - 430 - total_opts))
+
+    # LE VERSET, dessine maintenant : centre dans l'espace qui lui revient,
+    # entre la consigne et la premiere option. Colle en haut, il laissait tout
+    # le vide d'un seul cote et la carte paraissait cassee ; centre, l'air se
+    # repartit et le verset devient le centre optique de l'image — ce qui est
+    # aussi ce qu'on veut dire.
+    yq = haut_q + max(0, (y - 50 - haut_q - hauteur_q) // 2)
+    for ln in q_lines:
+        d.text(((W - d.textlength(ln, font=f_q)) / 2, yq), ln, font=f_q, fill=TXT)
+        yq += f_q.size + 18
 
     shown = len(q["o"]) if n_opts is None else n_opts
     for i, opt in enumerate(q["o"]):
