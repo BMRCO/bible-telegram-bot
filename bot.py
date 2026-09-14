@@ -1413,13 +1413,37 @@ def strip_rubric(text: str) -> str:
         r'^\s*(?:'
         r'au chef des chantres|pour le chef des chantres|'
         r'psaume de david|psaume d\u2019asaph|psaume d\'asaph|psaume des fils de kor\u00e9|'
-        r'psaume[^.,]*|cantique des degr\u00e9s|cantique|de david|d\u2019asaph|d\'asaph|'
+        r'psaume[^.,]*|'
+        # --- 14 septembre 2026 : \u00ab Cantique de David. \u00bb ----------------------
+        # \u00ab cantique \u00bb exigeait un point ou une virgule IMMEDIATEMENT apres.
+        # \u00ab Cantique de David. L'Eternel est mon berger... \u00bb ne matchait donc
+        # rien, et Psaumes 23:1 \u2014 le verset le plus publie du projet \u2014 sortait
+        # avec sa superscription dans l'image. 13 versets concernes sur 31 102,
+        # dont 2 dans les viviers cures (Psaumes 23:1 et 92:1).
+        #
+        # Les superscriptions a VIRGULE INTERNE passent AVANT \u00ab cantique[^.,]* \u00bb
+        # et \u00ab priere[^.,]* \u00bb, qui s'arretent a la premiere virgule et
+        # laisseraient un fragment pendant (\u00ab l'Ezrachite. Je chanterai... \u00bb).
+        # Elles sont enumerees en toutes lettres, comme l'exige la regle
+        # ci-dessus : ce sont les seules attestees dans les 31 102 versets.
+        r'cantique d[\u2019\']ethan, l[\u2019\']ezrachite|'
+        r'cantique d[\u2019\']ez\u00e9chias, roi de juda, sur sa maladie et '
+        r'sur son r\u00e9tablissement|'
+        r'cantique des cantiques, de salomon|'
+        r'pri\u00e8re d[\u2019\']un malheureux, lorsqu[\u2019\']il est abattu et '
+        r'qu[\u2019\']il r\u00e9pand sa plainte devant l[\u2019\']eternel|'
+        r'pri\u00e8re d[\u2019\']habakuk, le proph\u00e8te|'
+        # \u00ab cantique des degres \u00bb est desormais couvert par \u00ab cantique[^.,]* \u00bb.
+        # BORNE A LA VIRGULE, jamais au point : Psaumes 123:1 s'ecrit
+        # \u00ab Cantique des degres, Je leve mes yeux vers toi... \u00bb \u2014 une borne au
+        # point avalerait le verset entier.
+        r'cantique[^.,]*|de david|d\u2019asaph|d\'asaph|'
         r'des fils de kor\u00e9|fils de kor\u00e9|'
         r'sur\s+(?:alamoth|la\s+gitthith|gitthith|schoschannim|mahalath|'
         r'muth-labben|nehiloth|neginoth|sheminith|l\u2019octave|l\'octave|'
         r'biche\b[^.,]*|la\s+biche\b[^.,]*|les\s+instruments[^.,]*|lis\b[^.,]*)|'
         r'a\s+jeduthun|d\u2019apr\u00e8s\s+jeduthun|d\'apr\u00e8s\s+jeduthun|jeduthun|'
-        r'pri\u00e8re de[^.,]*|maschil[^.,]*|michtam[^.,]*|hymne[^.,]*'
+        r'pri\u00e8re[^.,]*|maschil[^.,]*|michtam[^.,]*|hymne[^.,]*'
         r')\s*[.,]\s*',
         flags=re.IGNORECASE,
     )
