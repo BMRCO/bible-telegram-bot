@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="fr">
+<head>
+ 
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>LaBible.app — Lire la Bible Louis Segond 1910 gratuitement en ligne</title>
+  <meta name="description" content="Lisez la Bible Louis Segond 1910 en ligne, gratuite et installable sur téléphone, tablette, PC. Sans publicité ni inscription. Commencez maintenant." />
+  <meta name="keywords" content="Bible Louis Segond 1910, LSG 1910, lire la Bible en ligne, Bible gratuite, verset du jour, plan de lecture Bible 365 jours, Bible française, Bible protestante, Jean 3 16, Psaume 23, Bible en ligne" />
+  <meta name="author" content="LaBible.app" />
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <link rel="canonical" href="https://labible.app/" />
+  <!-- Partage (Open Graph / X) — bannière 1200x630 -->
+  <meta property="og:title" content="LaBible.app — Bible Louis Segond 1910 gratuite en ligne" />
+  <meta property="og:description" content="Lisez la Bible Louis Segond 1910 en ligne, gratuite et installable sur téléphone, tablette, PC. Sans publicité ni inscription. Commencez maintenant." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://labible.app/" />
+  <meta property="og:image" content="https://labible.app/og/labible-1200x630.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:alt" content="LaBible.app — Bible Louis Segond 1910" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta property="og:site_name" content="LaBible.app" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@LaBibleapp" />
+  <meta name="twitter:title" content="LaBible.app — Bible Louis Segond 1910 gratuite en ligne" />
+  <meta name="twitter:description" content="Lisez la Bible Louis Segond 1910 en ligne, gratuite et installable sur téléphone, tablette, PC. Sans publicité ni inscription. Commencez maintenant." />
+  <meta name="twitter:image" content="https://labible.app/og/labible-1200x630.png" />
+  <meta name="twitter:image:alt" content="LaBible.app — Bible Louis Segond 1910" />
+  <link rel="alternate" hreflang="fr" href="https://labible.app/" />
+  <link rel="alternate" hreflang="x-default" href="https://labible.app/" />
+
+  <!-- ── Preconnect (améliore le temps de chargement) ── -->
+  <link rel="preconnect" href="https://telegram.org" />
+  <link rel="dns-prefetch" href="https://telegram.org" />
+
+  <meta name="theme-color" content="#0b0b0b" />
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon-192x192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="preload" href="/icons/icon-512x512.png" as="image" />
+  <link rel="stylesheet" href="/styles.css?v=5" />
+
+  <style>
+    /* ── stickyHeader — contient topbar + recherche + contrôles ── */
+    .stickyHeader {
+      position: sticky;
+      top: 0;
+      z-index: 95;
+      background: var(--bg, #0b0b0b);
+    }
+    /* topbar dans stickyHeader n'a pas besoin d'être sticky */
+    .stickyHeader .topbar {
+      position: relative !important;
+    }
+    /* ".app" em dourado real (var--gold: dourado escuro no claro, claro no escuro) */
+    .brandDot { color: var(--gold); font-weight: 700; }
+    .globalSearch {
+      padding: 8px 16px 6px;
+      background: var(--bg, #0b0b0b);
+      border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+    }
+    .globalSearchInner { position: relative; display: flex; gap: 8px; align-items: center; }
+    .globalSearchInner .gsIcon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; opacity: .35; pointer-events: none; }
+    #globalSearchInput { flex: 1; padding: 9px 36px; background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent); border-radius: 10px; color: var(--text); font-size: 13px; font-family: inherit; outline: none; transition: border-color .2s; }
+    #globalSearchInput:focus { border-color: color-mix(in srgb, var(--gold) 55%, transparent); }
+    #globalSearchInput::placeholder { color: var(--muted2); }
+    #globalSearchClear { position: absolute; right: 90px; top: 50%; transform: translateY(-50%); background: color-mix(in srgb, var(--text) 10%, transparent); border: none; color: var(--muted2); border-radius: 50%; width: 20px; height: 20px; font-size: 10px; cursor: pointer; display: none; align-items: center; justify-content: center; }
+    #globalSearchBtn { padding: 9px 16px; background: var(--accent, #c9a640); color: var(--accentText, #0b0b0b); border: none; border-radius: 10px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+
+    #globalResults { display: none; padding: 12px 16px; background: var(--bg, #0b0b0b); border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent); max-height: 55vh; overflow-y: auto; }
+    #globalResults.active { display: block; }
+    .gResultsMeta { font-size: 10px; color: var(--muted2); letter-spacing: .3em; margin-bottom: 10px; text-transform: uppercase; }
+    .gResultsHint { font-size: 12px; color: var(--muted); padding: 9px 12px; margin-bottom: 10px; border-radius: 10px; background: color-mix(in srgb, var(--gold) 8%, transparent); border: 1px solid color-mix(in srgb, var(--gold) 20%, transparent); }
+    .gResultItem { border-radius: 10px; border: 1px solid color-mix(in srgb, var(--text) 8%, transparent); background: color-mix(in srgb, var(--text) 3%, transparent); margin-bottom: 7px; overflow: hidden; cursor: pointer; transition: border-color .2s, background .2s; }
+    .gResultItem:hover { border-color: color-mix(in srgb, var(--gold) 35%, transparent); }
+    .gResultItem.open { border-color: color-mix(in srgb, var(--gold) 45%, transparent); background: color-mix(in srgb, var(--gold) 8%, transparent); }
+    .gResultHead { padding: 11px 14px; display: flex; justify-content: space-between; align-items: center; }
+    .gResultRef { font-size: 13px; color: var(--gold); font-weight: 700; }
+    .gResultArrow { color: color-mix(in srgb, var(--gold) 60%, transparent); font-size: 14px; transition: transform .2s; }
+    .gResultItem.open .gResultArrow { transform: rotate(90deg); }
+    .gResultBody { display: none; padding: 0 14px 13px; font-size: 14px; font-style: italic; line-height: 1.7; color: var(--text); }
+    .gResultItem.open .gResultBody { display: block; }
+    .gResultActions { display: flex; gap: 8px; margin-top: 10px; }
+    .gResultActions button { padding: 5px 12px; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--text) 12%, transparent); background: color-mix(in srgb, var(--text) 6%, transparent); color: var(--muted); font-size: 11px; font-family: inherit; cursor: pointer; }
+    #gMoreBtn { display: block; width: 100%; margin: 8px 0 2px; padding: 10px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent); background: color-mix(in srgb, var(--gold) 10%, transparent); color: var(--text); font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; }
+    #gMoreBtn:hover { background: color-mix(in srgb, var(--gold) 16%, transparent); }
+
+    #readControls { background: var(--bg, #0b0b0b); padding: 6px 14px 4px; border-bottom: 1px solid rgba(226,197,122,0.12); }
+    #readControls .controls { margin: 0; gap: 8px; }
+    #readControls .controls .field span { font-size: 11px; }
+    #readControls select { padding: 6px 10px; font-size: 13px; }
+    #readControls .btn { padding: 6px 12px; font-size: 12px; }
+
+    .controls .field { flex: 1; min-width: 100px !important; }
+    .controls .field:first-child { flex: 2; }
+    .controls .navBtns { width: 100%; margin-left: 0; }
+    .verse { cursor: pointer; border-radius: 8px; padding: 4px 6px; margin: 0 -6px; transition: background 0.15s; }
+    .verse:hover { background: rgba(226, 197, 122, 0.05); }
+    .verse.selected { background: rgba(226, 197, 122, 0.09); outline: 1px solid rgba(226, 197, 122, 0.2); }
+    .hl { background: rgba(226, 197, 122, 0.3); border-radius: 3px; padding: 0 2px; }
+  </style>
+
+  <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+
+  <script src="/footer.js" defer></script>
+  <style>
+    /* Barre d'onglets avec 4 onglets : défilement horizontal si l'écran est étroit,
+       plutôt que du texte qui se coupe sur deux lignes. */
+    .tabs{ overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; }
+    .tabs::-webkit-scrollbar{ display:none; }
+    .tab{ flex:1 0 auto; white-space:nowrap; text-align:center; }
+    .tabLink{ display:flex; align-items:center; justify-content:center; }
+    /* 3e sélecteur (Verset) : plus étroit pour tenir sur mobile */
+    #readControls .controls .field:nth-child(3){ min-width:70px !important; flex:1; }
+
+    /* ── Onglets dans la barre fixe (au-dessus des sélecteurs) ── */
+    .tabsWrap{ padding: 8px 14px; background: var(--bg, #0b0b0b); }
+    .tabsWrap .tabs{ max-width: 980px; margin: 0 auto; box-shadow: none; }
+    /* Sélecteurs Livre/Chapitre/Verset : visibles uniquement en Lecture */
+    #readControls{ display: none; }
+    body.viewRead #readControls{ display: block; }
+    body:not(.viewRead) .tabsWrap{ border-bottom: 1px solid rgba(226,197,122,0.12); }
+  </style>
+
+  <style>
+    /* ── Vue "Versets" (thèmes) — intégrée à l'app, mêmes styles que les pages /versets/* ── */
+    #view-versets .backLink{ display:inline-block; font-size:13px; margin-bottom:6px; text-decoration:none; }
+    #view-versets h1{ font-family: ui-serif, Georgia, serif; font-size:24px; margin:6px 0 4px; }
+    #view-versets h1 .h1Icon{ display:inline-flex; vertical-align:-3px; color:var(--gold); margin-right:6px; }
+    #view-versets .pageLead{ color:var(--muted); font-size:14px; margin:0 0 16px; line-height:1.6; }
+    #themeGrid{ display:grid; grid-template-columns:1fr; gap:10px; margin-top:6px; }
+    @media (min-width:560px){ #themeGrid{ grid-template-columns:1fr 1fr; } }
+    .themeCard{ display:flex; align-items:center; gap:10px; padding:14px; border-radius:14px;
+      border:1px solid color-mix(in srgb, var(--text) 10%, transparent);
+      background: color-mix(in srgb, var(--text) 3%, transparent);
+      text-decoration:none; color:var(--text); font-weight:700; cursor:pointer;
+      transition:border-color .15s, background .15s; }
+    .themeCard:hover{ border-color: color-mix(in srgb, var(--gold) 40%, transparent);
+      background: color-mix(in srgb, var(--gold) 7%, transparent); }
+    .themeCard .em{ display:inline-flex; color:var(--gold); flex-shrink:0; }
+    #view-versets .versetList{ display:flex; flex-direction:column; gap:10px; margin:6px 0 18px; }
+    #view-versets .versetItem{ display:block; padding:12px 14px; border-radius:14px;
+      border:1px solid color-mix(in srgb, var(--text) 10%, transparent);
+      background: color-mix(in srgb, var(--text) 3%, transparent);
+      text-decoration:none; cursor:pointer; transition:border-color .15s, background .15s; }
+    #view-versets .versetItem:hover{ border-color: color-mix(in srgb, var(--gold) 40%, transparent);
+      background: color-mix(in srgb, var(--gold) 7%, transparent); }
+    #view-versets .versetRef{ display:block; color:var(--gold); font-weight:800; font-size:13px; margin-bottom:5px; }
+    #view-versets .versetText{ display:block; color:var(--text); font-family: ui-serif, Georgia, serif;
+      font-style:italic; line-height:1.65; }
+    #view-versets .ctaRead{ display:inline-block; margin:6px 0 4px; padding:11px 16px; border-radius:12px;
+      border:1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+      background: color-mix(in srgb, var(--gold) 12%, transparent); color:var(--text);
+      font-weight:700; text-decoration:none; }
+    #view-versets .ctaRead:hover{ background: color-mix(in srgb, var(--gold) 18%, transparent); }
+  </style>
+</head>
+<body class="viewRead">
+
+  <div class="stickyHeader">
+  <header class="topbar">
+    <div class="brand" id="btnHome" title="Accueil" role="button" tabindex="0">
+      <img src="/icons/icon-512x512.png" class="brandIcon" width="44" height="44" alt="LaBible.app" style="border-radius:9px;object-fit:cover;width:44px;height:44px;min-width:44px;max-width:44px;" fetchpriority="high" />
+      <div class="brandText">
+        <div class="brandTitle">LaBible<span class="brandDot">.app</span></div>
+        <div class="brandSub">LSG 1910</div>
+      </div>
+    </div>
+    <div class="topActions">
+      <button id="btnFontMinus" class="iconBtn" title="Diminuer la police" style="font-size:11px;font-weight:900;letter-spacing:-0.5px;min-width:36px;">A−</button>
+      <button id="btnFontPlus"  class="iconBtn" title="Augmenter la police" style="font-size:11px;font-weight:900;letter-spacing:-0.5px;min-width:36px;">A+</button>
+      <div class="topDivider"></div>
+      <button id="btnTheme" class="iconBtn" title="Thème" aria-label="Changer de thème"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.8v2.4M12 18.8v2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M2.8 12h2.4M18.8 12h2.4M4.9 19.1l1.7-1.7M17.4 6.6l1.7-1.7"/></svg></button>
+      <button id="btnWake" class="iconBtn" title="Garder l'écran allumé" aria-label="Garder l'écran allumé" aria-pressed="false" hidden><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10 5.6h4"/></svg></button>
+      <div class="topDivider"></div>
+      <button id="btnInstall" class="chip chipGold" title="Installer" aria-label="Installer" hidden style="width:36px;height:36px;padding:0;justify-content:center;">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 12l-5-5 1.4-1.4L7 9.2V2h2v7.2l2.6-3.6L13 7l-5 5zM2 14h12v2H2z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="globalSearch">
+    <div class="globalSearchInner">
+      <span class="gsIcon">🔍</span>
+      <input id="globalSearchInput" type="text" placeholder="Rechercher un verset, mot clé… (ex : Jean 3:16)" autocomplete="off" />
+      <button id="globalSearchClear">✕</button>
+      <button id="globalSearchBtn">Rechercher</button>
+    </div>
+  </div>
+  <div class="globalSearchSpacer"></div>
+
+  <div id="globalResults">
+    <div class="gResultsMeta" id="gResultsMeta"></div>
+    <div id="gResultsList"></div>
+  </div>
+
+  <div class="tabsWrap">
+    <nav class="tabs" aria-label="Navigation">
+      <button class="tab active" data-view="read">Lecture</button>
+      <button class="tab" data-view="plan">Plan</button>
+      <button class="tab" data-view="library">Bibliothèque</button>
+      <button class="tab" data-view="versets">Versets</button>
+    </nav>
+  </div>
+
+  <div id="readControls">
+    <div class="controls">
+      <label class="field"><span>Livre</span><select id="bookSelect"></select></label>
+      <label class="field"><span>Chapitre</span><select id="chapterSelect"></select></label>
+      <label class="field"><span>Verset</span><select id="verseSelect"></select></label>
+      <div class="navBtns">
+        <button class="btn" id="btnPrev">← Précédent</button>
+        <button class="btn" id="btnNext">Suivant →</button>
+      </div>
+    </div>
+  </div>
+  </div><!-- /stickyHeader -->
+
+  <main class="container">
+
+    <!-- LECTURE -->
+    <section class="view active" id="view-read">
+
+      <div class="card">
+        <div class="cardHeader">
+          <div><h2>Lecture</h2></div>
+          <div class="row gap8">
+            <button class="chip" id="btnVDD">✨ Verset du jour</button>
+          </div>
+        </div>
+        <div class="page" id="readerPage" aria-live="polite">
+          <div class="pageHeader" id="pageHeader"></div>
+
+          <!-- Astuce affichee une seule fois : le geste "toucher un verset"
+               ouvre six fonctions (image, explication, references, favori,
+               copier, partager) et rien ne le laissait deviner.
+
+               ANCREE EN BAS, pas en haut. Toute barre qui reste visible pendant
+               le defilement RECOUVRE le texte : ancree sous le bandeau, elle
+               masquait un verset en pleine lecture. En bas, combinee au
+               padding ajoute au <body> tant qu'elle est affichee, elle ne
+               cache pas un seul mot.
+
+               position:sticky aurait pousse le contenu au lieu de le couvrir,
+               mais .page porte overflow:hidden, ce qui annule sticky.
+
+               Elle s'efface des que l'utilisateur touche un verset, ou via la
+               croix. Etant fixed, elle flotterait sur toutes les vues :
+               hintSyncView() la masque hors de la lecture. -->
+          <div id="verseHint"
+               style="position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:45;width:calc(100% - 28px);max-width:620px;display:none;gap:9px;align-items:flex-start;background:color-mix(in srgb, var(--bg) 92%, transparent);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);border:1px solid var(--gold);border-radius:14px;padding:10px 12px;font-size:12.5px;line-height:1.5;color:var(--muted);box-shadow:0 14px 38px color-mix(in srgb, #000 45%, transparent);">
+            <span aria-hidden="true">&#128161;</span>
+            <span>Touchez un verset pour le <b style="color:var(--gold);font-weight:700">partager</b> ou en <b style="color:var(--gold);font-weight:700">cr&eacute;er une image</b>.</span>
+            <button id="verseHintClose" aria-label="Masquer l'astuce"
+                    style="margin-left:auto;background:none;border:none;color:var(--muted);font-size:17px;line-height:1;cursor:pointer;padding:0 2px;">&times;</button>
+          </div>
+
+          <div class="verses" id="verses"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- PLAN -->
+    <section class="view" id="view-plan">
+      <div class="card">
+        <div class="cardHeader">
+          <div>
+            <h2>Plan de lecture</h2>
+            <div class="muted">365 jours — progression enregistrée sur l'appareil.</div>
+          </div>
+          <div class="row gap8">
+            <button class="chip" id="btnResetPlan">↺ Reset</button>
+            <button class="chip" id="btnJumpDay">📌 Jour…</button>
+          </div>
+        </div>
+        <div class="planGrid">
+          <div class="planBox">
+            <div class="planTitle">Aujourd'hui</div>
+            <div class="planToday" id="planTodayText">—</div>
+            <div class="planActions">
+              <button class="btnPrimary" id="btnOpenToday">📖 Ouvrir</button>
+              <button class="btn" id="btnMarkDone">✅ Marquer lu</button>
+            </div>
+            <div class="muted small" id="planTodayMeta"></div>
+          </div>
+          <div class="planBox">
+            <div class="planTitle">Progression</div>
+            <div class="progressWrap">
+              <div class="progressBar"><div class="progressFill" id="progressFill"></div></div>
+              <div class="progressText" id="progressText">0%</div>
+            </div>
+            <div class="muted small">Conseil: utilise "Index" pour accélérer la recherche.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BIBLIOTHÈQUE -->
+    <section class="view" id="view-library">
+      <div class="card">
+        <div class="cardHeader">
+          <div>
+            <h2>Bibliothèque</h2>
+            <div class="muted">Favoris + historique.</div>
+          </div>
+          <div class="row gap8">
+            <button class="chip" id="btnClearFav">🧹 Favoris</button>
+            <button class="chip" id="btnClearHistory">🧹 Historique</button>
+          </div>
+        </div>
+        <div class="libraryGrid">
+          <div class="libBox">
+            <div class="planTitle">✨ Verset du jour</div>
+            <div class="vdd" id="vddBox">—</div>
+            <div class="row gap8 wrap">
+              <button class="btn" id="btnOpenVDD">📖 Ouvrir</button>
+              <button class="btn" id="btnCopyVDD">📎 Copier</button>
+              <button class="btn" id="btnImgVDD">🖼️ Image</button>
+            </div>
+          </div>
+          <div class="libBox">
+            <div class="planTitle">🔖 Favoris</div>
+            <div class="list" id="favList"></div>
+          </div>
+          <div class="libBox">
+            <div class="planTitle">🕘 Historique</div>
+            <div class="list" id="historyList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-versets">
+      <div class="card" id="versetsHub">
+        <div class="cardHeader">
+          <div>
+            <h2>Versets par thème</h2>
+            <div class="muted">16 thèmes, 350 versets — Bible Louis Segond 1910.</div>
+          </div>
+        </div>
+        <div class="themeGrid" id="themeGrid"></div>
+      </div>
+
+      <div class="card" id="versetsTheme" style="display:none">
+        <a class="backLink muted" href="#" id="btnBackThemes">← Tous les thèmes</a>
+        <h1 id="themeTitle"><span class="h1Icon" id="themeIcon"></span> <span id="themeLabel"></span></h1>
+        <p class="pageLead" id="themeLead"></p>
+        <div class="versetList" id="themeVerseList"></div>
+        <a class="ctaRead" href="#" id="btnThemeReadAll">📖 Lisez la Bible complète</a>
+      </div>
+    </section>
+
+    <!-- ── FOOTER STANDARD — identique sur toutes les pages ── -->
+    <div id="lb-footer"></div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    /* Lien profond depuis une publication du canal Telegram.
+       Le bouton des posts pointe vers ?startapp=psaumes-91_1 ; Telegram lance
+       la Mini App avec ce parametre dans le fragment (#tgWebAppStartParam=...).
+       On le reecrit ici dans le format que l'application lit deja
+       (#psaumes-91:1, voir parseHashRef), AVANT le chargement de app.v2.js :
+       la lecture s'ouvre donc directement sur le passage publie.
+       Sans Telegram, ou si le parametre est absent ou mal forme, ce bloc ne
+       fait rien et l'application demarre normalement. */
+    (function () {
+      try {
+        var h = location.hash || '';
+        if (h.indexOf('tgWebApp') < 0) return;
+        var m = h.match(/[#&]tgWebAppStartParam=([^&]+)/);
+        var sp = m ? decodeURIComponent(m[1]) : '';
+        // <livre-en-slug>-<chapitre>[_<verset>]
+        var p = sp.match(/^([a-z0-9-]+)-(\d+)(?:_(\d+))?$/i);
+        if (!p) return;
+        // parseHashRef attend le NOM du livre, pas son slug : les tirets du
+        // slug redeviennent des espaces ("1-corinthiens" -> "1 Corinthiens",
+        // "cantique-des-cantiques" -> "cantique des cantiques"). La comparaison
+        // cote application ignore la casse et les accents.
+        var hash = '#' + encodeURIComponent(p[1].replace(/-/g, ' '))
+                 + '-' + p[2] + (p[3] ? ':' + p[3] : '');
+        history.replaceState(null, '', location.pathname + location.search + hash);
+      } catch (e) {}
+    })();
+  </script>
+
+  <script src="/app.v2.js?v=50"></script>
+
+  <script>
+  (function () {
+    var input   = document.getElementById('globalSearchInput');
+    var btn     = document.getElementById('globalSearchBtn');
+    var clearBtn= document.getElementById('globalSearchClear');
+    var resultsBox = document.getElementById('globalResults');
+    var resultsMeta= document.getElementById('gResultsMeta');
+    var resultsList= document.getElementById('gResultsList');
+
+    function showClear(val) { clearBtn.style.display = val ? 'flex' : 'none'; }
+    input.addEventListener('input', function () { showClear(input.value); if (!input.value) closeResults(); });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSearch(); });
+    clearBtn.addEventListener('click', function () { input.value = ''; showClear(false); closeResults(); input.focus(); });
+    btn.addEventListener('click', doSearch);
+
+    function closeResults() { resultsBox.classList.remove('active'); resultsList.innerHTML = ''; }
+
+    function doSearch() {
+      var q = input.value.trim();
+      if (!q) return;
+      // Guillemets vides ("" ou «») : équivalent à une recherche vide, on ignore.
+      if (/^["“”]{2}$/.test(q) || /^«\s*»$/.test(q)) return;
+      if (typeof window.appSearch !== 'function') return;
+      var hits = window.appSearch(q);
+      if (hits === null) {
+        resultsMeta.textContent = '⏳ Chargement… réessaie dans un instant.';
+        resultsBox.classList.add('active');
+        resultsList.innerHTML = '';
+        setTimeout(function () { doSearch(); }, 1500);
+        return;
+      }
+      renderResults(q, hits);
+    }
+
+    var PAGE = 50;
+
+    function makeResultItem(hit) {
+      var el = document.createElement('div');
+      el.className = 'gResultItem';
+      var bodyHtml = hit.textHtml ? '« ' + hit.textHtml + ' »' : '« ' + hit.text + ' »';
+      el.innerHTML =
+        '<div class="gResultHead"><span class="gResultRef">' + hit.ref + '</span><span class="gResultArrow">›</span></div>' +
+        '<div class="gResultBody"><div class="gResultText" style="cursor:pointer">' + bodyHtml + '</div><div class="gResultActions"><button class="btnCopy">📎 Copier</button></div></div>';
+      el.querySelector('.gResultHead').addEventListener('click', function () { el.classList.toggle('open'); });
+      el.querySelector('.gResultText').addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (typeof window.appGoTo === 'function') { window.appGoTo(hit.ref); closeResults(); input.value = ''; showClear(false); }
+      });
+      el.querySelector('.btnCopy').addEventListener('click', function (e) {
+        e.stopPropagation();
+        navigator.clipboard && navigator.clipboard.writeText('« ' + hit.text + ' »\n— ' + hit.ref + ' (LSG 1910)\n📖 https://labible.app');
+      });
+      return el;
+    }
+
+    function isExactQuery(q) {
+      var t = q.trim();
+      return /^["“](.+)["”]$/.test(t) || /^«\s*(.+?)\s*»$/.test(t);
+    }
+
+    function renderResults(q, hits) {
+      resultsList.innerHTML = '';
+      var exact = isExactQuery(q);
+      if (!hits.length) {
+        resultsMeta.textContent = 'Aucun résultat pour « ' + q + ' »' + (exact ? ' (recherche exacte)' : '');
+        resultsBox.classList.add('active');
+        return;
+      }
+      resultsMeta.textContent = '✦ ' + hits.length + ' résultat' + (hits.length > 1 ? 's' : '') + ' — « ' + q.toUpperCase() + ' »';
+      if (!exact && hits.length >= 20) {
+        var hint = document.createElement('div');
+        hint.className = 'gResultsHint';
+        hint.textContent = '💡 Trop de résultats ? Mets le mot entre guillemets — "' + q.trim() + '" — pour une recherche exacte.';
+        resultsList.appendChild(hint);
+      }
+
+      var shown = 0;
+      var moreBtn = document.createElement('button');
+      moreBtn.id = 'gMoreBtn';
+
+      function renderMore() {
+        if (moreBtn.parentNode) moreBtn.parentNode.removeChild(moreBtn);
+        var slice = hits.slice(shown, shown + PAGE);
+        for (var i = 0; i < slice.length; i++) { resultsList.appendChild(makeResultItem(slice[i])); }
+        shown += slice.length;
+        if (shown < hits.length) {
+          moreBtn.textContent = 'Afficher plus (' + (hits.length - shown) + ' restants)';
+          resultsList.appendChild(moreBtn);
+        }
+      }
+
+      moreBtn.addEventListener('click', renderMore);
+      renderMore();
+      resultsBox.classList.add('active');
+    }
+  })();
+  </script>
+
+  <!-- ── Schema.org JSON-LD ── -->
+  <script type="application/ld+json">
+  [
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "LaBible.app",
+      "url": "https://labible.app/",
+      "description": "Lisez toute la Bible Louis Segond 1910 gratuitement en ligne.",
+      "inLanguage": "fr"
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "LaBible.app",
+      "url": "https://labible.app/",
+      "description": "Application web progressive pour lire la Bible Louis Segond 1910, gratuite et installable sur téléphone, tablette ou PC. Sans publicité, sans inscription.",
+      "applicationCategory": "ReferenceApplication",
+      "operatingSystem": "All",
+      "inLanguage": "fr",
+      "isAccessibleForFree": true,
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "EUR"
+      }
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "LaBible.app",
+      "url": "https://labible.app/",
+      "logo": "https://labible.app/icons/icon-512x512.png",
+      "sameAs": [
+        "https://t.me/appbible",
+        "https://facebook.com/LaBibleApp",
+        "https://instagram.com/labible.app",
+        "https://youtube.com/@LaBible-app",
+        "https://www.tiktok.com/@labible.app",
+        "https://threads.net/@labible.app",
+        "https://pinterest.com/labibleapp"
+      ]
+    }
+  ]
+  </script>
+
+  <script>
+    /* telegram-web-app.js est charge en "defer" : il ne s'execute qu'apres
+       l'analyse du document. Ce bloc doit donc attendre DOMContentLoaded,
+       sinon window.Telegram n'existe pas encore au moment ou il tourne et
+       RIEN ne s'applique — ni le theme, ni tg.expand(), ni le bouton Retour. */
+    function initTelegramUI() {
+      var tg = window.Telegram && window.Telegram.WebApp;
+      if (!tg || !tg.initData) return;
+      tg.ready();
+      tg.expand();
+      /* Theme dans la Mini App.
+
+         ANCIEN COMPORTEMENT, CORRIGE : on injectait les couleurs de Telegram
+         une par une (--text, --muted, --bg...) SANS jamais synchroniser
+         data-theme. Les deux palettes se melangeaient : --text venait de
+         Telegram (utilise 35 fois dans la CSS) tandis que --panel, --gold,
+         --muted2 et --bg2 restaient ceux du theme de l'application.
+         Application en clair + Telegram en sombre = texte blanc sur carte
+         blanche, donc illisible. Trois des six variables injectees
+         (--card, --accent, --accentText) n'etaient meme lues nulle part.
+
+         MAINTENANT : on aligne data-theme sur le theme de Telegram et on
+         laisse la palette de l'application, coherente par construction,
+         faire le reste. Seul le fond suit Telegram, pour se fondre dans
+         l'interface du client. */
+      var r = document.documentElement;
+
+      function luminance(hex) {
+        var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || ''));
+        if (!m) return null;
+        var n = parseInt(m[1], 16);
+        var c = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(function (v) {
+          v /= 255;
+          return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+      }
+
+      function appliquerTheme() {
+        var p = tg.themeParams || {};
+        var scheme = tg.colorScheme;
+        if (scheme !== 'light' && scheme !== 'dark') {
+          var l = luminance(p.bg_color);
+          scheme = (l === null) ? 'dark' : (l > 0.5 ? 'light' : 'dark');
+        }
+        /* applyTheme() vient de app.v2.js, deja charge (ligne 368) : il pose
+           data-theme, met a jour l'icone du bouton et garde la preference. */
+        if (typeof window.applyTheme === 'function') window.applyTheme(scheme);
+        else r.setAttribute('data-theme', scheme);
+
+        /* Le fond suit Telegram pour que l'application se fonde dans le client.
+           Le texte, lui, reste celui de la palette de l'application. */
+        if (p.bg_color) {
+          r.style.setProperty('--bg', p.bg_color);
+          r.style.setProperty('--bg2', p.secondary_bg_color || p.bg_color);
+        }
+      }
+
+      appliquerTheme();
+      /* L'utilisateur peut changer le theme de Telegram pendant la lecture. */
+      if (tg.onEvent) tg.onEvent('themeChanged', appliquerTheme);
+      var tgChip = document.querySelector('a.chip.telegram');
+      if (tgChip) tgChip.style.display = 'none';
+      var installBtn = document.getElementById('btnInstall');
+      if (installBtn) installBtn.hidden = true;
+      function updateBackButton() {
+        var activeTab = document.querySelector('.tab.active');
+        if (activeTab && activeTab.dataset.view === 'read') { tg.BackButton.hide(); } else { tg.BackButton.show(); }
+      }
+      tg.BackButton.onClick(function () {
+        var activeTab = document.querySelector('.tab.active');
+        if (activeTab && activeTab.dataset.view === 'read') { tg.close(); } else { var readTab = document.querySelector('[data-view="read"]'); if (readTab) readTab.click(); }
+      });
+      document.querySelectorAll('.tab').forEach(function (tab) { tab.addEventListener('click', function () { setTimeout(updateBackButton, 50); }); });
+      updateBackButton();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initTelegramUI);
+    } else {
+      initTelegramUI();
+    }
+  </script>
+
+  <script>
+    /* Mise a jour automatique.
+       L'application se met a jour seule : aucune reinstallation n'est requise.
+
+       Le signal fiable est 'controllerchange' (un nouveau service worker a pris
+       la main), et non l'etat du worker en cours d'installation : ce dernier ne
+       se declenche que si la page etait deja ouverte au bon moment.
+
+       Le rechargement est sans danger : la position de lecture est conservee
+       dans localStorage (labible:lastRef) et restauree au demarrage.
+
+       Le drapeau 'rechargement' evite toute boucle de rechargement. */
+    if ('serviceWorker' in navigator) {
+      var rechargement = false;
+
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (rechargement) return;
+        rechargement = true;
+        console.log('[SW] Nouvelle version active — rechargement');
+        window.location.reload();
+      });
+
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').then(function (reg) {
+          console.log('[SW] Enregistré:', reg.scope);
+
+          function chercherMaj() {
+            if (document.visibilityState !== 'visible') return;
+            reg.update().catch(function () {});
+          }
+
+          /* Un worker deja en attente : on l'active tout de suite. */
+          if (reg.waiting && navigator.serviceWorker.controller) {
+            reg.waiting.postMessage('SKIP_WAITING');
+          }
+
+          reg.addEventListener('updatefound', function () {
+            var nouveau = reg.installing;
+            if (!nouveau) return;
+            nouveau.addEventListener('statechange', function () {
+              if (nouveau.state === 'installed' && navigator.serviceWorker.controller) {
+                nouveau.postMessage('SKIP_WAITING');
+              }
+            });
+          });
+
+          /* On verifie au retour sur l'application et toutes les 30 minutes. */
+          document.addEventListener('visibilitychange', chercherMaj);
+          setInterval(chercherMaj, 30 * 60 * 1000);
+          chercherMaj();
+        }).catch(function (err) { console.warn('[SW] Erreur d\'enregistrement:', err); });
+      });
+    }
+  </script>
+  <script>
+    /* Navigation depuis les pages de contenu (barre partagée) : /#plan /#bibliotheque /#q=motclé
+       On capture le hash TOUT DE SUITE (avant que l'app ne le remplace par #Livre-Chapitre). */
+    (function () {
+      var captured = '';
+      try { captured = decodeURIComponent((location.hash || '').replace(/^#/, '')).trim(); } catch (e) {}
+
+      function act(h, tries) {
+        tries = tries || 0;
+        if (!h) return;
+        if (h === 'plan' || h === 'bibliotheque' || h === 'library') {
+          if (typeof setView === 'function') {
+            setView(h === 'plan' ? 'plan' : 'library');
+          } else if (tries < 40) {
+            setTimeout(function () { act(h, tries + 1); }, 200);
+          }
+          return;
+        }
+        if (h.indexOf('q=') === 0) {
+          var q = h.slice(2).trim();
+          var input = document.getElementById('globalSearchInput');
+          var btn = document.getElementById('globalSearchBtn');
+          if (q && input && btn) {
+            if (typeof window.appSearch === 'function') {
+              input.value = q;
+              btn.click();
+            } else if (tries < 40) {
+              setTimeout(function () { act(h, tries + 1); }, 200);
+            }
+          }
+        }
+      }
+
+      // au chargement : agir sur le hash capté (plan/biblio après un court délai pour laisser l'app démarrer)
+      window.addEventListener('load', function () {
+        if (captured.indexOf('q=') === 0) { setTimeout(function () { act(captured, 0); }, 120); }
+        else if (captured) { setTimeout(function () { act(captured, 0); }, 400); }
+      });
+      // navigation ultérieure (clic sur un onglet) : utiliser le hash courant
+      window.addEventListener('hashchange', function () {
+        var h = '';
+        try { h = decodeURIComponent((location.hash || '').replace(/^#/, '')).trim(); } catch (e) {}
+        act(h, 0);
+      });
+    })();
+  </script>
+
+  <script>
+    /* Sélecteurs Livre/Chapitre/Verset visibles uniquement dans l'onglet Lecture.
+       On observe la classe "active" de l'onglet Lecture (mise à jour par setView). */
+    (function () {
+      var readTab = document.querySelector('.tab[data-view="read"]');
+      if (!readTab) return;
+      function upd() {
+        document.body.classList.toggle('viewRead', readTab.classList.contains('active'));
+      }
+      new MutationObserver(upd).observe(readTab, { attributes: true, attributeFilter: ['class'] });
+      upd();
+    })();
+  </script>
+</body>
+</html>

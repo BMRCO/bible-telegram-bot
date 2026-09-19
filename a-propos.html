@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>À propos — LaBible.app</title>
+  <meta name="description" content="LaBible.app, votre application web gratuite, installable et sans publicité pour lire toute la Bible Louis Segond 1910 en français." />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://labible.app/a-propos" />
+  <!-- Partage (Open Graph / X) — bannière 1200x630 -->
+  <meta property="og:title" content="À propos — LaBible.app" />
+  <meta property="og:description" content="Lire et méditer gratuitement toute la Bible Louis Segond 1910 en français. Sans publicité, sans compte." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://labible.app/a-propos" />
+  <meta property="og:image" content="https://labible.app/og/labible-1200x630.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:type" content="image/png" />
+  <meta property="og:image:alt" content="LaBible.app — Bible Louis Segond 1910" />
+  <meta property="og:locale" content="fr_FR" />
+  <meta property="og:site_name" content="LaBible.app" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@LaBibleapp" />
+  <meta name="twitter:title" content="À propos — LaBible.app" />
+  <meta name="twitter:description" content="Lire et méditer gratuitement toute la Bible Louis Segond 1910 en français. Sans publicité, sans compte." />
+  <meta name="twitter:image" content="https://labible.app/og/labible-1200x630.png" />
+  <meta name="twitter:image:alt" content="LaBible.app — Bible Louis Segond 1910" />
+  <meta name="theme-color" content="#0b0b0b" />
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon-192x192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="stylesheet" href="/styles.css?v=5" />
+  <style>
+    .stickyHeader { position: sticky; top: 0; z-index: 95; background: var(--bg, #0b0b0b); }
+    .stickyHeader .topbar { position: relative !important; }
+    .brandDot { color: var(--gold); font-weight: 700; }
+    .topActions .chip { padding: 7px 12px; font-size: 12.5px; border-radius: 10px; }
+
+    .pageContent { font-family: ui-serif, Georgia, "Times New Roman", serif; line-height: 1.78; }
+    .backLink { display:inline-block; font-size: 13px; margin-bottom: 14px; text-decoration:none; }
+
+    .kicker { font-family: ui-sans-serif, system-ui, sans-serif; text-transform: uppercase; letter-spacing: .22em; font-size: 12px; font-weight: 700; color: var(--gold); margin: 0 0 6px; }
+    .hero h1 { font-size: 40px; line-height: 1.08; margin: 0 0 14px; letter-spacing: .3px; }
+    .heroLead { color: var(--muted); font-size: 17px; line-height: 1.6; margin: 0 0 18px; max-width: 62ch; }
+    .principesBadge { display:inline-block; padding: 9px 18px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--gold) 45%, transparent); background: color-mix(in srgb, var(--gold) 9%, transparent); color: var(--gold); font-weight: 700; font-size: 14px; }
+
+    .statGrid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 26px 0 6px; }
+    .statCard { padding: 20px 12px; border-radius: 16px; border: 1px solid color-mix(in srgb, var(--text) 9%, transparent); background: color-mix(in srgb, var(--text) 3%, transparent); text-align: center; }
+    .statCard .num { font-size: 30px; font-weight: 800; color: var(--gold); line-height: 1; letter-spacing: .5px; }
+    .statCard .lbl { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+
+    .sectionTitle { display:flex; align-items:center; gap:10px; font-size: 21px; margin: 30px 0 4px; }
+    .sectionTitle .em { font-size: 22px; }
+    .pageContent hr { border: none; border-top: 1px solid color-mix(in srgb, var(--text) 10%, transparent); margin: 10px 0 16px; }
+    .pageContent p { margin: 0 0 13px; color: var(--text); }
+    .pageContent a { color: var(--gold); }
+
+    .featGrid { display:grid; grid-template-columns: 1fr; gap: 10px; margin: 6px 0 4px; }
+    @media (min-width:560px){ .featGrid { grid-template-columns: 1fr 1fr; } }
+    .featCard { padding: 14px 16px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--text) 9%, transparent); background: color-mix(in srgb, var(--text) 3%, transparent); }
+    .featCard .ft { display:flex; align-items:center; gap:9px; font-weight:700; font-size:15px; color: var(--text); }
+    .featCard .ft .em { font-size:18px; }
+    .featCard p { font-family: ui-sans-serif, system-ui, sans-serif; font-size:13.5px; color: var(--muted); margin:6px 0 0; line-height:1.5; }
+
+    .pullQuote { margin: 18px 0; padding: 14px 18px; border-left: 3px solid var(--gold); background: color-mix(in srgb, var(--gold) 6%, transparent); border-radius: 0 12px 12px 0; font-style: italic; color: var(--text); }
+    .ctaRead { display:inline-block; margin: 10px 0 2px; padding: 12px 18px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent); background: color-mix(in srgb, var(--gold) 12%, transparent); color: var(--text); font-weight: 700; text-decoration: none; }
+    .ctaRead:hover { background: color-mix(in srgb, var(--gold) 18%, transparent); }
+
+    @media (max-width: 520px){ .hero h1 { font-size: 32px; } .statCard .num { font-size: 26px; } .statGrid { gap:8px; } }
+  </style>
+  <script>
+    (function(){ try { var t = localStorage.getItem('labible:theme') === 'light' ? 'light' : 'dark'; document.documentElement.setAttribute('data-theme', t); } catch(e){} })();
+  </script>
+  <script src="/footer.js" defer></script>
+  <script src="/header.js" defer></script>
+</head>
+<body>
+
+  <div id="lb-topbar"></div>
+
+  <main class="container">
+    <article class="card pageContent">
+      <a class="backLink muted" href="/">← Retour à la lecture</a>
+
+      <div class="hero">
+        <p class="kicker">L'application</p>
+        <h1>À propos</h1>
+        <p class="heroLead">LaBible.app : lisez et méditez toute la Bible Louis Segond 1910 en français. Gratuite, installable et sans publicité — sur téléphone, tablette ou ordinateur.</p>
+        <span class="principesBadge">Gratuit · Sans publicité · Sans compte</span>
+      </div>
+
+      <div class="statGrid">
+        <div class="statCard"><div class="num">31 102</div><div class="lbl">Versets</div></div>
+        <div class="statCard"><div class="num">66</div><div class="lbl">Livres</div></div>
+        <div class="statCard"><div class="num">365</div><div class="lbl">Jours de lecture</div></div>
+      </div>
+
+      <h2 class="sectionTitle"><span class="em">🕊️</span> Notre mission</h2>
+      <hr />
+      <p>Diffuser la Parole de Dieu en français de manière <strong>gratuite, accessible et moderne</strong>, et la porter au plus grand nombre. LaBible.app n'est pas un projet commercial : la mission passe avant le profit, et la pérennité avant tout.</p>
+      <div class="pullQuote">Une Bible simple, sérieuse, centrée sur la Parole — libre d'accès, sans friction.</div>
+
+      <h2 class="sectionTitle"><span class="em">📖</span> Ce que vous y trouvez</h2>
+      <hr />
+      <div class="featGrid">
+        <div class="featCard"><div class="ft"><span class="em">📚</span> La Bible complète</div><p>Le texte intégral de la Louis Segond 1910, soit 31 102 versets, dans 66 livres.</p></div>
+        <div class="featCard"><div class="ft"><span class="em">🔍</span> Recherche instantanée</div><p>Par mot-clé ou par référence, dans toute la Bible, en un instant.</p></div>
+        <div class="featCard"><div class="ft"><span class="em">🗓️</span> Plan de lecture 365 jours</div><p>Un parcours quotidien, avec votre progression enregistrée sur l'appareil.</p></div>
+        <div class="featCard"><div class="ft"><span class="em">✨</span> Verset du jour</div><p>Un verset choisi chaque jour pour nourrir votre méditation.</p></div>
+        <div class="featCard"><div class="ft"><span class="em">💡</span> Explication des versets</div><p>Des éclairages sobres et fidèles pour mieux comprendre certains versets clés.</p></div>
+        <div class="featCard"><div class="ft"><span class="em">🔗</span> Références croisées</div><p>Chaque verset renvoie aux passages qui l'éclairent, pour approfondir votre étude.</p></div>
+        <div class="featCard"><div class="ft"><span class="em">🗂️</span> Versets par thème</div><p>Des versets regroupés par thème : paix, guérison, protection, espérance, et bien d'autres.</p></div>
+        <div class="featCard"><div class="ft"><span class="em">🖼️</span> Partage en image</div><p>Créez une image soignée d'un verset, aux couleurs du livre, à partager en un geste.</p></div>
+        <div class="featCard"><div class="ft"><span class="em">📥</span> Hors ligne et installable</div><p>Installez l'application et lisez même sans connexion.</p></div>
+      </div>
+
+      <h2 class="sectionTitle"><span class="em">⚖️</span> Nos principes</h2>
+      <hr />
+      <p><strong>Gratuit.</strong> L'accès à la Parole ne doit rien coûter. Le texte biblique est dans le domaine public, et le restera librement partagé.</p>
+      <p><strong>Sans publicité.</strong> Aucune bannière, aucune distraction. Rien ne vient s'interposer entre vous et le texte.</p>
+      <p><strong>Sans compte.</strong> Pas d'inscription, pas de données personnelles : vos favoris et votre progression restent sur votre appareil.</p>
+
+      <h2 class="sectionTitle"><span class="em">🌍</span> Au-delà du site</h2>
+      <hr />
+      <p>Chaque jour, LaBible.app partage un verset sur les réseaux — YouTube, Instagram, TikTok, Telegram, Facebook et d'autres — pour faire grandir une communauté chrétienne francophone. Vous pouvez nous y retrouver via les liens en bas de page.</p>
+      <p>Pour en savoir plus sur la traduction, découvrez la page <a href="/louis-segond.html">Louis Segond</a>.</p>
+
+      <p style="margin-top:18px"><a class="ctaRead" href="/">📖 Commencer à lire</a></p>
+    </article>
+
+    <div id="lb-footer"></div>
+  </main>
+
+  <script>
+    (function(){
+      var btn = document.getElementById('btnTheme');
+      function sync(){ var t = document.documentElement.getAttribute('data-theme') || 'dark'; if (btn) btn.textContent = t === 'light' ? '☀️' : '🌙'; }
+      sync();
+      if (btn) btn.addEventListener('click', function(){
+        var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+        var nxt = cur === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', nxt);
+        try { localStorage.setItem('labible:theme', nxt); } catch(e){}
+        sync();
+      });
+    })();
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) { window.addEventListener('load', function () { navigator.serviceWorker.register('/sw.js').catch(function(){}); }); }
+  </script>
+</body>
+</html>
