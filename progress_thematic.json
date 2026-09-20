@@ -17,14 +17,13 @@
     "sagesse": 27,
     "jesus": 27,
     "psaumes": 25,
-    "propheties": 20,
+    "propheties": 25,
     "peur": 20,
     "confiance": 20
   },
-  "theme_index": 19,
+  "theme_index": 0,
   "rot": 17,
   "music_bag": [
-    "music_meditation/Flute Meditation Music 15 - Royalty-free Music.mp3",
     "music_meditation/Christian Instrumental Background Music (God Is Always Faithful) - Royalty-free Music.mp3",
     "music_meditation/Christian Live Streaming music (Light of Faith) - Royalty-free Music.mp3",
     "music_meditation/Christian instrumental music for prayer (7-42) - Royalty-free Music.mp3",
@@ -44,13 +43,14 @@
     "music_meditation/Christian instrumental music for prayer (Heaven’s Whisper) - Royalty-free Music.mp3",
     "music_meditation/Instrumental Christian music for prayer (12-56) - Royalty-free Music.mp3"
   ],
-  "last_music": "music_meditation/Christian instrumental music for prayer (God Is My Peace) - Royalty-free Music.mp3",
+  "last_music": "music_meditation/Flute Meditation Music 15 - Royalty-free Music.mp3",
   "music_played": [
     "music_meditation/Christian Background Music (Heavens Whisper Short Version 3-36) - Royalty-free Music.mp3",
     "music_meditation/Christian instrumental music (God Will Make a Way) - Royalty-free Music.mp3",
     "music_meditation/onetent-relaxing-meditation-music-2-225173.mp3",
     "music_meditation/nickpanekaiassets-peaceful-piano-background-music-218762.mp3",
     "music_meditation/jessequinn-christian-worship-instrumental-calm-emotional-piano-by-jesse-quinn-164626.mp3",
-    "music_meditation/Christian instrumental music for prayer (God Is My Peace) - Royalty-free Music.mp3"
+    "music_meditation/Christian instrumental music for prayer (God Is My Peace) - Royalty-free Music.mp3",
+    "music_meditation/Flute Meditation Music 15 - Royalty-free Music.mp3"
   ]
 }
