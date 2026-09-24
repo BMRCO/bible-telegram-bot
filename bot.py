@@ -75,6 +75,17 @@ FONT_SERIF_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
 FONT_SANS       = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 WATERMARK    = "LaBible.app"
+# Ligne du carton de cloture des reels (12,7 s -> 15 s). Elle ne parait NI
+# dans le pied de page NI dans les legendes : une seule fois, a la fin.
+# Elle tourne par _rotate(), comme les clotures : la meme reference donne
+# toujours la meme ligne, mais elle change d'une publication a l'autre.
+# Toutes se terminent par « sur », le nom etant ecrit juste au-dessous.
+LIGNES_FIN = [
+    "Lisez le chapitre entier sur",
+    "Le chapitre entier est sur",
+    "Ce chapitre en entier sur",
+    "La Bible entière, gratuitement, sur",
+]
 MINI_APP_URL = "https://t.me/BIBLE_APP_BOT/labible"
 APP_URL      = "https://labible.app"
 
@@ -2158,7 +2169,12 @@ def pick_music(progress):
 def make_reel_video(text, ref, progress=None, cat_name=None):
     W, H = 1080, 1920
     FPS, TOTAL = 30, 30 * 15
-    seed = abs(hash(ref)) % (2**31)
+    # md5 et non hash() : le hash des chaines est sale a chaque processus, donc
+    # la meme reference ne donnait PAS la meme image d'un run a l'autre — ce que
+    # le mot « seed » laissait pourtant croire. La palette, elle, vient de
+    # REEL_PALETTE_BY_CAT et etait deja stable ; c'est la position des etoiles
+    # qui changeait.
+    seed = int(hashlib.md5(ref.encode("utf-8")).hexdigest(), 16) % (2**31)
     rng = np.random.default_rng(seed)
     fp, fpb = FONT_SERIF, FONT_SERIF_BOLD
     text_clean = text.rstrip('.')
@@ -2180,7 +2196,7 @@ def make_reel_video(text, ref, progress=None, cat_name=None):
     verse_lines = wrap_text_with_quotes(d, text_clean, fv, MAX_TW)
     fr = ImageFont.truetype(fpb, 36)
     fl = ImageFont.truetype(fp, 28)
-    fw = ImageFont.truetype(fp, 28)
+    fw = ImageFont.truetype(fpb, 34)   # filigrane : gras et dore, il etait illisible
     REEL_PALETTES = [
         ((10, 14, 38), (180, 148, 72),  (192, 158, 80),  (230, 228, 220), (160, 160, 175)),
         ((30,  8, 12), (210, 155, 75),  (220, 168, 85),  (255, 245, 225), (170, 145, 115)),
@@ -2211,7 +2227,12 @@ def make_reel_video(text, ref, progress=None, cat_name=None):
     # Le mouvement n'a pas change : derive lente vers le haut, balancement
     # sinusoidal, scintillement. Le ton reste sobre : ce sont des etoiles
     # lointaines, pas des paillettes.
-    N_P = 90
+    # Densite selon le moment. Il y a trois reels par jour : 06h UTC (matin,
+    # « promise »), 13h (apres-midi, « jesus ») et 19h (soir, « psaume »).
+    # Les etoiles sont a leur place le soir ; le jour elles restent, mais
+    # discretes. Les retirer tout a fait vide la carte : c'est la seule
+    # texture de l'image.
+    N_P = 90 if cat_name == "psaume" else 28
     px = rng.uniform(CX1+20, CX2-20, N_P); py = rng.uniform(CY1+20, CY2-20, N_P)
     ps = rng.uniform(0.2, 0.8, N_P); pr = rng.uniform(1.0, 2.6, N_P)
     pa = rng.uniform(0, 2*math.pi, N_P)
@@ -2224,22 +2245,33 @@ def make_reel_video(text, ref, progress=None, cat_name=None):
     LINE_H = size + 20
     start_y = int(CY1 + (CY2-CY1)*0.42 - len(verse_lines)*LINE_H//2)
     FL, FT = CY2-200, CY2-170
+    CLOSE_OUT, CLOSE_IN = 12.2, 12.7
+    ligne_fin = _rotate(LIGNES_FIN, ref)
     os.makedirs("frames", exist_ok=True)
     for f in range(TOTAL):
         s = f / FPS
-        alpha = ease(s/0.5) if s < 0.5 else (ease((15-s)/1.5) if s > 13.5 else 1.0)
+        alpha = ease(s/0.5) if s < 0.5 else (ease((15-s)/0.6) if s > 14.4 else 1.0)
+        # Le verset et sa carte s'effacent a 12,2 s pour laisser la place au
+        # carton de cloture, qui entre a 12,7 s. Pas de chevauchement.
+        v_a = alpha * (1.0 if s < CLOSE_OUT else max(0.0, 1.0 - (s-CLOSE_OUT)/0.5))
         img = Image.new("RGB", (W, H), BG)
         draw = ImageDraw.Draw(img)
         for y in range(0, H, 4):
             t2 = y/H
             draw.rectangle([(0, y), (W, min(y+4, H))], fill=tuple(max(0, int(BG[i]*(1-t2*0.3))) for i in range(3)))
-        cl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-        cd = ImageDraw.Draw(cl)
-        cd.rounded_rectangle([CX1,CY1,CX2,CY2], radius=40, fill=(*BG, int(alpha*230)))
-        img = Image.alpha_composite(img.convert("RGBA"), cl).convert("RGB")
-        draw = ImageDraw.Draw(img)
-        draw.rounded_rectangle([CX1,CY1,CX2,CY2], radius=40, outline=blend(GOLD, alpha), width=5)
-        draw.rounded_rectangle([CX1+10,CY1+10,CX2-10,CY2-10], radius=34, outline=blend(GOLD, alpha*0.3), width=1)
+        # blend() suppose que le fond est BG, alors que le vrai fond est un
+        # degrade plus sombre : a alpha nul elle peint donc du BG sur du plus
+        # sombre, c'est-a-dire un fantome plus CLAIR que le fond. Tant que la
+        # carte etait visible cela ne se voyait pas ; depuis qu'elle s'eteint
+        # pour le carton de cloture, il faut simplement ne plus rien dessiner.
+        if v_a > 0.01:
+            cl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+            cd = ImageDraw.Draw(cl)
+            cd.rounded_rectangle([CX1,CY1,CX2,CY2], radius=40, fill=(*BG, int(v_a*230)))
+            img = Image.alpha_composite(img.convert("RGBA"), cl).convert("RGB")
+            draw = ImageDraw.Draw(img)
+            draw.rounded_rectangle([CX1,CY1,CX2,CY2], radius=40, outline=blend(GOLD, v_a), width=5)
+            draw.rounded_rectangle([CX1+10,CY1+10,CX2-10,CY2-10], radius=34, outline=blend(GOLD, v_a*0.3), width=1)
         pl = Image.new("RGBA", (W, H), (0, 0, 0, 0))
         pd = ImageDraw.Draw(pl)
         for i in range(N_P):
@@ -2258,29 +2290,49 @@ def make_reel_video(text, ref, progress=None, cat_name=None):
                        fill=(*WHITE, a_core))
         img = Image.alpha_composite(img.convert("RGBA"), pl).convert("RGB")
         draw = ImageDraw.Draw(img)
-        for i, line in enumerate(verse_lines):
-            ls = 0.1 + i*0.20; le = ls + 0.5
-            la = (0 if s<ls else (ease((s-ls)/(le-ls)) if s<le else 1.0)) * alpha
-            bbox = draw.textbbox((0,0), line, font=fv); tw = bbox[2]-bbox[0]
-            x = (W-tw)//2; y = start_y + i*LINE_H
-            draw.text((x+2, y+2), line, font=fv, fill=blend((0,0,0), la*0.6))
-            draw.text((x, y), line, font=fv, fill=blend(WHITE, la))
-        fs = 0.6 + len(verse_lines)*0.20 + 0.3
-        fa = (0 if s<fs else (ease((s-fs)/0.6) if s<fs+0.6 else 1.0)) * alpha
-        lx1, lx2 = CX1+CARD_PAD, CX2-CARD_PAD
-        draw.line([(lx1, FL), (lx2, FL)], fill=blend(GOLD, fa*0.8), width=2)
-        draw.text((lx1, FT), ref, font=fr, fill=blend(GR, fa))
-        draw.text((lx1, FT+44), "LSG 1910", font=fl, fill=blend(SIL, fa*0.85))
-        wbbox = draw.textbbox((0,0), WATERMARK, font=fw)
-        draw.text((lx2-(wbbox[2]-wbbox[0]), FT+44), WATERMARK, font=fw, fill=blend(SIL, fa*0.85))
-        # CTA — apparaît dans les dernières 5 secondes
-        if s > TOTAL/FPS - 5:
-            f_cta = ImageFont.truetype(FONT_SANS, 26)
-            cta = "Abonnez-vous pour plus de versets"
-            cta_a = ease((s - (TOTAL/FPS - 5)) / 1.0) * alpha
-            cta_bbox = draw.textbbox((0,0), cta, font=f_cta)
-            cta_w = cta_bbox[2] - cta_bbox[0]
-            draw.text(((W-cta_w)//2, CY2 + 20), cta, font=f_cta, fill=blend(SIL, cta_a * 0.7))
+        if v_a > 0.01:
+            for i, line in enumerate(verse_lines):
+                ls = 0.1 + i*0.20; le = ls + 0.5
+                la = (0 if s<ls else (ease((s-ls)/(le-ls)) if s<le else 1.0)) * v_a
+                bbox = draw.textbbox((0,0), line, font=fv); tw = bbox[2]-bbox[0]
+                x = (W-tw)//2; y = start_y + i*LINE_H
+                draw.text((x+2, y+2), line, font=fv, fill=blend((0,0,0), la*0.6))
+                draw.text((x, y), line, font=fv, fill=blend(WHITE, la))
+            fs = 0.6 + len(verse_lines)*0.20 + 0.3
+            fa = (0 if s<fs else (ease((s-fs)/0.6) if s<fs+0.6 else 1.0)) * v_a
+            lx1, lx2 = CX1+CARD_PAD, CX2-CARD_PAD
+            draw.line([(lx1, FL), (lx2, FL)], fill=blend(GOLD, fa*0.8), width=2)
+            draw.text((lx1, FT), ref, font=fr, fill=blend(GR, fa))
+            draw.text((lx1, FT+44), "LSG 1910", font=fl, fill=blend(SIL, fa*0.85))
+            # Filigrane en or, en face de la reference. Il etait gris argent et
+            # maigre : sur telephone on ne lisait pas le nom.
+            wbbox = draw.textbbox((0,0), WATERMARK, font=fw)
+            draw.text((lx2-(wbbox[2]-wbbox[0]), FT+8), WATERMARK, font=fw,
+                      fill=blend(GR, fa))
+
+        # Carton de cloture. Il remplace l'ancien « Abonnez-vous pour plus de
+        # versets », qui etait ecrit SOUS la carte, dans la bande que
+        # l'interface de Shorts recouvre : personne ne le voyait.
+        if s >= CLOSE_IN:
+            ea = ease((s-CLOSE_IN)/0.5) * alpha
+            f_end_top = ImageFont.truetype(fp, 38)
+            f_end_big = ImageFont.truetype(fpb, 84)
+            f_end_sub = ImageFont.truetype(fp, 30)
+            bas = "Gratuit \u00b7 Sans publicit\u00e9 \u00b7 LSG 1910"
+            b1 = draw.textbbox((0,0), ligne_fin, font=f_end_top)
+            b2 = draw.textbbox((0,0), WATERMARK, font=f_end_big)
+            b3 = draw.textbbox((0,0), bas, font=f_end_sub)
+            y0 = (H - 260)//2
+            draw.text(((W-(b1[2]-b1[0]))//2, y0), ligne_fin, font=f_end_top,
+                      fill=blend(SIL, ea*0.9))
+            draw.text(((W-(b2[2]-b2[0]))//2+3, y0+72+3), WATERMARK, font=f_end_big,
+                      fill=blend((0,0,0), ea*0.6))
+            draw.text(((W-(b2[2]-b2[0]))//2, y0+72), WATERMARK, font=f_end_big,
+                      fill=blend(GR, ea))
+            draw.line([(W//2-170, y0+200), (W//2+170, y0+200)],
+                      fill=blend(GOLD, ea*0.8), width=2)
+            draw.text(((W-(b3[2]-b3[0]))//2, y0+224), bas, font=f_end_sub,
+                      fill=blend(SIL, ea*0.75))
         img.save(f"frames/frame_{f:04d}.png")
     output_path = "reel.mp4"
     import glob, shutil
@@ -2445,7 +2497,7 @@ def make_parabole_video(title, verses, progress=None):
         ((22,  8, 40),  (195, 160, 75),  (210, 175, 88),  (250, 245, 255), (155, 135, 180)),
         ((10, 10, 10),  (195, 172,  95), (210, 187, 108), (250, 248, 235), (145, 135,  95)),
     ]
-    seed = abs(hash(title)) % (2**31)
+    seed = int(hashlib.md5(title.encode("utf-8")).hexdigest(), 16) % (2**31)
     BG, GOLD, GR, WHITE, SIL = REEL_PALETTES[seed % len(REEL_PALETTES)]
 
     def ease(t): t = max(0, min(1, t)); return t*t*(3-2*t)
