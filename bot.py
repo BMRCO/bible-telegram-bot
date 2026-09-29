@@ -180,13 +180,85 @@ CATEGORIES = {
 # CTA par catégorie (FB/IG/Threads) — remplace la ligne générique unique
 # "Partagez ce verset avec quelqu'un qui en a besoin 🙏" répétée partout.
 # Vouvoiement, même ton que les CTA déjà utilisés sur TikTok (manuel).
+# Une valeur peut etre une CHAINE (phrase unique) ou une LISTE : dans ce cas
+# cta_for() tire par _rotate(), donc la meme reference donne toujours la meme
+# phrase mais elle change d'une publication a l'autre.
+#
+# Pourquoi des listes : mesure du 24 septembre sur les viviers cures, la phrase
+# fixe sortait sur 78 % des propheties, 75 % des « jesus », 61 % des proverbes.
+# Le lecteur du canal voyait la meme ligne presque tous les jours.
+#
+# Chaque phrase est declarative, au vouvoiement, et ne dit rien que l'Ecriture
+# ne dise (§2.3 du cahier). La marque temporelle doit correspondre a l'heure du
+# cron : « aujourd'hui » le matin, « ce soir » pour les psaumes de 17h34 UTC.
 CTA_BY_CATEGORY = {
-    "promise":    "Une promesse de Dieu pour aujourd'hui. Partagez-la avec celui qui en a besoin 🙏",
-    "jesus":      "Les paroles de Jésus traversent les siècles. Partagez cette Parole 🙏",
-    "psaume":     "Que ce Psaume vous accompagne aujourd'hui. Partagez-le 🙏",
-    "proverbe":   "La sagesse de la Parole pour votre journée. Partagez-la 🙏",
-    "prophetie":  "La Parole annoncée, la Parole accomplie. Partagez cette vérité 🙏",
-    "protection": "L'Éternel veille sur les siens. Partagez cette assurance 🙏",
+    "promise": [
+        "Une promesse de Dieu pour aujourd'hui. Partagez-la avec celui qui en a besoin 🙏",
+        "Ce que Dieu promet, il l'accomplit. Partagez-la 🙏",
+        "Ses promesses ne dépendent pas de nos forces. Partagez-la 🙏",
+        "Dieu ne se rétracte pas. Partagez cette promesse 🙏",
+        "Il est fidèle, celui qui a promis. Partagez-la 🙏",
+        "La promesse tient, même quand l'attente dure. Partagez-la 🙏",
+        "Aucune de ses paroles n'est tombée à terre. Partagez-la 🙏",
+        "Ce qu'il a dit, il le fera. Partagez cette promesse 🙏",
+        "Une parole donnée par Dieu ne se reprend pas. Partagez-la 🙏",
+    ],
+    "jesus": [
+        "Les paroles de Jésus traversent les siècles. Partagez cette Parole 🙏",
+        "Ses paroles ne passeront point. Partagez-les 🙏",
+        "Il parle, et sa parole demeure. Partagez-la 🙏",
+        "Ce qu'il a dit, il le dit encore. Partagez cette Parole 🙏",
+        "Jamais homme n'a parlé comme cet homme. Partagez cette Parole 🙏",
+        "Il enseignait comme ayant autorité. Partagez-la 🙏",
+        "Ses paroles sont esprit et vie. Partagez-les 🙏",
+        "Ce sont ses mots, rapportés tels quels. Partagez-les 🙏",
+        "Sa parole s'adresse encore à qui la lit. Partagez-la 🙏",
+    ],
+    # 17h34 UTC = 19h34 en France : la journee est finie, la marque est le soir.
+    "psaume": [
+        "Que ce Psaume vous accompagne ce soir. Partagez-le 🙏",
+        "Un Psaume pour finir le jour. Partagez-le 🙏",
+        "Le soir venu, la Parole demeure. Partagez-la 🙏",
+        "Que ces mots vous accompagnent jusqu'au repos. Partagez-les 🙏",
+        "Un Psaume à relire avant la nuit. Partagez-le 🙏",
+        "La nuit ne suspend pas sa garde. Partagez cette assurance 🙏",
+        "Le repos vient de lui. Partagez-la 🙏",
+        "Dieu écoute aussi le soir. Partagez-la 🙏",
+        "Une prière déjà écrite, pour ce soir. Partagez-la 🙏",
+    ],
+    "proverbe": [
+        "La sagesse de la Parole pour votre journée. Partagez-la 🙏",
+        "La sagesse commence par la crainte de l'Éternel. Partagez-la 🙏",
+        "Un proverbe se médite plus qu'il ne se lit. Partagez-le 🙏",
+        "Gardez ce verset pour le moment venu. Partagez-le 🙏",
+        "La sagesse se demande, et elle est donnée. Partagez-la 🙏",
+        "Une parole dite à propos vaut de l'or. Partagez-la 🙏",
+        "La sagesse ne vieillit pas. Partagez-la 🙏",
+        "Il y a des mots qui éclairent une décision. Partagez-les 🙏",
+        "La sagesse s'écoute avant de s'apprendre. Partagez-la 🙏",
+    ],
+    "prophetie": [
+        "La Parole annoncée, la Parole accomplie. Partagez cette vérité 🙏",
+        "Ce qui avait été annoncé s'est accompli. Partagez-la 🙏",
+        "Dieu dit d'avance ce qu'il fera. Partagez cette vérité 🙏",
+        "L'Écriture annonce avant de raconter. Partagez-la 🙏",
+        "L'annonce précède les faits de plusieurs siècles. Partagez-la 🙏",
+        "La prophétie ne vient pas d'une volonté d'homme. Partagez-la 🙏",
+        "Ce qui est écrit s'accomplit. Partagez cette vérité 🙏",
+        "Ce qui a été écrit d'avance l'a été pour notre instruction. Partagez-la 🙏",
+        "Dieu tient parole, siècle après siècle. Partagez cette vérité 🙏",
+    ],
+    "protection": [
+        "L'Éternel veille sur les siens. Partagez cette assurance 🙏",
+        "Il garde ceux qui se confient en lui. Partagez-la 🙏",
+        "Sa garde ne s'interrompt pas. Partagez cette assurance 🙏",
+        "Le refuge est en Dieu, non dans les circonstances. Partagez-la 🙏",
+        "Celui qui vous garde ne sommeille pas. Partagez cette assurance 🙏",
+        "Il est un rempart pour qui se réfugie en lui. Partagez-la 🙏",
+        "Rien ne se passe hors de sa vue. Partagez cette assurance 🙏",
+        "Sous ses ailes vous trouvez un refuge. Partagez cette assurance 🙏",
+        "Le jour commence sous sa garde. Partagez cette assurance 🙏",
+    ],
 }
 CTA_DEFAULT = "Partagez ce verset avec quelqu'un qui en a besoin 🙏"
 
@@ -231,7 +303,7 @@ CTA_KEYWORD_GROUPS = [
         "paix", "tranquille", "tranquillité", "calme", "apaise",
     ], [
         "Recevez cette paix qui dépasse toute intelligence. Partagez-la 🙏",
-        "Que ce verset apporte le calme à votre journée. Partagez-le 🙏",
+        "Que ce verset apporte le calme. Partagez-le 🙏",
         "Sa paix surpasse toute agitation. Partagez cette tranquillité 🙏",
     ], [
         # Esaie 53:5 : « Le chatiment qui nous donne la paix est tombe sur
@@ -302,7 +374,7 @@ CTA_KEYWORD_GROUPS = [
     ("sagesse", [
         "sagesse", "=sage", "discernement", "intelligence", "instruction",
     ], [
-        "La sagesse de la Parole pour votre journée. Partagez-la 🙏",
+        "La sagesse de la Parole traverse les temps. Partagez-la 🙏",
         "Sa sagesse dépasse toute compréhension humaine. Partagez cette lumière 🙏",
         "Sa Parole instruit celui qui l'écoute. Partagez cet encouragement 🙏",
     ]),
@@ -514,7 +586,7 @@ HOOK_FALLBACK = {
     # Un repli ne decrit pas le verset — il ne peut pas le voir.
     "proverbe": [
         "La sagesse de la Parole, donnée à lire.",
-        "À garder avec vous aujourd'hui.",
+        "À garder avec vous.",
     ],
     "prophetie": [
         "Une parole annoncée. Dieu tient ce qu'il dit.",
@@ -1199,7 +1271,12 @@ def cta_for(cat_name, verse_text=None, ref=None):
         if kw_cta:
             return kw_cta
 
-    return CTA_BY_CATEGORY.get(cat_name, CTA_DEFAULT)
+    base = CTA_BY_CATEGORY.get(cat_name, CTA_DEFAULT)
+    if isinstance(base, (list, tuple)):
+        # Rotation stable : meme reference -> meme phrase (logs reproductibles),
+        # mais elle change d'une publication a l'autre. Jamais de random.
+        base = _rotate(base, f"{ref}|{cat_name}")
+    return base
 
 
 # ---------------------------------------------------
@@ -1217,9 +1294,10 @@ SOCIAL_CLOSERS = [
     "Transmettez cette parole autour de vous.",
     "Gardez ce verset avec vous.",
     "Offrez cette parole à quelqu'un.",
-    "Le chapitre entier vous attend sur LaBible.app.",
     "Prenez un instant pour le relire.",
 ]
+# « Le chapitre entier vous attend sur LaBible.app. » a ete retire du pool :
+# le carton de cloture du reel dit deja cela, dans le meme message.
 
 # Clotures Telegram. Sur Telegram, le geste qui porte le nom de la chaine est
 # le TRANSFERT, pas la copie : le vocabulaire suit.
@@ -1227,9 +1305,9 @@ TG_CLOSERS = [
     "Transférez ce verset à quelqu'un qui en a besoin.",
     "Transmettez cette parole à un proche.",
     "Gardez ce verset avec vous.",
-    "Le chapitre entier est à un clic.",
     "Prenez un instant pour le relire.",
 ]
+# Idem : « Le chapitre entier est a un clic. » faisait doublon avec le carton.
 
 
 def _strip_share_clause(line: str) -> str:
@@ -1251,8 +1329,8 @@ def closing_line(cat_name, text, ref, pool):
 
     Si la cloture tiree reprend le verbe qui ouvre la phrase de fond
     (« Gardez esperance... Gardez ce verset... »), on passe a la suivante du
-    pool. Les mots de 3 lettres ou moins sont exemptes : « Le chapitre entier »
-    serait sinon ecarte a chaque fois."""
+    pool. Les mots de 3 lettres ou moins (« Le », « Un »...) sont exemptes,
+    sinon un article en tete ecarterait la cloture a chaque fois."""
     base = _strip_share_clause(cta_for(cat_name, text, ref))
     graine = f"{ref}|{datetime.date.today().isoformat()}|{cat_name}"
     depart = int(hashlib.md5(graine.encode("utf-8")).hexdigest(), 16) % len(pool)
@@ -2245,12 +2323,15 @@ def make_reel_video(text, ref, progress=None, cat_name=None):
     LINE_H = size + 20
     start_y = int(CY1 + (CY2-CY1)*0.42 - len(verse_lines)*LINE_H//2)
     FL, FT = CY2-200, CY2-170
-    CLOSE_OUT, CLOSE_IN = 12.2, 12.7
+    # Le carton entrait a 12,7 s : plein a 13,2, le fondu final commencant a
+    # 14,4, il ne restait qu'1,2 s pour le lire. Avance de deux secondes. Les
+    # 15 s sont fixes, donc ce temps est pris au verset, qui garde ~10 s.
+    CLOSE_OUT, CLOSE_IN = 10.2, 10.7
     ligne_fin = _rotate(LIGNES_FIN, ref)
     os.makedirs("frames", exist_ok=True)
     for f in range(TOTAL):
         s = f / FPS
-        alpha = ease(s/0.5) if s < 0.5 else (ease((15-s)/0.6) if s > 14.4 else 1.0)
+        alpha = ease(s/0.5) if s < 0.5 else (ease((15-s)/0.45) if s > 14.55 else 1.0)
         # Le verset et sa carte s'effacent a 12,2 s pour laisser la place au
         # carton de cloture, qui entre a 12,7 s. Pas de chevauchement.
         v_a = alpha * (1.0 if s < CLOSE_OUT else max(0.0, 1.0 - (s-CLOSE_OUT)/0.5))
