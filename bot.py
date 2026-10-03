@@ -28,12 +28,37 @@ THREADS_ACCESS_TOKEN = os.environ.get("THREADS_ACCESS_TOKEN", "")
 PINTEREST_ACCESS_TOKEN = os.environ.get("PINTEREST_ACCESS_TOKEN", "")
 PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "")
 
-# ----- Filtro de plataforma (para testes manuais) -----
-# Definido pela variável de ambiente ONLY_PLATFORM (passada pelo publish.yml).
-# Valores: all | telegram | facebook | instagram | youtube | pinterest | threads
+# ----- Filtro de plataforma -----
+# Variavel ONLY_PLATFORM, passada pelos workflows.
+#   all                        -> todas
+#   telegram                   -> so uma (comportamento historico, mantido)
+#   telegram,youtube,threads   -> varias, separadas por virgula
+#
+# PLATEFORMES vale None quando nao ha restricao. E a unica coisa que
+# should_post() consulta; ONLY_PLATFORM fica para as mensagens e para a
+# compatibilidade com os workflows antigos.
+PLATEFORMES_CONNUES = {"telegram", "facebook", "instagram",
+                       "youtube", "pinterest", "threads"}
+
 ONLY_PLATFORM = os.environ.get("ONLY_PLATFORM", "all").strip().lower()
 if ONLY_PLATFORM in ("", "all"):
     ONLY_PLATFORM = "all"
+    PLATEFORMES = None
+else:
+    PLATEFORMES = {p.strip() for p in ONLY_PLATFORM.split(",") if p.strip()}
+    _inconnues = PLATEFORMES - PLATEFORMES_CONNUES
+    if _inconnues:
+        # Une faute de frappe dans un nom de plateforme passerait inapercue :
+        # le run reussirait en ne publiant nulle part. On arrete.
+        raise SystemExit(
+            "ONLY_PLATFORM : plateforme(s) inconnue(s) " + ", ".join(sorted(_inconnues))
+            + ". Connues : " + ", ".join(sorted(PLATEFORMES_CONNUES)))
+    print("📡 Plateformes : " + ", ".join(sorted(PLATEFORMES)))
+
+# ----- Reference forcee (publication manuelle) -----
+# FORCE_REF="Jean 3:16" ou "Romains 8:38-39" : publie CE verset au lieu de
+# tirer le suivant du vivier. La progression du vivier n'avance pas.
+FORCE_REF = os.environ.get("FORCE_REF", "").strip()
 
 # Categories publiees sur le canal Telegram public.
 #
@@ -57,14 +82,17 @@ def should_post(platform: str) -> bool:
     """True se a plataforma deve publicar neste run. 'all' = publica em todas."""
     # Le filtre ne s'applique qu'aux publications automatiques : un envoi
     # force a la main (ONLY_PLATFORM=telegram) doit toujours passer.
-    if platform == "telegram" and TELEGRAM_CATEGORIES and ONLY_PLATFORM != "telegram":
+    # Le filtre par categorie ne s'applique qu'aux publications automatiques :
+    # si Telegram a ete nomme explicitement, c'est un envoi voulu, il passe.
+    demande = PLATEFORMES is not None and "telegram" in PLATEFORMES
+    if platform == "telegram" and TELEGRAM_CATEGORIES and not demande:
         cat = os.environ.get("BOT_CATEGORY", "").strip().lower()
         # Sans categorie (parabole, lancement manuel), on laisse passer.
         if cat and cat not in TELEGRAM_CATEGORIES:
             return False
-    if ONLY_PLATFORM == "all":
+    if PLATEFORMES is None:
         return True
-    return platform == ONLY_PLATFORM
+    return platform in PLATEFORMES
 # -------------------------------------------------------
 
 PROGRESS_FILE = "progress.json"
@@ -2462,8 +2490,126 @@ def pick_from_category(cat, progress):
     return book, ch, vstart, vend
 
 
+# « Jean 3:16 », « Romains 8:38-39 », « 1 Corinthiens 13:4-7 ».
+_REF = re.compile(r"^\s*(.+?)\s+(\d+)\s*[:.]\s*(\d+)\s*(?:[-\u2013]\s*(\d+))?\s*$")
+
+# Categorie deduite du livre quand BOT_CATEGORY n'est pas donne. Elle commande
+# la palette, l'emoji, la hashtag et la phrase de cloture — pas le texte.
+_LIVRE_CATEGORIE = {
+    "psaume": "psaume", "psaumes": "psaume",
+    "proverbes": "proverbe", "ecclesiaste": "proverbe",
+    "matthieu": "jesus", "marc": "jesus", "luc": "jesus", "jean": "jesus",
+    "esaie": "prophetie", "jeremie": "prophetie", "ezechiel": "prophetie",
+    "daniel": "prophetie", "osee": "prophetie", "joel": "prophetie",
+    "amos": "prophetie", "abdias": "prophetie", "jonas": "prophetie",
+    "michee": "prophetie", "nahum": "prophetie", "habacuc": "prophetie",
+    "sophonie": "prophetie", "aggee": "prophetie", "zacharie": "prophetie",
+    "malachie": "prophetie", "apocalypse": "prophetie",
+}
+
+
+def categorie_du_livre(livre):
+    cle = unicodedata.normalize("NFKD", livre.lower())
+    cle = "".join(c for c in cle if not unicodedata.combining(c))
+    return _LIVRE_CATEGORIE.get(cle.strip(), "promise")
+
+
+def _sans_accent(t):
+    t = unicodedata.normalize("NFKD", (t or "").lower())
+    return "".join(c for c in t if not unicodedata.combining(c)).strip()
+
+
+def resoudre_livre(nom):
+    """Nom tape a la main -> nom exact de lsg1910.json, ou None.
+
+    load_verse() exige l'orthographe exacte du fichier. Ici le nom vient d'une
+    case de formulaire : il faut accepter « psaumes », « PSAUMES », « Esaie »,
+    « cantique des cantiques ». Le fichier du bot ecrit « Psaume » au singulier
+    et tronque « Cantique Des Cantiqu » — voir le cahier, §3.2.
+    """
+    nom = (nom or "").strip()
+    if not nom:
+        return None
+    index = get_bible_index()
+    if nom in index:
+        return nom
+    direct = BOOK_NAME_MAP.get(nom)
+    if direct and direct in index:
+        return direct
+    cible = _sans_accent(nom)
+    plat = {_sans_accent(k): k for k in index}
+    for variante in (cible, cible.rstrip("s"), cible + "s"):
+        if variante in plat:
+            return plat[variante]
+    # « Cantique des cantiques » -> « Cantique Des Cantiqu » (tronque a 20)
+    for aplati, reel in plat.items():
+        if aplati.startswith(cible[:12]) or cible.startswith(aplati[:12]):
+            return reel
+    return None
+
+
+def verset_force(reference):
+    """Resout FORCE_REF en (texte, ref affichee, cat, cat_name).
+
+    Echoue bruyamment : une reference mal ecrite doit arreter le run, pas
+    publier autre chose. Le texte vient toujours de lsg1910.json, jamais de
+    la main — meme regle que partout ailleurs dans le projet.
+    """
+    m = _REF.match(reference)
+    if not m:
+        raise SystemExit(f"FORCE_REF illisible : {reference!r}. "
+                         "Format attendu : « Jean 3:16 » ou « Romains 8:38-39 ».")
+    livre, ch = m.group(1).strip(), int(m.group(2))
+    v1 = int(m.group(3))
+    v2 = int(m.group(4)) if m.group(4) else v1
+    if v2 < v1:
+        raise SystemExit(f"FORCE_REF : {v1}-{v2} est a l'envers.")
+
+    canon = resoudre_livre(livre)
+    if canon is None:
+        raise SystemExit(
+            f"FORCE_REF : livre inconnu {livre!r}.\nLivres : "
+            + ", ".join(sorted(get_bible_index().keys())))
+    try:
+        morceaux = [load_verse(canon, ch, v) for v in range(v1, v2 + 1)]
+    except KeyError:
+        raise SystemExit(
+            f"FORCE_REF : {canon} {ch}:{v1}" + (f"-{v2}" if v2 > v1 else "")
+            + " n'existe pas dans lsg1910.json.")
+
+    texte = clean_text(strip_rubric(" ".join(morceaux)))
+    if not texte.strip():
+        raise SystemExit(f"FORCE_REF : {reference} ne donne aucun texte.")
+
+    cat_name = os.environ.get("BOT_CATEGORY", "").strip().lower()  # noqa
+    if cat_name not in CATEGORIES:
+        cat_name = categorie_du_livre(canon)
+        print(f"📌 Categorie deduite du livre : {cat_name}")
+    else:
+        print(f"📌 Categorie forcee : {cat_name}")
+
+    # Le nom affiche vient de la Bible, pas de ce qui a ete tape : « jean 3:16 »
+    # doit produire « Jean 3:16 » sur l'image.
+    #
+    # Deux noms du fichier du bot ne peuvent PAS sortir tels quels : « Psaume »
+    # est au singulier, et « Cantique Des Cantiqu » est tronque a 20 caracteres.
+    # Ils iraient sur l'image ET dans l'URL du chapitre, qui serait cassee
+    # (cahier §3.2). Le nom affiche est donc corrige ici.
+    AFFICHAGE = {"Psaume": "Psaumes",
+                 "Cantique Des Cantiqu": "Cantique des Cantiques"}
+    affiche = AFFICHAGE.get(canon, canon)
+    ref = f"{affiche} {ch}:{v1}" + (f"-{v2}" if v2 > v1 else "")
+    return texte, ref, CATEGORIES[cat_name], cat_name
+
+
 def pick_verse(progress):
     hour_utc = datetime.datetime.utcnow().hour
+    if FORCE_REF:
+        # Publication manuelle : le vivier n'avance pas, la rotation reste
+        # intacte pour les publications automatiques.
+        texte, ref, cat, cat_name = verset_force(FORCE_REF)
+        print(f"✋ Reference forcee : {ref}")
+        return texte, ref, cat, cat_name, hour_utc
     # Usar categoria definida pelo publish.yml se disponível
     cat_name = os.environ.get("BOT_CATEGORY", "").strip()
     if cat_name and cat_name in CATEGORIES:
