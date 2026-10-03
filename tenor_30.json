@@ -1,0 +1,548 @@
+[
+  {
+    "n": 1,
+    "theme": "consolation",
+    "ref": "Matthieu 5:4",
+    "livre": "Matthieu",
+    "chapitre": 5,
+    "verset": 4,
+    "texte": "Heureux les affligés, car ils seront consolés !",
+    "len": 47,
+    "titre": "Matthieu 5:4 — Heureux les affligés, car ils seront consolés !",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "evangile",
+      "matthieu",
+      "consolation"
+    ]
+  },
+  {
+    "n": 2,
+    "theme": "consolation",
+    "ref": "Psaumes 147:3",
+    "livre": "Psaumes",
+    "chapitre": 147,
+    "verset": 3,
+    "texte": "Il guérit ceux qui ont le cœur brisé, Et il panse leurs blessures.",
+    "len": 66,
+    "titre": "Psaumes 147:3 — Il guérit ceux qui ont le cœur brisé, Et il panse…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "consolation"
+    ]
+  },
+  {
+    "n": 3,
+    "theme": "consolation",
+    "ref": "Jean 14:1",
+    "livre": "Jean",
+    "chapitre": 14,
+    "verset": 1,
+    "texte": "Que votre cœur ne se trouble point. Croyez en Dieu, et croyez en moi.",
+    "len": 69,
+    "titre": "Jean 14:1 — Que votre cœur ne se trouble point. Croyez en Dieu, et…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "evangile",
+      "jean",
+      "consolation"
+    ]
+  },
+  {
+    "n": 4,
+    "theme": "solitude",
+    "ref": "Jean 14:18",
+    "livre": "Jean",
+    "chapitre": 14,
+    "verset": 18,
+    "texte": "Je ne vous laisserai pas orphelins, je viendrai à vous.",
+    "len": 55,
+    "titre": "Jean 14:18 — Je ne vous laisserai pas orphelins, je viendrai à vous.",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "evangile",
+      "jean",
+      "solitude"
+    ]
+  },
+  {
+    "n": 5,
+    "theme": "solitude",
+    "ref": "Psaumes 73:23",
+    "livre": "Psaumes",
+    "chapitre": 73,
+    "verset": 23,
+    "texte": "Cependant je suis toujours avec toi, Tu m’as saisi la main droite.",
+    "len": 66,
+    "titre": "Psaumes 73:23 — Cependant je suis toujours avec toi, Tu m’as saisi la…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "solitude"
+    ]
+  },
+  {
+    "n": 6,
+    "theme": "peur",
+    "ref": "Psaumes 56:3",
+    "livre": "Psaumes",
+    "chapitre": 56,
+    "verset": 3,
+    "texte": "Quand je suis dans la crainte, En toi je me confie.",
+    "len": 51,
+    "titre": "Psaumes 56:3 — Quand je suis dans la crainte, En toi je me confie.",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "peur"
+    ]
+  },
+  {
+    "n": 7,
+    "theme": "peur",
+    "ref": "Psaumes 118:6",
+    "livre": "Psaumes",
+    "chapitre": 118,
+    "verset": 6,
+    "texte": "L’Éternel est pour moi, je ne crains rien : Que peuvent me faire des hommes ?",
+    "len": 77,
+    "titre": "Psaumes 118:6 — L’Éternel est pour moi, je ne crains rien : Que…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "peur"
+    ]
+  },
+  {
+    "n": 8,
+    "theme": "peur",
+    "ref": "Psaumes 34:4",
+    "livre": "Psaumes",
+    "chapitre": 34,
+    "verset": 4,
+    "texte": "J’ai cherché l’Éternel, et il m’a répondu ; Il m’a délivré de toutes mes frayeurs.",
+    "len": 82,
+    "titre": "Psaumes 34:4 — J’ai cherché l’Éternel, et il m’a répondu ; Il m’a…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "peur"
+    ]
+  },
+  {
+    "n": 9,
+    "theme": "force",
+    "ref": "Psaumes 18:32",
+    "livre": "Psaumes",
+    "chapitre": 18,
+    "verset": 32,
+    "texte": "C’est Dieu qui me ceint de force, Et qui me conduit dans la voie droite.",
+    "len": 72,
+    "titre": "Psaumes 18:32 — C’est Dieu qui me ceint de force, Et qui me conduit…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "force"
+    ]
+  },
+  {
+    "n": 10,
+    "theme": "force",
+    "ref": "Psaumes 31:24",
+    "livre": "Psaumes",
+    "chapitre": 31,
+    "verset": 24,
+    "texte": "Fortifiez-vous et que votre cœur s’affermisse, Vous tous qui espérez en l’Éternel !",
+    "len": 83,
+    "titre": "Psaumes 31:24 — Fortifiez-vous et que votre cœur s’affermisse, Vous…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "force"
+    ]
+  },
+  {
+    "n": 11,
+    "theme": "force",
+    "ref": "2 Timothée 4:7",
+    "livre": "2 Timothée",
+    "chapitre": 4,
+    "verset": 7,
+    "texte": "J’ai combattu le bon combat, j’ai achevé la course, j’ai gardé la foi.",
+    "len": 70,
+    "titre": "2 Timothée 4:7 — J’ai combattu le bon combat, j’ai achevé la course,…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "2-timothee",
+      "force"
+    ]
+  },
+  {
+    "n": 12,
+    "theme": "confiance",
+    "ref": "Proverbes 3:6",
+    "livre": "Proverbes",
+    "chapitre": 3,
+    "verset": 6,
+    "texte": "Reconnais-le dans toutes tes voies, Et il aplanira tes sentiers.",
+    "len": 64,
+    "titre": "Proverbes 3:6 — Reconnais-le dans toutes tes voies, Et il aplanira tes…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "proverbes",
+      "confiance"
+    ]
+  },
+  {
+    "n": 13,
+    "theme": "confiance",
+    "ref": "Proverbes 16:3",
+    "livre": "Proverbes",
+    "chapitre": 16,
+    "verset": 3,
+    "texte": "Recommande à l’Éternel tes œuvres, Et tes projets réussiront.",
+    "len": 61,
+    "titre": "Proverbes 16:3 — Recommande à l’Éternel tes œuvres, Et tes projets…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "proverbes",
+      "confiance"
+    ]
+  },
+  {
+    "n": 14,
+    "theme": "confiance",
+    "ref": "Psaumes 84:12",
+    "livre": "Psaumes",
+    "chapitre": 84,
+    "verset": 12,
+    "texte": "Éternel des armées ! Heureux l’homme qui se confie en toi !",
+    "len": 59,
+    "titre": "Psaumes 84:12 — Éternel des armées ! Heureux l’homme qui se confie en…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "confiance"
+    ]
+  },
+  {
+    "n": 15,
+    "theme": "protection",
+    "ref": "Psaumes 121:7",
+    "livre": "Psaumes",
+    "chapitre": 121,
+    "verset": 7,
+    "texte": "L’Éternel te gardera de tout mal, Il gardera ton âme.",
+    "len": 53,
+    "titre": "Psaumes 121:7 — L’Éternel te gardera de tout mal, Il gardera ton âme.",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "protection"
+    ]
+  },
+  {
+    "n": 16,
+    "theme": "protection",
+    "ref": "Psaumes 91:11",
+    "livre": "Psaumes",
+    "chapitre": 91,
+    "verset": 11,
+    "texte": "Car il ordonnera à ses anges De te garder dans toutes tes voies.",
+    "len": 64,
+    "titre": "Psaumes 91:11 — Car il ordonnera à ses anges De te garder dans toutes…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "protection"
+    ]
+  },
+  {
+    "n": 17,
+    "theme": "protection",
+    "ref": "Exode 14:14",
+    "livre": "Exode",
+    "chapitre": 14,
+    "verset": 14,
+    "texte": "L’Éternel combattra pour vous ; et vous, gardez le silence.",
+    "len": 59,
+    "titre": "Exode 14:14 — L’Éternel combattra pour vous ; et vous, gardez le…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "exode",
+      "protection"
+    ]
+  },
+  {
+    "n": 18,
+    "theme": "esperance",
+    "ref": "Proverbes 23:18",
+    "livre": "Proverbes",
+    "chapitre": 23,
+    "verset": 18,
+    "texte": "Car il est un avenir, Et ton espérance ne sera pas anéantie.",
+    "len": 60,
+    "titre": "Proverbes 23:18 — Car il est un avenir, Et ton espérance ne sera pas…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "proverbes",
+      "esperance"
+    ]
+  },
+  {
+    "n": 19,
+    "theme": "esperance",
+    "ref": "Psaumes 130:5",
+    "livre": "Psaumes",
+    "chapitre": 130,
+    "verset": 5,
+    "texte": "J’espère en l’Éternel, mon âme espère, Et j’attends sa promesse.",
+    "len": 64,
+    "titre": "Psaumes 130:5 — J’espère en l’Éternel, mon âme espère, Et j’attends sa…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "esperance"
+    ]
+  },
+  {
+    "n": 20,
+    "theme": "esperance",
+    "ref": "Psaumes 119:114",
+    "livre": "Psaumes",
+    "chapitre": 119,
+    "verset": 114,
+    "texte": "Tu es mon asile et mon bouclier ; J’espère en ta promesse.",
+    "len": 58,
+    "titre": "Psaumes 119:114 — Tu es mon asile et mon bouclier ; J’espère en ta promesse.",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "esperance"
+    ]
+  },
+  {
+    "n": 21,
+    "theme": "paix",
+    "ref": "Psaumes 3:5",
+    "livre": "Psaumes",
+    "chapitre": 3,
+    "verset": 5,
+    "texte": "Je me couche, et je m’endors ; Je me réveille, car l’Éternel est mon soutien.",
+    "len": 77,
+    "titre": "Psaumes 3:5 — Je me couche, et je m’endors ; Je me réveille, car…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "paix"
+    ]
+  },
+  {
+    "n": 22,
+    "theme": "paix",
+    "ref": "Matthieu 5:9",
+    "livre": "Matthieu",
+    "chapitre": 5,
+    "verset": 9,
+    "texte": "Heureux ceux qui procurent la paix, car ils seront appelés fils de Dieu !",
+    "len": 73,
+    "titre": "Matthieu 5:9 — Heureux ceux qui procurent la paix, car ils seront…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "evangile",
+      "matthieu",
+      "paix"
+    ]
+  },
+  {
+    "n": 23,
+    "theme": "amour",
+    "ref": "1 Jean 4:8",
+    "livre": "1 Jean",
+    "chapitre": 4,
+    "verset": 8,
+    "texte": "Celui qui n’aime pas n’a pas connu Dieu, car Dieu est amour.",
+    "len": 60,
+    "titre": "1 Jean 4:8 — Celui qui n’aime pas n’a pas connu Dieu, car Dieu est…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "1-jean",
+      "amour"
+    ]
+  },
+  {
+    "n": 24,
+    "theme": "amour",
+    "ref": "Jean 15:13",
+    "livre": "Jean",
+    "chapitre": 15,
+    "verset": 13,
+    "texte": "Il n’y a pas de plus grand amour que de donner sa vie pour ses amis.",
+    "len": 68,
+    "titre": "Jean 15:13 — Il n’y a pas de plus grand amour que de donner sa vie…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "evangile",
+      "jean",
+      "amour"
+    ]
+  },
+  {
+    "n": 25,
+    "theme": "amour",
+    "ref": "Proverbes 17:17",
+    "livre": "Proverbes",
+    "chapitre": 17,
+    "verset": 17,
+    "texte": "L’ami aime en tout temps, Et dans le malheur il se montre un frère.",
+    "len": 67,
+    "titre": "Proverbes 17:17 — L’ami aime en tout temps, Et dans le malheur il se…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "proverbes",
+      "amour"
+    ]
+  },
+  {
+    "n": 26,
+    "theme": "pardon",
+    "ref": "Psaumes 103:3",
+    "livre": "Psaumes",
+    "chapitre": 103,
+    "verset": 3,
+    "texte": "C’est lui qui pardonne toutes tes iniquités, Qui guérit toutes tes maladies.",
+    "len": 76,
+    "titre": "Psaumes 103:3 — C’est lui qui pardonne toutes tes iniquités, Qui…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "pardon"
+    ]
+  },
+  {
+    "n": 27,
+    "theme": "pardon",
+    "ref": "Psaumes 32:1",
+    "livre": "Psaumes",
+    "chapitre": 32,
+    "verset": 1,
+    "texte": "Heureux celui à qui la transgression est remise, A qui le péché est pardonné !",
+    "len": 78,
+    "titre": "Psaumes 32:1 — Heureux celui à qui la transgression est remise, A qui…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "pardon"
+    ]
+  },
+  {
+    "n": 28,
+    "theme": "gratitude",
+    "ref": "Psaumes 107:1",
+    "livre": "Psaumes",
+    "chapitre": 107,
+    "verset": 1,
+    "texte": "Louez l’Éternel, car il est bon, Car sa miséricorde dure à toujours !",
+    "len": 69,
+    "titre": "Psaumes 107:1 — Louez l’Éternel, car il est bon, Car sa miséricorde…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "gratitude"
+    ]
+  },
+  {
+    "n": 29,
+    "theme": "gratitude",
+    "ref": "Psaumes 103:1",
+    "livre": "Psaumes",
+    "chapitre": 103,
+    "verset": 1,
+    "texte": "Mon âme, bénis l’Éternel ! Que tout ce qui est en moi bénisse son saint nom !",
+    "len": 77,
+    "titre": "Psaumes 103:1 — Mon âme, bénis l’Éternel ! Que tout ce qui est en moi…",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "psaumes",
+      "gratitude"
+    ]
+  },
+  {
+    "n": 30,
+    "theme": "priere",
+    "ref": "Jean 14:14",
+    "livre": "Jean",
+    "chapitre": 14,
+    "verset": 14,
+    "texte": "Si vous demandez quelque chose en mon nom, je le ferai.",
+    "len": 55,
+    "titre": "Jean 14:14 — Si vous demandez quelque chose en mon nom, je le ferai.",
+    "tags": [
+      "verset-du-jour",
+      "parole-de-dieu",
+      "bible",
+      "evangile",
+      "jean",
+      "priere"
+    ]
+  }
+]
