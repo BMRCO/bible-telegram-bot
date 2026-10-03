@@ -1,0 +1,179 @@
+name: Publication manuelle
+
+# Publier UN verset choisi a la main, dans le format choisi, sur les
+# plateformes cochees. Ne touche pas a la rotation des viviers : la
+# progression des publications automatiques reste intacte.
+
+on:
+  workflow_dispatch:
+    inputs:
+      verset:
+        description: 'Verset — ex. Jean 3:16  ou  Romains 8:38-39'
+        required: true
+        type: string
+      format:
+        description: 'Format'
+        required: true
+        type: choice
+        default: 'reel'
+        options:
+          - reel
+          - image
+      categorie:
+        description: 'Categorie (auto = deduite du livre) — palette, emoji, hashtag'
+        required: false
+        type: choice
+        default: 'auto'
+        options:
+          - auto
+          - promise
+          - jesus
+          - psaume
+          - proverbe
+          - prophetie
+          - protection
+      telegram:
+        description: 'Telegram'
+        type: boolean
+        default: true
+      facebook:
+        description: 'Facebook'
+        type: boolean
+        default: true
+      instagram:
+        description: 'Instagram'
+        type: boolean
+        default: true
+      youtube:
+        description: 'YouTube'
+        type: boolean
+        default: true
+      pinterest:
+        description: 'Pinterest (image seulement)'
+        type: boolean
+        default: false
+      threads:
+        description: 'Threads'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: verses-post-manuel-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pillow requests numpy cloudinary google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Construire la liste des plateformes
+        id: plateformes
+        env:
+          # Passer par l'environnement plutot que d'interpoler dans le script :
+          # evite toute injection de commande via une valeur d'entree.
+          P_TELEGRAM:  ${{ inputs.telegram }}
+          P_FACEBOOK:  ${{ inputs.facebook }}
+          P_INSTAGRAM: ${{ inputs.instagram }}
+          P_YOUTUBE:   ${{ inputs.youtube }}
+          P_PINTEREST: ${{ inputs.pinterest }}
+          P_THREADS:   ${{ inputs.threads }}
+        run: |
+          LISTE=""
+          for COUPLE in "telegram:$P_TELEGRAM" "facebook:$P_FACEBOOK" \
+                        "instagram:$P_INSTAGRAM" "youtube:$P_YOUTUBE" \
+                        "pinterest:$P_PINTEREST" "threads:$P_THREADS"; do
+            NOM="${COUPLE%%:*}"
+            COCHE="${COUPLE##*:}"
+            if [ "$COCHE" = "true" ]; then
+              LISTE="${LISTE:+$LISTE,}$NOM"
+            fi
+          done
+
+          if [ -z "$LISTE" ]; then
+            echo "::error::Aucune plateforme cochee — rien a publier."
+            exit 1
+          fi
+
+          echo "Plateformes : $LISTE"
+          echo "liste=$LISTE" >> $GITHUB_OUTPUT
+
+      - name: Categorie
+        id: categorie
+        env:
+          CAT: ${{ inputs.categorie }}
+        run: |
+          # 'auto' devient vide : bot.py deduit alors la categorie du livre.
+          if [ "$CAT" = "auto" ]; then CAT=""; fi
+          echo "valeur=$CAT" >> $GITHUB_OUTPUT
+
+      - name: Publier
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+          IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FORCE_REF: ${{ inputs.verset }}
+          BOT_CATEGORY: ${{ steps.categorie.outputs.valeur }}
+          ONLY_PLATFORM: ${{ steps.plateformes.outputs.liste }}
+          PUB_MODE: ${{ inputs.format }}
+        run: |
+          if [ "$PUB_MODE" = "reel" ]; then
+            python bot.py reel
+          else
+            python bot.py
+          fi
+
+      - name: Commit progress
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add progress.json
+          if git diff --staged --quiet; then
+            echo "Aucun changement de progression."
+            exit 0
+          fi
+          # Seule la rotation de la musique bouge ici : le vivier n'avance pas
+          # sur une publication manuelle.
+          git commit -m "Update progress [skip ci]"
+          for i in 1 2 3; do
+            if git push; then
+              echo "Progression enregistree."
+              exit 0
+            fi
+            echo "Push refuse (tentative $i) — rebase puis nouvel essai."
+            git pull --rebase origin main || true
+            sleep 5
+          done
+          echo "::error::Progression NON enregistree apres 3 tentatives."
+          exit 1
