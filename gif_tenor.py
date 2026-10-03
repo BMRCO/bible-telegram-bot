@@ -1,13 +1,21 @@
 #!/usr/bin/env python3
 """Gerador de GIFs quadrados para o Tenor — LaBible.app.
 
-RECRIADO a partir do aspeto dos cinco GIFs publicados a 14/09/2026,
-porque o gif_tenor.py original não está em nenhum repositório.
-Se o original aparecer, é ele que manda: este ficheiro é substituível.
+Este ficheiro gerou os trinta GIFs publicados no Tenor a 29/09/2026.
+O gif_tenor.py original perdeu-se; este é o código de produção.
+
+NÃO é chamado pelo bot. O Tenor não tem endpoint de upload na API, por
+isso a publicação é sempre à mão. Isto é uma ferramenta avulsa, que vive
+no repositório para não existir num sítio só.
 
 640x640, boucle de 4 s, poeira de estrelas em movimento contínuo.
-O texto NUNCA é escrito à mão: vem de bible/lsg1910.json pelas
-funções do bot (load_verse -> strip_rubric -> clean_text).
+O texto NUNCA é escrito à mão: vem de bible/lsg1910.json pelas funções
+do bot (load_verse -> strip_rubric -> clean_text), através do campo
+"texte" do tenor_30.json.
+
+Correr a partir da raiz do repositório:
+    python3 gif_tenor.py --json tenor_30.json --out gifs
+    python3 gif_tenor.py --json tenor_30.json --out gifs --only 1 14
 """
 import os, sys, math, random, json, argparse
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
@@ -89,12 +97,40 @@ def _wrap(draw, text, font, maxw):
 
 NBSP = "\u00a0"
 
+# A EB Garamond NAO tem glifo para U+202F (narrow no-break space). O clean_text
+# do bot aplica U+202F antes de ; ? ! — e esse caracter chega aqui dentro do
+# campo "texte" do tenor_30.json. Desenhado tal e qual, sai um quadrado vazio na
+# imagem. Normaliza-se para U+00A0, que a fonte tem. Ver _verificar_glifos.
+ESPACOS_FINOS = ("\u202f", "\u2009", "\u200a", "\u2007")
+
 
 def _nbsp(text):
     """Tipografia francesa: nunca começar uma linha por ! ? ; : ou », nem acabar em «."""
+    for e in ESPACOS_FINOS:
+        text = text.replace(e, NBSP)
     for p in ("!", "?", ";", ":", "»"):
         text = text.replace(" " + p, NBSP + p)
     return text.replace("« ", "«" + NBSP)
+
+
+def _verificar_glifos(text, font_path="EBGaramond-Regular.ttf"):
+    """Para o programa se a fonte nao souber desenhar algum caracter.
+
+    Um caracter sem glifo nao levanta erro nenhum: a PIL desenha um quadrado
+    vazio e segue. Foi assim que 12 dos 30 GIFs publicados a 29/09/2026 sairam
+    com um quadrado antes do ponto de exclamacao, sem que nada o dissesse.
+    Um defeito silencioso e um defeito que se decidiu nao ver.
+    """
+    try:
+        from fontTools.ttLib import TTFont
+    except ImportError:
+        return                      # verificacao opcional; nao bloqueia a geracao
+    cmap = TTFont(os.path.join(FONT_DIR, font_path)).getBestCmap()
+    faltam = sorted({c for c in text if ord(c) not in cmap and c != "\n"})
+    if faltam:
+        desc = ", ".join(f"U+{ord(c):04X} ({c!r})" for c in faltam)
+        sys.exit(f"ERRO: a fonte {font_path} nao tem glifo para: {desc}\n"
+                 f"      Texto: {text!r}")
 
 
 def _layout(text, maxw, max_lines=6):
@@ -115,7 +151,10 @@ def _static_layer(text, ref):
     layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
     maxw = W - 150
-    font, lines, size = _layout(f"« {text} »", maxw)
+    citacao = _nbsp(f"« {text} »")
+    _verificar_glifos(citacao)
+    _verificar_glifos(ref)
+    font, lines, size = _layout(citacao, maxw)
     lh = int(size * 1.46)
     total = lh * len(lines)
     y = (H - total) // 2 - 26
