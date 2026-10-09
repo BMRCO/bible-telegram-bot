@@ -9,7 +9,25 @@ import hashlib
 import subprocess
 import requests
 import numpy as np
+import socket
+import traceback
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
+
+# ---------------------------------------------------------------------
+# RESEAU : aucun appel ne doit pouvoir bloquer indefiniment.
+#
+# Les appels `requests` ont tous un timeout= explicite. Mais
+# googleapiclient (upload YouTube, vignette) passe par httplib2, qui n'a
+# AUCUN timeout par defaut : un next_chunk() sur une connexion figee
+# bloque pour toujours, et rien ne l'interrompt.
+#
+# Run #1442 du 7 octobre 2026 : 30 min 24 s, tue par GitHub avec
+# "The job has exceeded the maximum execution time of 30m0s". Aucune
+# exception n'avait ete levee — il n'y a rien a rattraper quand ca bloque.
+#
+# NE PAS RETIRER CETTE LIGNE.
+# ---------------------------------------------------------------------
+socket.setdefaulttimeout(120)
 
 TOKEN         = os.environ["TELEGRAM_BOT_TOKEN"]
 CHANNEL       = os.environ["TELEGRAM_CHANNEL"]
@@ -27,6 +45,101 @@ CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET", "")
 THREADS_ACCESS_TOKEN = os.environ.get("THREADS_ACCESS_TOKEN", "")
 PINTEREST_ACCESS_TOKEN = os.environ.get("PINTEREST_ACCESS_TOKEN", "")
 PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "")
+
+# Conversation privee de BC, pour les alertes de panne.
+# VIT UNIQUEMENT DANS LES GITHUB SECRETS : ce depot est PUBLIC, et un
+# chat_id est un identifiant personnel. Ne jamais ecrire la valeur ici.
+TELEGRAM_ALERT_CHAT_ID = os.environ.get("TELEGRAM_ALERT_CHAT_ID", "")
+
+
+# ---------------------------------------------------------------------
+# ECHECS : ce qui a rate pendant ce run
+#
+# Avant : chaque fonction de publication imprimait son erreur et rendait
+# la main. Le run restait vert. Une plateforme pouvait etre muette des
+# semaines sans que rien ne le dise.
+#
+# Pire : une exception reseau (et non un code HTTP) n'etait rattrapee
+# nulle part et tuait le run entier. Run du 9 octobre 2026 : ImgBB
+# injoignable -> ConnectTimeout -> post_to_pinterest -> main() -> exit 1.
+# Telegram, Facebook, Instagram et YouTube avaient deja publie, et
+# save_json(PROGRESS_FILE) — derniere ligne de main() — n'a jamais tourne.
+# Le verset est donc reste "non utilise" et ressort une seconde fois sur
+# les quatre plateformes qui l'avaient deja recu.
+#
+# Republier est pire que rater.
+# ---------------------------------------------------------------------
+ECHECS = []
+
+
+def signaler_echec(plateforme, detail):
+    """Note un echec et l'imprime. Remplace les anciens print("❌ ...")."""
+    detail = str(detail)[:300]
+    ECHECS.append((plateforme, detail))
+    print(f"❌ {plateforme} : {detail}")
+
+
+def publier(plateforme, fonction, *args, **kwargs):
+    """Appelle une fonction de publication en l'isolant.
+
+    Une plateforme qui tombe ne doit pas emporter les cinq autres, ni
+    empecher l'enregistrement de la progression. Rattrape TOUT, y compris
+    les exceptions reseau que les anciens print() ne voyaient pas.
+    """
+    try:
+        return fonction(*args, **kwargs)
+    except Exception as e:
+        signaler_echec(plateforme, f"{type(e).__name__} : {e}")
+        traceback.print_exc()
+        return None
+
+
+def envoyer_alerte_privee(contexte):
+    """Message prive a BC. Jamais sur le canal : il est pour la Parole."""
+    if not ECHECS:
+        return
+    if not TELEGRAM_ALERT_CHAT_ID:
+        print("⚠️  TELEGRAM_ALERT_CHAT_ID absent : alerte privée non envoyée")
+        return
+    lignes = "\n".join(f"• {p} : {d}" for p, d in ECHECS)
+    url_run = ""
+    serveur = os.environ.get("GITHUB_SERVER_URL", "")
+    depot   = os.environ.get("GITHUB_REPOSITORY", "")
+    run_id  = os.environ.get("GITHUB_RUN_ID", "")
+    if serveur and depot and run_id:
+        url_run = f"\n\nJournal du run :\n{serveur}/{depot}/actions/runs/{run_id}"
+    corps = (
+        "🚨 LaBible.app — publication incomplète\n\n"
+        f"Run : {contexte}\n"
+        f"Workflow : {os.environ.get('GITHUB_WORKFLOW', '—')}\n"
+        f"{datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC\n\n"
+        f"Plateformes en échec ({len(ECHECS)}) :\n{lignes}"
+        f"{url_run}"
+    )
+    # Texte brut, sans parse_mode : les messages d'erreur des API
+    # contiennent <, > et {} — un envoi en HTML echouerait a cause de
+    # cela meme qu'il vient signaler.
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+            data={"chat_id": TELEGRAM_ALERT_CHAT_ID, "text": corps},
+            timeout=30)
+        print("📨 Alerte privée envoyée")
+    except Exception as e:
+        print(f"⚠️  Alerte privée non envoyée : {str(e)[:200]}")
+
+
+def finaliser(contexte):
+    """Derniere instruction de chaque run.
+
+    Sans echec : ne fait rien, le run reste vert, aucun bruit.
+    Avec echecs : envoie l'alerte privee ET sort en code 1, pour que la
+    notification GitHub parte aussi.
+    """
+    if not ECHECS:
+        return
+    envoyer_alerte_privee(contexte)
+    raise SystemExit(1)
 
 # ----- Filtro de plataforma -----
 # Variavel ONLY_PLATFORM, passada pelos workflows.
@@ -1714,7 +1827,7 @@ def post_to_facebook(image_path, ref, text, cat, cat_name, link_override=None):
     if r.status_code == 200:
         print(f"\u2705 Facebook publi\u00e9 \u2014 {r.json().get('post_id') or r.json().get('id')}")
     else:
-        print(f"❌ Erreur Facebook ({r.status_code}): {r.text[:300]}")
+        signaler_echec("Facebook", f"HTTP {r.status_code} — {r.text[:200]}")
 
 
 def post_reel_to_facebook(video_path, ref, text, cat, cat_name, link_override=None):
@@ -1732,7 +1845,7 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name, link_override=No
     if r.status_code == 200:
         print(f"\u2705 Facebook reel publi\u00e9 \u2014 {r.json().get('id')}")
     else:
-        print(f"❌ Erreur Facebook reel ({r.status_code}): {r.text[:300]}")
+        signaler_echec("Facebook reel", f"HTTP {r.status_code} — {r.text[:200]}")
 
 
 # ---------------------------------------------------
@@ -1748,7 +1861,7 @@ def upload_to_imgbb(image_path):
         print(f"✅ ImgBB : {url}")
         import time; time.sleep(5)
         return url
-    print(f"❌ ImgBB ({r.status_code}): {r.text[:300]}")
+    signaler_echec("ImgBB", f"HTTP {r.status_code} — {r.text[:200]}")
     return None
 
 
@@ -1809,7 +1922,7 @@ def post_to_instagram(image_path, ref, text, cat, cat_name, link_override=None):
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"image_url": image_url, "caption": caption, "access_token": FB_PAGE_TOKEN}, timeout=60)
     if r.status_code != 200:
-        print(f"❌ Instagram container ({r.status_code}): {r.text[:300]}")
+        signaler_echec("Instagram", f"container — HTTP {r.status_code} — {r.text[:200]}")
         return
     container_id = r.json().get("id")
     print(f"✅ Container Instagram : {container_id}")
@@ -1823,14 +1936,14 @@ def post_to_instagram(image_path, ref, text, cat, cat_name, link_override=None):
         if status == "FINISHED":
             break
         if status == "ERROR":
-            print("❌ Erreur Instagram.")
+            signaler_echec("Instagram", "container jamais prêt")
             return
     r2 = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish",
         data={"creation_id": container_id, "access_token": FB_PAGE_TOKEN}, timeout=60)
     if r2.status_code == 200:
         print(f"✅ Instagram publié — {r2.json().get('id')}")
     else:
-        print(f"❌ Instagram publication ({r2.status_code}): {r2.text[:300]}")
+        signaler_echec("Instagram", f"publication — HTTP {r2.status_code} — {r2.text[:200]}")
 
 
 def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=None):
@@ -1847,7 +1960,7 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=N
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
         data={"media_type": "REELS", "video_url": video_url, "caption": caption, "access_token": FB_PAGE_TOKEN, "thumb_offset": "7500"}, timeout=60)
     if r.status_code != 200:
-        print(f"❌ Reel Instagram container ({r.status_code}): {r.text[:300]}")
+        signaler_echec("Instagram reel", f"container — HTTP {r.status_code} — {r.text[:200]}")
         return
     container_id = r.json().get("id")
     print(f"✅ Container reel : {container_id}")
@@ -1861,14 +1974,14 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=N
         if status == "FINISHED":
             break
         if status == "ERROR":
-            print("❌ Erreur reel Instagram.")
+            signaler_echec("Instagram reel", "container jamais prêt")
             return
     r2 = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish",
         data={"creation_id": container_id, "access_token": FB_PAGE_TOKEN}, timeout=60)
     if r2.status_code == 200:
         print(f"✅ Instagram reel publié — {r2.json().get('id')}")
     else:
-        print(f"❌ Instagram reel publication ({r2.status_code}): {r2.text[:300]}")
+        signaler_echec("Instagram reel", f"publication — HTTP {r2.status_code} — {r2.text[:200]}")
 
 
 # ---------------------------------------------------
@@ -1910,7 +2023,7 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
     if r.status_code in (200, 201):
         print(f"✅ Pinterest publié — {r.json().get('id')}")
     else:
-        print(f"❌ Pinterest ({r.status_code}): {r.text[:300]}")
+        signaler_echec("Pinterest", f"HTTP {r.status_code} — {r.text[:200]}")
 
 
 # ---------------------------------------------------
@@ -1923,7 +2036,7 @@ def _threads_publish(container_id):
     if r2.status_code == 200:
         print(f"✅ Threads publié — {r2.json().get('id')}")
     else:
-        print(f"❌ Threads publication ({r2.status_code}): {r2.text[:300]}")
+        signaler_echec("Threads", f"publication — HTTP {r2.status_code} — {r2.text[:200]}")
 
 
 def post_to_threads(image_path, ref, text, cat, cat_name, link_override=None):
@@ -1942,7 +2055,7 @@ def post_to_threads(image_path, ref, text, cat, cat_name, link_override=None):
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "IMAGE", "image_url": image_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
-        print(f"❌ Threads container ({r.status_code}): {r.text[:300]}")
+        signaler_echec("Threads", f"container — HTTP {r.status_code} — {r.text[:200]}")
         return
     _threads_publish(r.json().get("id"))
 
@@ -1956,14 +2069,14 @@ def post_reel_to_threads(video_path, ref, text, cat, cat_name, link_override=Non
     print("📤 Upload vidéo Threads...")
     video_url = upload_video_public(video_path)
     if not video_url:
-        print("❌ Threads — upload vidéo échoué")
+        signaler_echec("Threads reel", "hébergement de la vidéo échoué")
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
     caption = social_caption(ref, text, cat, cat_name, chapter_url, "threads")
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
         data={"media_type": "VIDEO", "video_url": video_url, "text": caption, "access_token": THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
-        print(f"❌ Threads reel container ({r.status_code}): {r.text[:300]}")
+        signaler_echec("Threads reel", f"container — HTTP {r.status_code} — {r.text[:200]}")
         return
     container_id = r.json().get("id")
     # Attendre que le container soit prêt
@@ -1977,7 +2090,7 @@ def post_reel_to_threads(video_path, ref, text, cat, cat_name, link_override=Non
         if status == "FINISHED":
             break
         if status == "ERROR":
-            print(f"❌ Threads container error: {rs.json().get('error_message')}")
+            signaler_echec("Threads reel", f"container — {rs.json().get('error_message')}")
             return
     _threads_publish(container_id)
 
@@ -2694,7 +2807,7 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
         except Exception as e:
             print(f"⚠️  Vignette non definie : {str(e)[:200]}")
     except Exception as e:
-        print(f"❌ YouTube : {e}")
+        signaler_echec("YouTube", f"{type(e).__name__} : {e}")
 
 
 # ---------------------------------------------------
@@ -2911,12 +3024,12 @@ def main_parabole():
     caption = (f"✝️ <b>{title}</b>\n{first_ref}\n\n"
                f"{_rotate(TG_CLOSERS, first_ref + title)}\n📖 {parabole_url}\n\n"
                f"#LaBibleApp #LSG1910 #ParaboleDeJésus")
-    send_video(video, caption, first_ref)
+    publier("Telegram", send_video, video, caption, first_ref)
 
     # Publier sur les plateformes
     cat = CATEGORIES["jesus"]
-    post_reel_to_facebook(video, title, verses[0][1] if verses else "", cat, "jesus")
-    post_reel_to_instagram(video, title, verses[0][1] if verses else "", cat, "jesus")
+    publier("Facebook reel", post_reel_to_facebook, video, title, verses[0][1] if verses else "", cat, "jesus")
+    publier("Instagram reel", post_reel_to_instagram, video, title, verses[0][1] if verses else "", cat, "jesus")
 
     # YouTube — titre avec référence
     try:
@@ -2952,10 +3065,11 @@ def main_parabole():
                     print(f"  ⏳ YouTube : {int(status.progress()*100)}%")
             print(f"✅ YouTube publié — https://youtube.com/watch?v={response.get('id')}")
     except Exception as e:
-        print(f"❌ YouTube parabole : {e}")
+        signaler_echec("YouTube parabole", f"{type(e).__name__} : {e}")
 
     save_json(PROGRESS_FILE, progress)
     print("✅ Terminé (parabole).")
+    finaliser("parabole")
 
 
 # ---------------------------------------------------
@@ -2968,8 +3082,8 @@ def main():
     img = make_image(text, ref, cat_name)
     chapter_url = parse_ref_to_chapter_url(ref)
     caption = telegram_caption(ref, text, cat, cat_name, chapter_url)
-    send_photo(img, caption, ref)
-    post_to_facebook(img, ref, text, cat, cat_name)
+    publier("Telegram", send_photo, img, caption, ref)
+    publier("Facebook", post_to_facebook, img, ref, text, cat, cat_name)
     # Instagram : toujours un reel — les images fixes n'ont quasiment aucune portée sur IG,
     # alors que les reels sont distribués bien plus largement.
     #
@@ -2987,12 +3101,16 @@ def main():
             except Exception as e:
                 print(f"⚠️ Logo : {e}")
         video_ig = make_reel_video(text, ref, progress, cat_name)
-        post_reel_to_instagram(video_ig, ref, text, cat, cat_name)
-        post_to_youtube(video_ig, ref, text, cat, cat_name, hour_utc)
-    post_to_pinterest(img, ref, text, cat, cat_name)
-    post_to_threads(img, ref, text, cat, cat_name)
+        publier("Instagram reel", post_reel_to_instagram, video_ig, ref, text, cat, cat_name)
+        publier("YouTube", post_to_youtube, video_ig, ref, text, cat, cat_name, hour_utc)
+    publier("Pinterest", post_to_pinterest, img, ref, text, cat, cat_name)
+    publier("Threads", post_to_threads, img, ref, text, cat, cat_name)
+    # La progression avance des lors que le verset est sorti quelque part.
+    # Elle etait la derniere ligne : une plateforme qui tombait laissait le
+    # verset "non utilise", et il ressortait sur celles qui l'avaient deja eu.
     save_json(PROGRESS_FILE, progress)
     print("✅ Terminé (image).")
+    finaliser("image")
 
 
 def main_reel():
@@ -3010,20 +3128,34 @@ def main_reel():
     video = make_reel_video(text, ref, progress, cat_name)
     chapter_url = parse_ref_to_chapter_url(ref)
     caption = telegram_caption(ref, text, cat, cat_name, chapter_url)
-    send_video(video, caption, ref)
-    post_reel_to_facebook(video, ref, text, cat, cat_name)
-    post_reel_to_instagram(video, ref, text, cat, cat_name)
-    post_to_youtube(video, ref, text, cat, cat_name, hour_utc)
-    post_reel_to_threads(video, ref, text, cat, cat_name)
+    publier("Telegram", send_video, video, caption, ref)
+    publier("Facebook reel", post_reel_to_facebook, video, ref, text, cat, cat_name)
+    publier("Instagram reel", post_reel_to_instagram, video, ref, text, cat, cat_name)
+    publier("YouTube", post_to_youtube, video, ref, text, cat, cat_name, hour_utc)
+    publier("Threads reel", post_reel_to_threads, video, ref, text, cat, cat_name)
     save_json(PROGRESS_FILE, progress)
     print("✅ Terminé (reel).")
+    finaliser("reel")
 
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) > 1 and sys.argv[1] == "reel":
-        main_reel()
-    elif len(sys.argv) > 1 and sys.argv[1] == "parabole":
-        main_parabole()
-    else:
-        main()
+    _mode = sys.argv[1] if len(sys.argv) > 1 else "image"
+    try:
+        if _mode == "reel":
+            main_reel()
+        elif _mode == "parabole":
+            main_parabole()
+        else:
+            main()
+    except SystemExit:
+        # finaliser() : l'alerte est deja partie, on laisse le code 1 sortir.
+        raise
+    except Exception as _e:
+        # Panne franche a mi-parcours. On tente l'alerte avec ce qu'on sait
+        # et on laisse l'exception monter : le run devient rouge et le
+        # traceback complet reste dans le journal GitHub.
+        traceback.print_exc()
+        signaler_echec(f"Run interrompu ({_mode})", f"{type(_e).__name__} : {_e}")
+        envoyer_alerte_privee(_mode)
+        raise
