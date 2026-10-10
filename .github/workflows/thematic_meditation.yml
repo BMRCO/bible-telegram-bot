@@ -44,6 +44,9 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
+          # Conversation privee pour les alertes de panne. Vide = pas d'alerte
+          # privee, mais la run sort quand meme en erreur (e-mail GitHub).
+          TELEGRAM_ALERT_CHAT_ID: ${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
           # Par l'environnement : une entree libre ne doit jamais etre interpolee dans un script.
@@ -63,6 +66,14 @@ jobs:
             python thematic_meditation.py
           fi
       - name: Commit progress
+        # Ajoute le 10 octobre 2026. SANS CE `if:`, GitHub saute ce pas des
+        # que le pas precedent echoue. Depuis que finaliser() sort en code 1
+        # sur une panne partielle, la progression n'etait plus commitee et le
+        # contenu ressortait le lendemain sur les plateformes qui l'avaient
+        # deja recu. Republier est pire que rater. !cancelled() = on commite
+        # en succes ET en echec, mais pas si le job a ete tue (timeout) :
+        # dans ce cas on ne sait pas ou le script s'est arrete.
+        if: ${{ !cancelled() }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
