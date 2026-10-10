@@ -34,6 +34,12 @@ from bot import (
     telegram_markup, _rotate, TG_CLOSERS, _strip_share_clause,
     BIBLE_FILE, APP_URL, WATERMARK,
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
+    # Alertes de panne : importees de bot.py, pas redefinies ici.
+    # bot.py porte aussi socket.setdefaulttimeout(120), applique des
+    # l'import — googleapiclient/httplib2 n'a aucun timeout par defaut,
+    # et le `while response is None: next_chunk()` plus bas n'a sinon
+    # aucun filet.
+    signaler_echec, publier, finaliser,
 )
 
 YT_CLIENT_ID      = os.environ.get("YOUTUBE_CLIENT_ID", "")
@@ -521,7 +527,7 @@ def _video_title(num, part_label=None):
 def post_to_telegram(video_path, num, part_label=None):
     """Publica a meditação no canal Telegram."""
     if not TELEGRAM_TOKEN or not TELEGRAM_CHANNEL:
-        print("⚠️  Telegram credentials ausentes.")
+        signaler_echec("Telegram méditation", "TELEGRAM_BOT_TOKEN ou TELEGRAM_CHANNEL vide")
         return
     head = _meditation_head(num, part_label)
     chapter_url = f"{APP_URL}/lsg/psaumes/{num}"
@@ -551,15 +557,15 @@ def post_to_telegram(video_path, num, part_label=None):
         if r.status_code == 200:
             print("✅ Telegram publié")
         else:
-            print(f"❌ Telegram ({r.status_code}): {r.text[:200]}")
+            signaler_echec("Telegram méditation", f"HTTP {r.status_code} — {r.text[:200]}")
     except Exception as e:
-        print(f"❌ Telegram: {e}")
+        signaler_echec("Telegram méditation", f"{type(e).__name__} : {e}")
 
 
 def post_to_facebook(video_path, num, part_label=None):
     """Publica a meditação como vídeo na página Facebook."""
     if not FB_PAGE_TOKEN:
-        print("⚠️  FB_PAGE_TOKEN ausente.")
+        signaler_echec("Facebook méditation", "FB_PAGE_TOKEN vide ou absent")
         return
     head = _meditation_head(num, part_label)
     chapter_url = f"{APP_URL}/lsg/psaumes/{num}"
@@ -581,15 +587,15 @@ def post_to_facebook(video_path, num, part_label=None):
         if r.status_code == 200:
             print(f"✅ Facebook publié — {r.json().get('id')}")
         else:
-            print(f"❌ Facebook ({r.status_code}): {r.text[:200]}")
+            signaler_echec("Facebook méditation", f"HTTP {r.status_code} — {r.text[:200]}")
     except Exception as e:
-        print(f"❌ Facebook: {e}")
+        signaler_echec("Facebook méditation", f"{type(e).__name__} : {e}")
 
 
 def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
     """Upload do vídeo para YouTube como vídeo normal (não Short)."""
     if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
-        print("⚠️  Credentials YouTube ausentes.")
+        signaler_echec("YouTube méditation", "identifiants OAuth YouTube vides ou absents")
         return None
 
     from google.oauth2.credentials import Credentials
@@ -748,7 +754,8 @@ def main():
     # ─── Carregar versículos ───
     verses = fetch_psaume_verses(num, vfrom, vto)
     if not verses:
-        print(f"❌ Nenhum versículo encontrado para Psaume {num}")
+        signaler_echec("Méditation", f"aucun verset trouvé pour le Psaume {num}")
+        finaliser("méditation psaume")
         sys.exit(1)
 
     # Remover rubricas demasiado curtas (linhas como "De David")
@@ -762,11 +769,13 @@ def main():
     video_path = make_meditation_video(num, verses, part_label)
 
     # ─── Upload YouTube ───
-    upload_to_youtube(video_path, num, verses, part_label)
+    # publier() isole chaque plateforme : une panne reseau sur l'une ne
+    # peut plus empecher les autres ni la sauvegarde de la progression.
+    publier("YouTube méditation", upload_to_youtube, video_path, num, verses, part_label)
 
     # ─── Telegram + Facebook ───
-    post_to_telegram(video_path, num, part_label)
-    post_to_facebook(video_path, num, part_label)
+    publier("Telegram méditation", post_to_telegram, video_path, num, part_label)
+    publier("Facebook méditation", post_to_facebook, video_path, num, part_label)
 
     # ─── Progression (uniquement apres publication reussie) ───
     if progress is not None:
@@ -775,6 +784,10 @@ def main():
               f"{progress.get('next_psaume')}")
 
     print("✅ Terminé (méditation).")
+    # Sans echec : silence, run vert. Avec echecs : alerte privee + exit 1.
+    # La progression est deja ecrite ; le workflow commite avec
+    # `if: ${{ !cancelled() }}`, donc rien ne se reperd.
+    finaliser("méditation psaume")
 
 
 if __name__ == "__main__":

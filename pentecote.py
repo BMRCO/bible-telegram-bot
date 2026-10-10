@@ -23,6 +23,9 @@ from bot import (
     post_reel_to_facebook, post_reel_to_instagram, post_reel_to_threads,
     post_to_youtube,
     PROGRESS_FILE, CATEGORIES,
+    # Alertes de panne : importees de bot.py, pas redefinies ici.
+    # bot.py porte aussi socket.setdefaulttimeout(120), applique des l'import.
+    signaler_echec, publier, finaliser,
 )
 
 # ----------------------------------------------------------------------
@@ -126,7 +129,8 @@ def main_pentecote():
     # Carregar verso
     text = load_verse(slot["book"], slot["chapter"], slot["verse"])
     if not text:
-        print(f"❌ Verso não encontrado: {slot['book']} {slot['chapter']}:{slot['verse']}")
+        signaler_echec("Pentecôte", f"verset introuvable : {slot['book']} {slot['chapter']}:{slot['verse']}")
+        finaliser(f"pentecôte slot {slot_id}")
         sys.exit(1)
     text = clean_text(text)
     ref = f"{slot['book']} {slot['chapter']}:{slot['verse']}"
@@ -139,11 +143,13 @@ def main_pentecote():
 
     if mode == "image":
         img = make_image(text, ref)
-        send_photo(img, caption, ref)
-        post_to_facebook(img, ref, text, cat, cat_name)
-        post_to_instagram(img, ref, text, cat, cat_name)
-        post_to_pinterest(img, ref, text, cat, cat_name)
-        post_to_threads(img, ref, text, cat, cat_name)
+        # publier() isole chaque plateforme : une panne sur l'une ne peut
+        # plus empecher les autres ni la sauvegarde de la progression.
+        publier("Telegram", send_photo, img, caption, ref)
+        publier("Facebook", post_to_facebook, img, ref, text, cat, cat_name)
+        publier("Instagram", post_to_instagram, img, ref, text, cat, cat_name)
+        publier("Pinterest", post_to_pinterest, img, ref, text, cat, cat_name)
+        publier("Threads", post_to_threads, img, ref, text, cat, cat_name)
     else:
         # Garantir logo
         if not os.path.exists("logo.png"):
@@ -155,14 +161,16 @@ def main_pentecote():
             except Exception as e:
                 print(f"⚠️ Logo : {e}")
         video = make_reel_video(text, ref, progress)
-        send_video(video, caption, ref)
-        post_reel_to_facebook(video, ref, text, cat, cat_name)
-        post_reel_to_instagram(video, ref, text, cat, cat_name)
-        post_to_youtube(video, ref, text, cat, cat_name, hour_utc)
-        post_reel_to_threads(video, ref, text, cat, cat_name)
+        publier("Telegram", send_video, video, caption, ref)
+        publier("Facebook reel", post_reel_to_facebook, video, ref, text, cat, cat_name)
+        publier("Instagram reel", post_reel_to_instagram, video, ref, text, cat, cat_name)
+        publier("YouTube", post_to_youtube, video, ref, text, cat, cat_name, hour_utc)
+        publier("Threads reel", post_reel_to_threads, video, ref, text, cat, cat_name)
 
     save_json(PROGRESS_FILE, progress)
     print(f"✅ Pentecôte slot {slot_id} terminé.")
+    # Sans echec : silence, run vert. Avec echecs : alerte privee + exit 1.
+    finaliser(f"pentecôte slot {slot_id}")
 
 
 if __name__ == "__main__":

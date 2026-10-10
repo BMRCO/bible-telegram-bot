@@ -34,6 +34,11 @@ from bot import (
     telegram_markup, _rotate, TG_CLOSERS,
     BIBLE_FILE, APP_URL, WATERMARK, parse_ref_to_chapter_url,
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
+    # Alertes de panne : importees de bot.py, pas redefinies ici.
+    # bot.py porte aussi socket.setdefaulttimeout(120), applique des
+    # l'import — sans lui, le `while response is None: next_chunk()`
+    # de l'upload YouTube peut bloquer indefiniment.
+    signaler_echec, publier, finaliser,
 )
 # Reutiliza helpers de render + musica das meditacoes de Salmos
 from psaume_meditation import (
@@ -422,7 +427,7 @@ def _refs_line(verses):
 
 def post_to_telegram(video_path, theme_key, verses):
     if not TELEGRAM_TOKEN or not TELEGRAM_CHANNEL:
-        print("\u26a0\ufe0f  Telegram credentials ausentes.")
+        signaler_echec("Telegram th\u00e9matique", "TELEGRAM_BOT_TOKEN ou TELEGRAM_CHANNEL vide")
         return
     th = THEMES[theme_key]
     theme_url = _theme_url(theme_key, verses)
@@ -445,14 +450,17 @@ def post_to_telegram(video_path, theme_key, verses):
                       "parse_mode": "HTML", "disable_web_page_preview": True,
                       "reply_markup": reply_markup},
                 files={"video": f}, timeout=180)
-        print("\u2705 Telegram publi\u00e9" if r.status_code == 200 else f"\u274c Telegram ({r.status_code}): {r.text[:200]}")
+        if r.status_code == 200:
+            print("\u2705 Telegram publi\u00e9")
+        else:
+            signaler_echec("Telegram th\u00e9matique", f"HTTP {r.status_code} \u2014 {r.text[:200]}")
     except Exception as e:
-        print(f"\u274c Telegram: {e}")
+        signaler_echec("Telegram th\u00e9matique", f"{type(e).__name__} : {e}")
 
 
 def post_to_facebook(video_path, theme_key, verses):
     if not FB_PAGE_TOKEN:
-        print("\u26a0\ufe0f  FB_PAGE_TOKEN ausente.")
+        signaler_echec("Facebook th\u00e9matique", "FB_PAGE_TOKEN vide ou absent")
         return
     th = THEMES[theme_key]
     theme_url = _theme_url(theme_key, verses)
@@ -471,14 +479,17 @@ def post_to_facebook(video_path, theme_key, verses):
                 data={"title": f"{th['title']} | LSG1910",
                       "description": desc, "access_token": FB_PAGE_TOKEN},
                 files={"source": f}, timeout=300)
-        print(f"\u2705 Facebook publi\u00e9 \u2014 {r.json().get('id')}" if r.status_code == 200 else f"\u274c Facebook ({r.status_code}): {r.text[:200]}")
+        if r.status_code == 200:
+            print(f"\u2705 Facebook publi\u00e9 \u2014 {r.json().get('id')}")
+        else:
+            signaler_echec("Facebook th\u00e9matique", f"HTTP {r.status_code} \u2014 {r.text[:200]}")
     except Exception as e:
-        print(f"\u274c Facebook: {e}")
+        signaler_echec("Facebook th\u00e9matique", f"{type(e).__name__} : {e}")
 
 
 def upload_to_youtube(video_path, theme_key, verses):
     if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
-        print("\u26a0\ufe0f  Credentials YouTube ausentes.")
+        signaler_echec("YouTube th\u00e9matique", "identifiants OAuth YouTube vides ou absents")
         return None
     from google.oauth2.credentials import Credentials
     from googleapiclient.discovery import build
@@ -575,12 +586,15 @@ def main():
     music = pick_music_varied(progress)
     video_path = make_thematic_video(theme_key, verses, music)
 
-    upload_to_youtube(video_path, theme_key, verses)
-    post_to_telegram(video_path, theme_key, verses)
-    post_to_facebook(video_path, theme_key, verses)
+    # publier() isole chaque plateforme : une panne sur l'une ne peut plus
+    # empecher les autres ni la sauvegarde de la progression.
+    publier("YouTube th\u00e9matique", upload_to_youtube, video_path, theme_key, verses)
+    publier("Telegram th\u00e9matique", post_to_telegram, video_path, theme_key, verses)
+    publier("Facebook th\u00e9matique", post_to_facebook, video_path, theme_key, verses)
     theme_url = _theme_url(theme_key, verses)
     # Instagram (Reel) - agora que e vertical 9:16, encaixa perfeitamente
-    post_reel_to_instagram(
+    publier(
+        "Instagram th\u00e9matique", post_reel_to_instagram,
         video_path,
         THEMES[theme_key]["title"],
         verses[0][1] if verses else "",
@@ -588,7 +602,8 @@ def main():
         theme_key,
         link_override=theme_url,
     )
-    post_reel_to_threads(
+    publier(
+        "Threads th\u00e9matique", post_reel_to_threads,
         video_path,
         THEMES[theme_key]["title"],
         verses[0][1] if verses else "",
@@ -604,6 +619,8 @@ def main():
     save_json(PROGRESS_FILE, progress)
 
     print("\u2705 Termin\u00e9 (m\u00e9ditation th\u00e9matique).")
+    # Sans echec : silence, run vert. Avec echecs : alerte privee + exit 1.
+    finaliser("m\u00e9ditation th\u00e9matique")
 
 
 if __name__ == "__main__":

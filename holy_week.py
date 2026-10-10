@@ -3,8 +3,20 @@ holy_week.py — Publications spéciales Semaine Sainte 2026
 Publie images + reels en extra (en plus des publications normales)
 """
 import os, json, re, unicodedata, datetime, hashlib, math, subprocess, requests, shutil
+import socket
+import traceback
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+
+# ---------------------------------------------------------------------
+# RESEAU : aucun appel ne doit pouvoir bloquer indefiniment.
+# googleapiclient passe par httplib2, qui n'a AUCUN timeout par defaut :
+# le `while response is None: next_chunk()` de l'upload YouTube peut
+# attendre pour toujours sur une connexion morte, sans lever d'exception.
+# Ce fichier n'importe pas bot.py, il pose donc le filet lui-meme.
+# NE PAS RETIRER CETTE LIGNE.
+# ---------------------------------------------------------------------
+socket.setdefaulttimeout(120)
 
 # ── Secrets ──
 TOKEN                 = os.environ["TELEGRAM_BOT_TOKEN"]
@@ -20,6 +32,82 @@ THREADS_ACCESS_TOKEN  = os.environ.get("THREADS_ACCESS_TOKEN", "")
 YT_CLIENT_ID          = os.environ.get("YOUTUBE_CLIENT_ID", "")
 YT_CLIENT_SECRET      = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
 YT_REFRESH_TOKEN      = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
+# Conversation privee pour les alertes. JAMAIS ecrit en dur : le depot est
+# public et le chat_id est un identifiant personnel.
+TELEGRAM_ALERT_CHAT_ID = os.environ.get("TELEGRAM_ALERT_CHAT_ID", "")
+
+
+# ---------------------------------------------------------------------
+# ECHECS : ce qui a rate pendant ce run.
+# Avant, chaque fonction imprimait son erreur et rendait la main : le run
+# restait vert et une plateforme pouvait etre muette sans que rien ne le
+# dise. Meme mecanique que bot.py, recopiee ici faute d'import.
+# ---------------------------------------------------------------------
+ECHECS = []
+
+
+def signaler_echec(plateforme, detail):
+    """Note un echec et l'imprime. Remplace les anciens print("❌ ...")."""
+    detail = str(detail)[:300]
+    ECHECS.append((plateforme, detail))
+    print(f"❌ {plateforme} : {detail}")
+
+
+def publier(plateforme, fonction, *args, **kwargs):
+    """Isole une plateforme : son echec ne peut plus arreter les autres."""
+    try:
+        return fonction(*args, **kwargs)
+    except Exception as e:
+        signaler_echec(plateforme, f"{type(e).__name__} : {e}")
+        traceback.print_exc()
+        return None
+
+
+def envoyer_alerte_privee(contexte):
+    """Message prive. Jamais sur le canal : il est pour la Parole."""
+    if not ECHECS:
+        return
+    if not TELEGRAM_ALERT_CHAT_ID:
+        print("⚠️  TELEGRAM_ALERT_CHAT_ID absent : alerte privée non envoyée")
+        return
+    lignes = "\n".join(f"• {p} : {d}" for p, d in ECHECS)
+    url_run = ""
+    serveur = os.environ.get("GITHUB_SERVER_URL", "")
+    depot   = os.environ.get("GITHUB_REPOSITORY", "")
+    run_id  = os.environ.get("GITHUB_RUN_ID", "")
+    if serveur and depot and run_id:
+        url_run = f"\n\nJournal du run :\n{serveur}/{depot}/actions/runs/{run_id}"
+    corps = (
+        "🚨 LaBible.app — publication incomplète\n\n"
+        f"Run : {contexte}\n"
+        f"Workflow : {os.environ.get('GITHUB_WORKFLOW', '—')}\n"
+        f"{datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC\n\n"
+        f"Plateformes en échec ({len(ECHECS)}) :\n{lignes}"
+        f"{url_run}"
+    )
+    # Texte brut, sans parse_mode : les messages d'erreur des API
+    # contiennent <, > et {} — un envoi en HTML echouerait a cause de cela
+    # meme qu'il vient signaler.
+    try:
+        requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+                      data={"chat_id": TELEGRAM_ALERT_CHAT_ID, "text": corps},
+                      timeout=30)
+        print("📨 Alerte privée envoyée")
+    except Exception as e:
+        print(f"⚠️  Alerte privée non envoyée : {str(e)[:200]}")
+
+
+def finaliser(contexte):
+    """Derniere instruction du run.
+
+    Sans echec : ne fait rien, run vert, aucun bruit.
+    Avec echecs : alerte privee ET sortie en code 1, pour que la
+    notification GitHub parte aussi.
+    """
+    if not ECHECS:
+        return
+    envoyer_alerte_privee(contexte)
+    raise SystemExit(1)
 
 FONT_SERIF      = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
 FONT_SERIF_BOLD = "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf"
@@ -622,79 +710,139 @@ def post_telegram_video(path, caption, ref=None):
     r.raise_for_status(); print("✅ Telegram vidéo publié")
 
 def post_facebook_photo(path, caption):
-    if not FB_PAGE_TOKEN: return
+    if not FB_PAGE_TOKEN:
+        signaler_echec("Facebook image", "FB_PAGE_TOKEN vide ou absent")
+        return
     with open(path,"rb") as f:
         r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/photos",
                           data={"message":caption,"access_token":FB_PAGE_TOKEN},
                           files={"source":f}, timeout=60)
-    print(f"✅ Facebook image — {r.json().get('id','?')}" if r.status_code==200 else f"❌ Facebook ({r.status_code}): {r.text}")
+    if r.status_code == 200:
+        print(f"✅ Facebook image — {r.json().get('id','?')}")
+    else:
+        signaler_echec("Facebook image", f"HTTP {r.status_code} — {r.text[:200]}")
 
 def post_facebook_reel(path, caption):
-    if not FB_PAGE_TOKEN: return
+    if not FB_PAGE_TOKEN:
+        signaler_echec("Facebook reel", "FB_PAGE_TOKEN vide ou absent")
+        return
     with open(path,"rb") as f:
         r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
                           data={"description":caption,"access_token":FB_PAGE_TOKEN},
                           files={"source":f}, timeout=120)
-    print(f"✅ Facebook reel — {r.json().get('id','?')}" if r.status_code==200 else f"❌ Facebook reel ({r.status_code}): {r.text}")
+    if r.status_code == 200:
+        print(f"✅ Facebook reel — {r.json().get('id','?')}")
+    else:
+        signaler_echec("Facebook reel", f"HTTP {r.status_code} — {r.text[:200]}")
 
 def post_instagram_image(path, caption):
-    if not FB_PAGE_TOKEN: return
+    if not FB_PAGE_TOKEN:
+        signaler_echec("Instagram image", "FB_PAGE_TOKEN vide ou absent")
+        return
     url = upload_to_cloudinary(path, "image")
-    if not url: return
+    if not url:
+        signaler_echec("Instagram image", "hébergement de l'image échoué")
+        return
     if "cloudinary.com" in url: url = url.replace("/upload/","/upload/f_jpg/")
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
                       data={"image_url":url,"caption":caption,"access_token":FB_PAGE_TOKEN}, timeout=60)
-    if r.status_code!=200: print(f"❌ IG container ({r.status_code}): {r.text}"); return
+    if r.status_code != 200:
+        signaler_echec("Instagram image", f"container — HTTP {r.status_code} — {r.text[:200]}")
+        return
     cid = r.json().get("id")
     import time
+    # Sans ce drapeau, une attente qui s'epuise publiait quand meme un
+    # container non pret : l'erreur accusait la publication au lieu de
+    # l'attente, et masquait la vraie panne.
+    pret = False
+    s = ""
     for _ in range(8):
         time.sleep(10)
         rs = requests.get(f"https://graph.facebook.com/v25.0/{cid}",
                           params={"fields":"status_code","access_token":FB_PAGE_TOKEN}, timeout=30)
         s = rs.json().get("status_code","")
-        if s=="FINISHED": break
-        if s=="ERROR": print("❌ IG ERROR"); return
+        if s == "FINISHED":
+            pret = True
+            break
+        if s == "ERROR":
+            signaler_echec("Instagram image", "container en ERROR côté Meta")
+            return
+    if not pret:
+        signaler_echec("Instagram image", f"container jamais prêt (dernier statut : {s or 'inconnu'})")
+        return
     r2 = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish",
                        data={"creation_id":cid,"access_token":FB_PAGE_TOKEN}, timeout=60)
-    print(f"✅ Instagram image — {r2.json().get('id','?')}" if r2.status_code==200 else f"❌ IG publish ({r2.status_code}): {r2.text}")
+    if r2.status_code == 200:
+        print(f"✅ Instagram image — {r2.json().get('id','?')}")
+    else:
+        signaler_echec("Instagram image", f"publication — HTTP {r2.status_code} — {r2.text[:200]}")
 
 def post_instagram_reel(path, caption):
-    if not FB_PAGE_TOKEN: return
+    if not FB_PAGE_TOKEN:
+        signaler_echec("Instagram reel", "FB_PAGE_TOKEN vide ou absent")
+        return
     video_url = upload_to_cloudinary(path, "video")
-    if not video_url: return
+    if not video_url:
+        signaler_echec("Instagram reel", "hébergement de la vidéo échoué")
+        return
     r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
                       data={"media_type":"REELS","video_url":video_url,"caption":caption,
                             "access_token":FB_PAGE_TOKEN,"thumb_offset":"7500"}, timeout=60)
-    if r.status_code!=200: print(f"❌ IG reel container ({r.status_code}): {r.text}"); return
+    if r.status_code != 200:
+        signaler_echec("Instagram reel", f"container — HTTP {r.status_code} — {r.text[:200]}")
+        return
     cid = r.json().get("id"); print(f"✅ Container reel IG: {cid}")
     import time
+    pret = False
+    s = ""
     for attempt in range(10):
         time.sleep(15)
         rs = requests.get(f"https://graph.facebook.com/v25.0/{cid}",
                           params={"fields":"status_code","access_token":FB_PAGE_TOKEN}, timeout=30)
         s = rs.json().get("status_code","")
         print(f"  ⏳ {s} (tentative {attempt+1})")
-        if s=="FINISHED": break
-        if s=="ERROR": print("❌ IG reel ERROR"); return
+        if s == "FINISHED":
+            pret = True
+            break
+        if s == "ERROR":
+            signaler_echec("Instagram reel", "container en ERROR côté Meta")
+            return
+    if not pret:
+        signaler_echec("Instagram reel", f"container jamais prêt (dernier statut : {s or 'inconnu'})")
+        return
     r2 = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish",
                        data={"creation_id":cid,"access_token":FB_PAGE_TOKEN}, timeout=60)
-    print(f"✅ Instagram reel — {r2.json().get('id','?')}" if r2.status_code==200 else f"❌ IG reel publish ({r2.status_code}): {r2.text}")
+    if r2.status_code == 200:
+        print(f"✅ Instagram reel — {r2.json().get('id','?')}")
+    else:
+        signaler_echec("Instagram reel", f"publication — HTTP {r2.status_code} — {r2.text[:200]}")
 
 def post_threads(path, caption):
-    if not THREADS_ACCESS_TOKEN: return
+    if not THREADS_ACCESS_TOKEN:
+        signaler_echec("Threads", "THREADS_ACCESS_TOKEN vide ou absent")
+        return
     url = upload_to_cloudinary(path, "image")
-    if not url: return
+    if not url:
+        signaler_echec("Threads", "hébergement de l'image échoué")
+        return
     if "cloudinary.com" in url: url = url.replace("/upload/","/upload/f_jpg/")
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
                       data={"media_type":"IMAGE","image_url":url,"text":caption,"access_token":THREADS_ACCESS_TOKEN}, timeout=60)
-    if r.status_code!=200: print(f"❌ Threads ({r.status_code}): {r.text}"); return
+    if r.status_code != 200:
+        signaler_echec("Threads", f"container — HTTP {r.status_code} — {r.text[:200]}")
+        return
     import time; time.sleep(5)
     r2 = requests.post("https://graph.threads.net/v1.0/me/threads_publish",
                        data={"creation_id":r.json().get("id"),"access_token":THREADS_ACCESS_TOKEN}, timeout=60)
-    print(f"✅ Threads — {r2.json().get('id','?')}" if r2.status_code==200 else f"❌ Threads publish ({r2.status_code}): {r2.text}")
+    if r2.status_code == 200:
+        print(f"✅ Threads — {r2.json().get('id','?')}")
+    else:
+        signaler_echec("Threads", f"publication — HTTP {r2.status_code} — {r2.text[:200]}")
 
 def post_youtube(path, day_data):
-    if not YT_CLIENT_ID: return
+    if not (YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN):
+        signaler_echec("YouTube", "identifiants OAuth YouTube vides ou absents")
+        return
     try:
         from google.oauth2.credentials import Credentials
         from googleapiclient.discovery import build
@@ -720,7 +868,7 @@ def post_youtube(path, day_data):
             _, response = req.next_chunk()
         print(f"✅ YouTube — https://youtube.com/shorts/{response.get('id','?')}")
     except Exception as e:
-        print(f"❌ YouTube: {e}")
+        signaler_echec("YouTube", f"{type(e).__name__} : {e}")
 
 
 # ── MAIN ──
@@ -749,20 +897,24 @@ def main():
     # ── IMAGE ──
     print("🖼️  Génération image...")
     img = make_holy_week_image(day)
-    post_telegram_photo(img, caption_tg, day['ref'])
-    post_facebook_photo(img, caption_social)
-    post_instagram_image(img, caption_social)
-    post_threads(img, caption_social)
+    # publier() isole chaque plateforme : une panne sur l'une ne peut plus
+    # arreter les suivantes.
+    publier("Telegram image", post_telegram_photo, img, caption_tg, day['ref'])
+    publier("Facebook image", post_facebook_photo, img, caption_social)
+    publier("Instagram image", post_instagram_image, img, caption_social)
+    publier("Threads", post_threads, img, caption_social)
 
     # ── REEL ──
     print("\n🎬 Génération reel...")
     reel = make_holy_week_reel(day)
-    post_telegram_video(reel, caption_tg, day['ref'])
-    post_facebook_reel(reel, caption_social)
-    post_instagram_reel(reel, caption_social)
-    post_youtube(reel, day)
+    publier("Telegram vidéo", post_telegram_video, reel, caption_tg, day['ref'])
+    publier("Facebook reel", post_facebook_reel, reel, caption_social)
+    publier("Instagram reel", post_instagram_reel, reel, caption_social)
+    publier("YouTube", post_youtube, reel, day)
 
     print(f"\n✅ Semaine Sainte complète — {day['theme']}")
+    # Sans echec : silence, run vert. Avec echecs : alerte privee + exit 1.
+    finaliser(f"semaine sainte — {day['theme']}")
 
 
 if __name__ == "__main__":

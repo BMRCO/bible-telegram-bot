@@ -35,6 +35,10 @@ from bot import (
     REEL_PALETTE_BY_CAT,
     send_video, send_photo,
     upload_video_public, upload_to_cloudinary,
+    # Alertes de panne : importees de bot.py, pas redefinies ici.
+    # bot.py porte aussi socket.setdefaulttimeout(120), applique des
+    # l'import — googleapiclient/httplib2 n'a aucun timeout par defaut.
+    signaler_echec, publier, finaliser,
 )
 
 MUSIC_DIR = "music_meditation"
@@ -99,7 +103,7 @@ LABEL_EMOJI = {
 # ---------------------------------------------------------------
 def fb_reel(video_path, caption):
     if not bot.FB_PAGE_TOKEN:
-        print("⚠️  FB_PAGE_TOKEN non défini.")
+        signaler_echec("Facebook quiz", "FB_PAGE_TOKEN vide ou absent")
         return
     with open(video_path, "rb") as f:
         r = requests.post(
@@ -109,21 +113,29 @@ def fb_reel(video_path, caption):
     if r.status_code == 200:
         print(f"✅ Facebook publié — {r.json().get('id')}")
     else:
-        print(f"❌ Facebook ({r.status_code}): {r.text[:300]}")
+        signaler_echec("Facebook quiz", f"HTTP {r.status_code} — {r.text[:200]}")
 
 
 def ig_reel(video_url, caption):
-    if not bot.FB_PAGE_TOKEN or not video_url:
+    if not bot.FB_PAGE_TOKEN:
+        signaler_echec("Instagram quiz", "FB_PAGE_TOKEN vide ou absent")
+        return
+    if not video_url:
+        signaler_echec("Instagram quiz", "hébergement de la vidéo échoué")
         return
     r = requests.post(
         f"https://graph.facebook.com/v25.0/{bot.IG_ACCOUNT_ID}/media",
         data={"media_type": "REELS", "video_url": video_url, "caption": caption,
               "access_token": bot.FB_PAGE_TOKEN, "thumb_offset": "1000"}, timeout=60)
     if r.status_code != 200:
-        print(f"❌ Instagram container ({r.status_code}): {r.text[:300]}")
+        signaler_echec("Instagram quiz", f"container — HTTP {r.status_code} — {r.text[:200]}")
         return
     cid = r.json().get("id")
     import time
+    # Sans ce drapeau, une attente qui s'epuise publiait quand meme un
+    # container non pret : l'erreur accusait la publication au lieu de
+    # l'attente, et masquait la vraie panne.
+    pret = False
     for attempt in range(10):
         time.sleep(15)
         rs = requests.get(f"https://graph.facebook.com/v25.0/{cid}",
@@ -132,28 +144,36 @@ def ig_reel(video_url, caption):
         st = rs.json().get("status_code", "")
         print(f"  ⏳ {st} ({attempt + 1})")
         if st == "FINISHED":
+            pret = True
             break
         if st == "ERROR":
-            print("❌ Instagram : container en erreur.")
+            signaler_echec("Instagram quiz", "container en ERROR côté Meta")
             return
+    if not pret:
+        signaler_echec("Instagram quiz", f"container jamais prêt (dernier statut : {st or 'inconnu'})")
+        return
     r2 = requests.post(
         f"https://graph.facebook.com/v25.0/{bot.IG_ACCOUNT_ID}/media_publish",
         data={"creation_id": cid, "access_token": bot.FB_PAGE_TOKEN}, timeout=60)
     if r2.status_code == 200:
         print(f"✅ Instagram publié — {r2.json().get('id')}")
     else:
-        print(f"❌ Instagram publication ({r2.status_code}): {r2.text[:300]}")
+        signaler_echec("Instagram quiz", f"publication — HTTP {r2.status_code} — {r2.text[:200]}")
 
 
 def threads_reel(video_url, caption):
-    if not bot.THREADS_ACCESS_TOKEN or not video_url:
+    if not bot.THREADS_ACCESS_TOKEN:
+        signaler_echec("Threads quiz", "THREADS_ACCESS_TOKEN vide ou absent")
+        return
+    if not video_url:
+        signaler_echec("Threads quiz", "hébergement de la vidéo échoué")
         return
     r = requests.post("https://graph.threads.net/v1.0/me/threads",
                       data={"media_type": "VIDEO", "video_url": video_url,
                             "text": caption,
                             "access_token": bot.THREADS_ACCESS_TOKEN}, timeout=60)
     if r.status_code != 200:
-        print(f"❌ Threads container ({r.status_code}): {r.text[:300]}")
+        signaler_echec("Threads quiz", f"container — HTTP {r.status_code} — {r.text[:200]}")
         return
     import time
     time.sleep(30)
@@ -164,10 +184,11 @@ def pinterest_pin(image_path, title, description):
     """Pinterest ne prend pas la video du quiz : on epingle l'image de la
     reponse, qui contient le verset complet et la reference."""
     if not bot.PINTEREST_ACCESS_TOKEN or not bot.PINTEREST_BOARD_ID:
-        print("⏭️  Pinterest non configuré.")
+        signaler_echec("Pinterest quiz", "PINTEREST_ACCESS_TOKEN ou PINTEREST_BOARD_ID vide")
         return
     img_url = upload_to_cloudinary(image_path)
     if not img_url:
+        signaler_echec("Pinterest quiz", "hébergement de l'image échoué")
         return
     r = requests.post(
         "https://api.pinterest.com/v5/pins",
@@ -181,7 +202,7 @@ def pinterest_pin(image_path, title, description):
     if r.status_code in (200, 201):
         print(f"✅ Pinterest publié — {r.json().get('id')}")
     else:
-        print(f"❌ Pinterest ({r.status_code}): {r.text[:300]}")
+        signaler_echec("Pinterest quiz", f"HTTP {r.status_code} — {r.text[:200]}")
 
 
 
@@ -194,7 +215,7 @@ def yt_upload(video_path, theme, q, seed):
     les gens tapent. D'ou cette fonction dediee.
     """
     if not (bot.YT_CLIENT_ID and bot.YT_CLIENT_SECRET and bot.YT_REFRESH_TOKEN):
-        print("⚠️  Credentials YouTube manquants.")
+        signaler_echec("YouTube quiz", "identifiants OAuth YouTube vides ou absents")
         return
     try:
         from google.oauth2.credentials import Credentials
@@ -266,7 +287,7 @@ def yt_upload(video_path, theme, q, seed):
         except Exception as e:
             print(f"⚠️  Vignette : {str(e)[:160]}")
     except Exception as e:
-        print(f"❌ YouTube : {str(e)[:300]}")
+        signaler_echec("YouTube quiz", f"{type(e).__name__} : {e}")
 
 
 def make_quiz_thumb(theme, q):
@@ -853,7 +874,8 @@ if __name__ == "__main__":
 
     bank = load_json(QUIZ_FILE)
     if not bank:
-        print(f"❌ {QUIZ_FILE} introuvable.")
+        signaler_echec("Quiz", f"{QUIZ_FILE} introuvable")
+        finaliser("quiz")
         sys.exit(1)
 
     if annonce:
@@ -870,10 +892,7 @@ if __name__ == "__main__":
         tg_cap = cap.replace(f"👉 {QUIZ_URL}",
                              f"👉 <a href=\"{QUIZ_URL}\">labible.app/quiz</a>")
         print("📤 Annonce…")
-        try:
-            bot.send_photo(path, tg_cap)
-        except Exception as e:
-            print("⚠️ Telegram:", e)
+        publier("Telegram annonce", bot.send_photo, path, tg_cap)
         try:
             if bot.FB_PAGE_TOKEN:
                 with open(path, "rb") as f:
@@ -881,16 +900,14 @@ if __name__ == "__main__":
                         f"https://graph.facebook.com/v25.0/{bot.FB_PAGE_ID}/photos",
                         data={"message": cap, "access_token": bot.FB_PAGE_TOKEN},
                         files={"source": f}, timeout=90)
-                print("✅ Facebook publié" if r.status_code == 200
-                      else f"❌ Facebook ({r.status_code}): {r.text[:200]}")
+                if r.status_code == 200:
+                    print("✅ Facebook publié")
+                else:
+                    signaler_echec("Facebook annonce", f"HTTP {r.status_code} — {r.text[:200]}")
         except Exception as e:
-            print("⚠️ Facebook:", e)
+            signaler_echec("Facebook annonce", f"{type(e).__name__} : {e}")
 
-        img_url = None
-        try:
-            img_url = upload_to_cloudinary(path)
-        except Exception as e:
-            print("⚠️ Cloudinary:", e)
+        img_url = publier("Hébergement annonce", upload_to_cloudinary, path)
 
         try:
             if img_url and bot.FB_PAGE_TOKEN:
@@ -906,12 +923,14 @@ if __name__ == "__main__":
                         f"https://graph.facebook.com/v25.0/{bot.IG_ACCOUNT_ID}/media_publish",
                         data={"creation_id": cid,
                               "access_token": bot.FB_PAGE_TOKEN}, timeout=60)
-                    print("✅ Instagram publié" if r2.status_code == 200
-                          else f"❌ Instagram ({r2.status_code}): {r2.text[:200]}")
+                    if r2.status_code == 200:
+                        print("✅ Instagram publié")
+                    else:
+                        signaler_echec("Instagram annonce", f"HTTP {r2.status_code} — {r2.text[:200]}")
                 else:
-                    print(f"❌ Instagram container ({r.status_code}): {r.text[:200]}")
+                    signaler_echec("Instagram annonce", f"container — HTTP {r.status_code} — {r.text[:200]}")
         except Exception as e:
-            print("⚠️ Instagram:", e)
+            signaler_echec("Instagram annonce", f"{type(e).__name__} : {e}")
 
         try:
             if img_url and bot.THREADS_ACCESS_TOKEN:
@@ -926,15 +945,17 @@ if __name__ == "__main__":
                     time.sleep(10)
                     bot._threads_publish(r.json().get("id"))
                 else:
-                    print(f"❌ Threads container ({r.status_code}): {r.text[:200]}")
+                    signaler_echec("Threads annonce", f"container — HTTP {r.status_code} — {r.text[:200]}")
         except Exception as e:
-            print("⚠️ Threads:", e)
+            signaler_echec("Threads annonce", f"{type(e).__name__} : {e}")
         print("✅ Annonce publiée.")
+        finaliser("annonce quiz")
         sys.exit(0)
 
     forced = args[0].lower() if args else None
     if forced and forced not in bank:
-        print(f"❌ Thème inconnu : {forced}. Choix : {', '.join(bank.keys())}")
+        signaler_echec("Quiz", f"thème inconnu : {forced}")
+        finaliser("quiz")
         sys.exit(1)
 
     theme, q, pos, total, prog = next_question(bank, forced)
@@ -956,36 +977,12 @@ if __name__ == "__main__":
     cat = CAT_MAP[theme]
     ref = q["r"]
 
-    try:
-        send_video(video, tg, ref)
-    except Exception as e:
-        print("⚠️ Telegram:", e)
-
-    try:
-        fb_reel(video, fb)
-    except Exception as e:
-        print("⚠️ Facebook:", e)
-
-    video_url = None
-    try:
-        video_url = upload_video_public(video)
-    except Exception as e:
-        print("⚠️ Upload vidéo:", e)
-
-    try:
-        ig_reel(video_url, ig)
-    except Exception as e:
-        print("⚠️ Instagram:", e)
-
-    try:
-        threads_reel(video_url, th)
-    except Exception as e:
-        print("⚠️ Threads:", e)
-
-    try:
-        yt_upload(video, theme, q, seed)
-    except Exception as e:
-        print("⚠️ YouTube:", e)
+    publier("Telegram quiz", send_video, video, tg, ref)
+    publier("Facebook quiz", fb_reel, video, fb)
+    video_url = publier("Hébergement vidéo quiz", upload_video_public, video)
+    publier("Instagram quiz", ig_reel, video_url, ig)
+    publier("Threads quiz", threads_reel, video_url, th)
+    publier("YouTube quiz", yt_upload, video, theme, q, seed)
 
     try:
         reveal_png = "/tmp/quiz_reveal.png"
@@ -993,9 +990,9 @@ if __name__ == "__main__":
         pin_title = hook_for(q, seed).replace("📖 ", "")
         pin_desc = (f"{q['q']}\n\nRéponse : {q['o'][q['a']]}\n{q['r']} — "
                     f"Bible Louis Segond 1910.\nLe quiz complet sur labible.app/quiz")
-        pinterest_pin(reveal_png, pin_title, pin_desc)
+        publier("Pinterest quiz", pinterest_pin, reveal_png, pin_title, pin_desc)
     except Exception as e:
-        print("⚠️ Pinterest:", e)
+        signaler_echec("Pinterest quiz", f"image de réponse — {type(e).__name__} : {e}")
 
     # ─── Progression (uniquement apres publication reussie) ───
     # Un theme force est un tir ponctuel : il ne fait pas avancer la rotation.
@@ -1010,3 +1007,8 @@ if __name__ == "__main__":
     print("─" * 56)
     print(tt)
     print("─" * 56)
+
+    # Derniere instruction : sans echec, silence et run vert ; avec echecs,
+    # alerte privee puis sortie en code 1. La progression est deja ecrite
+    # au-dessus, et le workflow commite avec `if: ${{ !cancelled() }}`.
+    finaliser("quiz")
