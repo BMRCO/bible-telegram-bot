@@ -1817,7 +1817,7 @@ def post_to_facebook(image_path, ref, text, cat, cat_name, link_override=None):
         print("⏭️  Facebook skip (filtro)")
         return
     if not FB_PAGE_TOKEN:
-        print("⚠️  FB_PAGE_TOKEN non défini.")
+        signaler_echec("Facebook", "FB_PAGE_TOKEN vide ou absent")
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
     msg = social_caption(ref, text, cat, cat_name, chapter_url, "fb")
@@ -1835,7 +1835,7 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name, link_override=No
         print("⏭️  Facebook reel skip (filtro)")
         return
     if not FB_PAGE_TOKEN:
-        print("⚠️  FB_PAGE_TOKEN non défini.")
+        signaler_echec("Facebook reel", "FB_PAGE_TOKEN vide ou absent")
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
     desc = social_caption(ref, text, cat, cat_name, chapter_url, "fb")
@@ -1911,9 +1911,11 @@ def post_to_instagram(image_path, ref, text, cat, cat_name, link_override=None):
         print("⏭️  Instagram skip (filtro)")
         return
     if not FB_PAGE_TOKEN:
+        signaler_echec("Instagram", "FB_PAGE_TOKEN vide ou absent")
         return
     image_url = upload_to_cloudinary(image_path)
     if not image_url:
+        signaler_echec("Instagram", "hébergement de l'image échoué")
         return
     if "cloudinary.com" in image_url:
         image_url = image_url.replace("/upload/", "/upload/f_jpg/")
@@ -1927,6 +1929,7 @@ def post_to_instagram(image_path, ref, text, cat, cat_name, link_override=None):
     container_id = r.json().get("id")
     print(f"✅ Container Instagram : {container_id}")
     import time
+    pret = False
     for attempt in range(8):
         time.sleep(8)
         rs = requests.get(f"https://graph.facebook.com/v25.0/{container_id}",
@@ -1934,10 +1937,14 @@ def post_to_instagram(image_path, ref, text, cat, cat_name, link_override=None):
         status = rs.json().get("status_code", "")
         print(f"  ⏳ {status} (tentative {attempt+1})")
         if status == "FINISHED":
+            pret = True
             break
         if status == "ERROR":
-            signaler_echec("Instagram", "container jamais prêt")
+            signaler_echec("Instagram", "container en ERROR côté Meta")
             return
+    if not pret:
+        signaler_echec("Instagram", f"container jamais prêt (dernier statut : {status or 'inconnu'})")
+        return
     r2 = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish",
         data={"creation_id": container_id, "access_token": FB_PAGE_TOKEN}, timeout=60)
     if r2.status_code == 200:
@@ -1951,9 +1958,11 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=N
         print("⏭️  Instagram reel skip (filtro)")
         return
     if not FB_PAGE_TOKEN:
+        signaler_echec("Instagram reel", "FB_PAGE_TOKEN vide ou absent")
         return
     video_url = upload_video_public(video_path)
     if not video_url:
+        signaler_echec("Instagram reel", "hébergement de la vidéo échoué")
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
     caption = social_caption(ref, text, cat, cat_name, chapter_url, "ig")
@@ -1965,6 +1974,7 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=N
     container_id = r.json().get("id")
     print(f"✅ Container reel : {container_id}")
     import time
+    pret = False
     for attempt in range(10):
         time.sleep(15)
         rs = requests.get(f"https://graph.facebook.com/v25.0/{container_id}",
@@ -1972,10 +1982,14 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=N
         status = rs.json().get("status_code", "")
         print(f"  ⏳ {status} (tentative {attempt+1})")
         if status == "FINISHED":
+            pret = True
             break
         if status == "ERROR":
-            signaler_echec("Instagram reel", "container jamais prêt")
+            signaler_echec("Instagram reel", "container en ERROR côté Meta")
             return
+    if not pret:
+        signaler_echec("Instagram reel", f"container jamais prêt (dernier statut : {status or 'inconnu'})")
+        return
     r2 = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish",
         data={"creation_id": container_id, "access_token": FB_PAGE_TOKEN}, timeout=60)
     if r2.status_code == 200:
@@ -1992,9 +2006,11 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
         print("⏭️  Pinterest skip (filtro)")
         return
     if not PINTEREST_ACCESS_TOKEN:
+        signaler_echec("Pinterest", "PINTEREST_ACCESS_TOKEN vide ou absent")
         return
     image_url = upload_to_imgbb(image_path)
     if not image_url:
+        signaler_echec("Pinterest", "hébergement de l'image échoué (ImgBB)")
         return
     chapter_url = parse_ref_to_chapter_url(ref)
     pin_keywords = {"promise": "Promesses de Dieu", "jesus": "Paroles de Jésus",
@@ -2044,9 +2060,11 @@ def post_to_threads(image_path, ref, text, cat, cat_name, link_override=None):
         print("⏭️  Threads skip (filtro)")
         return
     if not THREADS_ACCESS_TOKEN:
+        signaler_echec("Threads", "THREADS_ACCESS_TOKEN vide ou absent")
         return
     image_url = upload_to_cloudinary(image_path)
     if not image_url:
+        signaler_echec("Threads", "hébergement de l'image échoué")
         return
     if "cloudinary.com" in image_url:
         image_url = image_url.replace("/upload/", "/upload/f_jpg/")
@@ -2065,6 +2083,7 @@ def post_reel_to_threads(video_path, ref, text, cat, cat_name, link_override=Non
         print("⏭️  Threads reel skip (filtro)")
         return
     if not THREADS_ACCESS_TOKEN:
+        signaler_echec("Threads reel", "THREADS_ACCESS_TOKEN vide ou absent")
         return
     print("📤 Upload vidéo Threads...")
     video_url = upload_video_public(video_path)
@@ -2081,6 +2100,7 @@ def post_reel_to_threads(video_path, ref, text, cat, cat_name, link_override=Non
     container_id = r.json().get("id")
     # Attendre que le container soit prêt
     import time
+    pret = False
     for _ in range(10):
         time.sleep(6)
         rs = requests.get(f"https://graph.threads.net/v1.0/{container_id}",
@@ -2088,10 +2108,14 @@ def post_reel_to_threads(video_path, ref, text, cat, cat_name, link_override=Non
         status = rs.json().get("status", "")
         print(f"⏳ Threads status: {status}")
         if status == "FINISHED":
+            pret = True
             break
         if status == "ERROR":
             signaler_echec("Threads reel", f"container — {rs.json().get('error_message')}")
             return
+    if not pret:
+        signaler_echec("Threads reel", f"container jamais prêt (dernier statut : {status or 'inconnu'})")
+        return
     _threads_publish(container_id)
 
 
@@ -3037,7 +3061,11 @@ def main_parabole():
         from googleapiclient.discovery import build
         from googleapiclient.http import MediaFileUpload
         from google.auth.transport.requests import Request
-        if should_post("youtube") and YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN:
+        if not should_post("youtube"):
+            print("⏭️  YouTube parabole skip (filtro)")
+        elif not (YT_CLIENT_ID and YT_CLIENT_SECRET and YT_REFRESH_TOKEN):
+            signaler_echec("YouTube parabole", "identifiants OAuth YouTube vides ou absents")
+        else:
             creds = Credentials(token=None, refresh_token=YT_REFRESH_TOKEN, client_id=YT_CLIENT_ID,
                 client_secret=YT_CLIENT_SECRET, token_uri="https://oauth2.googleapis.com/token",
                 scopes=["https://www.googleapis.com/auth/youtube.upload"])
