@@ -58,7 +58,7 @@ concurrency:
 
 jobs:
   publish:
-    # Epingle le 10 octobre 2026. ubuntu-latest passe a Ubuntu 26 entre le
+    # Epingle le 9 octobre 2026. ubuntu-latest passe a Ubuntu 26 entre le
     # 19 octobre et le 19 novembre 2026, progressivement : la bascule peut
     # arriver SANS AUCUN COMMIT et casser ffmpeg, Pillow ou les polices.
     # Ne pas remettre ubuntu-latest sans avoir teste l'image 26.
@@ -136,10 +136,8 @@ jobs:
       - name: Run bot
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
-          # Conversation privee pour les alertes de panne. Vide = pas d'alerte
-          # privee, mais la run sort quand meme en erreur (e-mail GitHub).
           TELEGRAM_ALERT_CHAT_ID: ${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+          TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
           IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
