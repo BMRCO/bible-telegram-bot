@@ -49,6 +49,13 @@ jobs:
           TELEGRAM_ALERT_CHAT_ID: ${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+          # Ajoute le 10 octobre 2026. IL MANQUAIT DEPUIS TOUJOURS : ce
+          # workflow appelle post_reel_to_instagram() depuis le 23 juin 2026
+          # et n'a jamais passe IG_ACCOUNT_ID. Sans lui, l'URL devient
+          # .../v25.0//media et Meta repond « Object with ID 'media' does not
+          # exist ». Instagram a donc echoue en silence pendant presque quatre
+          # mois : rien ne le disait avant que signaler_echec() existe.
+          IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
           # Par l'environnement : une entree libre ne doit jamais etre interpolee dans un script.
           IN_THEME: ${{ inputs.theme }}
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
