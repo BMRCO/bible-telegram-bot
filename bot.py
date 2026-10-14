@@ -72,11 +72,32 @@ TELEGRAM_ALERT_CHAT_ID = os.environ.get("TELEGRAM_ALERT_CHAT_ID", "")
 ECHECS = []
 
 
+def _annoter_github(plateforme, detail):
+    """Annotation GitHub Actions.
+
+    Ajoute le 13 octobre 2026. Les echecs partiels etaient deja visibles — run
+    rouge, e-mail GitHub — mais il fallait ouvrir le journal et le faire defiler
+    pour savoir QUELLE plateforme et POURQUOI. Une annotation ::error:: parait
+    en haut de la page du run ET dans l'e-mail de notification : le diagnostic
+    arrive la ou on regarde deja, sans alerte Telegram ni secret en plus.
+
+    Le format n'accepte pas de saut de ligne : ils deviennent %0A. Les deux
+    points doubles sont neutralises, sinon ils coupent la commande.
+    """
+    if not os.environ.get("GITHUB_ACTIONS"):
+        return
+    def _net(t):
+        return (str(t).replace("%", "%25").replace("\r", "")
+                      .replace("\n", "%0A").replace("::", ":​:"))
+    print(f"::error title=❌ {_net(plateforme)}::{_net(detail)}")
+
+
 def signaler_echec(plateforme, detail):
     """Note un echec et l'imprime. Remplace les anciens print("❌ ...")."""
     detail = str(detail)[:300]
     ECHECS.append((plateforme, detail))
     print(f"❌ {plateforme} : {detail}")
+    _annoter_github(plateforme, detail)
 
 
 def publier(plateforme, fonction, *args, **kwargs):
