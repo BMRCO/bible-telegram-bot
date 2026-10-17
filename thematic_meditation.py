@@ -34,6 +34,16 @@ from bot import (
     telegram_markup, _rotate, TG_CLOSERS,
     BIBLE_FILE, APP_URL, WATERMARK, parse_ref_to_chapter_url,
     FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS,
+    # NE PAS redefinir cette table ici. Ce fichier en avait sa propre
+    # copie reduite — {"Psaumes": "Psaume"} — et il lui manquait
+    # l'entree du Cantique des Cantiques, dont le nom est TRONQUE a 20
+    # caracteres dans bible/lsg1910.json (« Cantique Des Cantiqu »).
+    # Resultat : la meditation « amour » plantait sur KeyError des que
+    # l'offset atteignait ce verset, AVANT save_json — donc l'offset ne
+    # bougeait plus et le theme restait bloque a chaque run. Du 13 au 17
+    # octobre 2026, aucune meditation thematique n'est sortie.
+    # Une seule table, dans bot.py.
+    BOOK_NAME_MAP,
     # Alertes de panne : importees de bot.py, pas redefinies ici.
     # bot.py porte aussi socket.setdefaulttimeout(120), applique des
     # l'import — sans lui, le `while response is None: next_chunk()`
@@ -64,8 +74,6 @@ SECS_PER_VERSE  = 9      # ritmo de meditacao
 # intro/outro mais curtos SO nos tematicos (sombreia o import; nao afeta os Salmos)
 SECS_INTRO = 3
 SECS_OUTRO = 3           # total = 3 + 5*9 + 3 = 51s  (< 60s -> regra de Short mais leve)
-
-BOOK_NAME_MAP = {"Psaumes": "Psaume"}
 
 # 
 #  Definicao dos temas: ficheiro, titulo, emoji, hashtag e PALETA (cor por tema)
@@ -190,16 +198,35 @@ def _bible_index():
     return _BIBLE_IDX
 
 
+def _resoudre_livre(book, idx):
+    """Nom du livre tel qu'il existe dans bible/lsg1910.json, ou None.
+
+    Trois filets, dans l'ordre : la table de bot.py, la casse, puis le
+    PREFIXE — ce dernier rattrape les noms tronques du fichier source
+    (« Cantique Des Cantiqu » pour « Cantique des Cantiques »). Si un
+    jour un autre nom est tronque, il passera sans qu'on ait rien a
+    ajouter.
+    """
+    bk = BOOK_NAME_MAP.get(book, book)
+    if bk in idx:
+        return bk
+    bas = bk.lower()
+    for k in idx:
+        if k.lower() == bas:
+            return k
+    for k in idx:
+        kb = k.lower()
+        if len(kb) >= 8 and (bas.startswith(kb) or kb.startswith(bas)):
+            return k
+    return None
+
+
 def _verse_text(book, ch, vs):
     """Texto limpo de um vers\u00edculo ou intervalo (junta vs)."""
     idx = _bible_index()
-    bk = BOOK_NAME_MAP.get(book, book)
-    if bk not in idx:
-        # fallback insensivel a grafia
-        for k in idx:
-            if k.lower() == bk.lower():
-                bk = k
-                break
+    bk = _resoudre_livre(book, idx)
+    if bk is None:
+        raise KeyError(f"livre introuvable dans {BIBLE_FILE} : {book!r}")
     parts = [clean_text(strip_rubric(idx[bk][int(ch)][int(x)])) for x in vs]
     return " ".join(parts).strip()
 
@@ -219,7 +246,16 @@ def load_theme_verses(theme_key, n, offset):
         e = entries[(offset + i) % total]
         book, ch = e[0], e[1]
         vs = e[2:] if len(e) > 2 else [1]
-        out.append((_ref_label(book, ch, vs), _verse_text(book, ch, vs)))
+        ref = _ref_label(book, ch, vs)
+        try:
+            out.append((ref, _verse_text(book, ch, vs)))
+        except Exception as exc:
+            # Un seul verset introuvable ne doit PAS bloquer le theme.
+            # Avant, l'exception remontait jusqu'a main() et tuait la run
+            # avant save_json : l'offset ne bougeait pas et le meme verset
+            # replantait le lendemain, indefiniment. On signale et on passe.
+            signaler_echec("M\u00e9ditation th\u00e9matique",
+                           f"verset ignor\u00e9 \u2014 {ref} : {type(exc).__name__} : {exc}")
     return total, out
 
 
@@ -580,6 +616,11 @@ def main():
     print(f"\U0001f3ac M\u00e9ditation th\u00e9matique \u2014 {THEMES[theme_key]['title']} (offset {offset})")
 
     total, verses = load_theme_verses(theme_key, THEMATIC_VERSES, offset)
+    if not verses:
+        signaler_echec("M\u00e9ditation th\u00e9matique",
+                       f"aucun verset exploitable pour « {theme_key} » \u00e0 l'offset {offset}")
+        finaliser("m\u00e9ditation th\u00e9matique")
+        return
     for ref, _ in verses:
         print(f"  \u2022 {ref}")
 
@@ -624,4 +665,17 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # Sans ce garde, une exception imprevue sortait en traceback brut :
+    # pas de signaler_echec, donc pas d'annotation GitHub, et il fallait
+    # ouvrir le journal pour savoir ce qui s'etait passe.
+    try:
+        main()
+    except SystemExit:
+        raise
+    except Exception as _e:
+        import traceback as _tb
+        _tb.print_exc()
+        signaler_echec("M\u00e9ditation th\u00e9matique",
+                       f"{type(_e).__name__} : {_e}")
+        finaliser("m\u00e9ditation th\u00e9matique")
+        raise

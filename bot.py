@@ -1904,6 +1904,32 @@ def upload_to_cloudinary(image_path):
     return upload_to_imgbb(image_path)
 
 
+def heberger_image(image_path, plateforme):
+    """URL publique d'une image, avec DEUX hebergeurs au lieu d'un.
+
+    Pinterest etait la seule plateforme a dependre d'ImgBB SEUL. Une
+    indisponibilite d'api.imgbb.com suffisait donc a faire rougir la run
+    entiere : 9, 11 et 17 octobre 2026, toujours le meme ConnectTimeout.
+    Les autres plateformes passaient deja par Cloudinary sans rien voir.
+
+    On essaie Cloudinary d'abord — c'est lui qui sert deja Instagram,
+    Threads et l'epingle du quiz, donc Pinterest accepte ses URL — et
+    ImgBB en secours. N'echoue, et ne signale, que si les DEUX echouent.
+    """
+    for nom, fonction in (("Cloudinary", upload_to_cloudinary),
+                          ("ImgBB", upload_to_imgbb)):
+        try:
+            url = fonction(image_path)
+        except Exception as e:
+            print(f"⚠️  {nom} indisponible : {type(e).__name__} : {e}")
+            continue
+        if url:
+            return url
+    signaler_echec(plateforme,
+                   "hébergement de l'image échoué — Cloudinary ET ImgBB")
+    return None
+
+
 def upload_video_public(video_path):
     if not CLOUDINARY_CLOUD_NAME or not CLOUDINARY_API_KEY or not CLOUDINARY_API_SECRET:
         return None
@@ -2029,10 +2055,13 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
     if not PINTEREST_ACCESS_TOKEN:
         signaler_echec("Pinterest", "PINTEREST_ACCESS_TOKEN vide ou absent")
         return
-    image_url = upload_to_imgbb(image_path)
+    image_url = heberger_image(image_path, "Pinterest")
     if not image_url:
-        signaler_echec("Pinterest", "hébergement de l'image échoué (ImgBB)")
         return
+    # Cloudinary sert le PNG tel quel ; f_jpg allege l'epingle sans rien
+    # changer a ce qu'on voit. Meme transformation que pour Instagram.
+    if "cloudinary.com" in image_url:
+        image_url = image_url.replace("/upload/", "/upload/f_jpg/")
     chapter_url = parse_ref_to_chapter_url(ref)
     pin_keywords = {"promise": "Promesses de Dieu", "jesus": "Paroles de Jésus",
                     "psaume": "Psaumes Bibliques", "proverbe": "Sagesse Biblique", "prophetie": "Prophéties Bibliques",
