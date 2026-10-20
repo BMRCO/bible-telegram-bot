@@ -52,8 +52,14 @@ def _annoter_github(plateforme, detail):
     Ajoute le 13 octobre 2026. Les echecs partiels etaient deja visibles — run
     rouge, e-mail GitHub — mais il fallait ouvrir le journal et le faire defiler
     pour savoir QUELLE plateforme et POURQUOI. Une annotation ::error:: parait
-    en haut de la page du run ET dans l'e-mail de notification : le diagnostic
-    arrive la ou on regarde deja, sans alerte Telegram ni secret en plus.
+    dans la boite « Annotations », tout en haut de la page du run : un seul
+    clic sur « View workflow run », sans ouvrir le journal.
+
+    CORRIGE le 19 octobre 2026 : l'e-mail de notification GitHub n'affiche
+    PAS le texte des annotations, seulement leur NOMBRE. Ce nombre reste un
+    signal utile — 2 = rien de neuf (Node 20 + code de sortie), 3 ou plus =
+    un motif ecrit attend sur la page du run. Mais le diagnostic lui-meme
+    n'est pas dans l'e-mail. Ne pas le promettre.
 
     Le format n'accepte pas de saut de ligne : ils deviennent %0A. Les deux
     points doubles sont neutralises, sinon ils coupent la commande.
