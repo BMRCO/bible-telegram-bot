@@ -1,8 +1,12 @@
 name: Meditation Psaume YouTube
 
 on:
-  schedule:
-    - cron: '39 4 * * *'      # 04h39 UTC - Meditation Psaume (manha cedo)
+  # EN PAUSE depuis le 29 octobre 2026 : les 150 Psaumes ont ete publies
+  # (cycle termine le 28 octobre). La serie reprendra avec une voix.
+  # Pour relancer : remettre le bloc ci-dessous ET "next_psaume": 1
+  # dans progress_meditation.json.
+  # schedule:
+  #   - cron: '39 4 * * *'      # 04h39 UTC - Meditation Psaume (manha cedo)
   workflow_dispatch:
     inputs:
       psaume:
