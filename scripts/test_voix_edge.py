@@ -18,6 +18,23 @@ import sys
 import tempfile
 
 import edge_tts
+import edge_tts.communicate as _comm
+
+# edge-tts ecrit xml:lang='en-US' en dur dans le SSML. Les voix multilingues
+# (Remy, Vivienne) s'en servent pour deviner la langue : elles commencent alors
+# en anglais ou en espagnol avant de passer au francais. On force le francais.
+def _mkssml_fr(tc, escaped_text):
+    if isinstance(escaped_text, bytes):
+        escaped_text = escaped_text.decode("utf-8")
+    return (
+        "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='fr-FR'>"
+        f"<voice name='{tc.voice}'><lang xml:lang='fr-FR'>"
+        f"<prosody pitch='{tc.pitch}' rate='{tc.rate}' volume='{tc.volume}'>"
+        f"{escaped_text}"
+        "</prosody></lang></voice></speak>"
+    )
+
+_comm.mkssml = _mkssml_fr
 
 BIBLE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bible", "lsg1910.json")
 PAUSE_TITRE = 1.0
