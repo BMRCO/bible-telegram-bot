@@ -1857,6 +1857,46 @@ def post_to_facebook(image_path, ref, text, cat, cat_name, link_override=None):
         signaler_echec("Facebook", f"HTTP {r.status_code} — {r.text[:200]}")
 
 
+def publier_reel_facebook(video_path, description, plateforme="Facebook reel",
+                          page_id=None, token=None):
+    """Publie une video verticale courte (3 a 90 s) en Reel sur la Page.
+
+    API Reels de Meta, en trois temps : start, envoi sur rupload, finish.
+    Elle demande pages_show_list, pages_read_engagement et pages_manage_posts,
+    que le jeton de Page possede. L'ancien envoi sur /{page}/videos exige en
+    plus publish_video, que l'app LaBibleAPP ne propose plus : le 1er novembre
+    2026 il repondait « (#100) No permission to publish the video ».
+    Renvoie l'id de la video, ou None apres avoir signale l'echec.
+    """
+    page_id = page_id or FB_PAGE_ID
+    token = token or FB_PAGE_TOKEN
+    base = f"https://graph.facebook.com/v25.0/{page_id}/video_reels"
+    r = requests.post(base, data={"upload_phase": "start", "access_token": token}, timeout=60)
+    if r.status_code != 200 or not r.json().get("video_id"):
+        signaler_echec(plateforme, f"start — HTTP {r.status_code} — {r.text[:200]}")
+        return None
+    video_id = r.json()["video_id"]
+    upload_url = r.json().get("upload_url") or f"https://rupload.facebook.com/video-upload/v25.0/{video_id}"
+    with open(video_path, "rb") as f:
+        r = requests.post(upload_url, data=f, timeout=300, headers={
+            "Authorization": f"OAuth {token}",
+            "offset": "0",
+            "file_size": str(os.path.getsize(video_path)),
+        })
+    if r.status_code != 200 or not r.json().get("success"):
+        signaler_echec(plateforme, f"envoi — HTTP {r.status_code} — {r.text[:200]}")
+        return None
+    r = requests.post(base, timeout=60, data={
+        "access_token": token, "video_id": video_id, "upload_phase": "finish",
+        "video_state": "PUBLISHED", "description": description,
+    })
+    if r.status_code != 200 or not r.json().get("success"):
+        signaler_echec(plateforme, f"finish — HTTP {r.status_code} — {r.text[:200]}")
+        return None
+    print(f"\u2705 {plateforme} publi\u00e9 \u2014 {video_id}")
+    return video_id
+
+
 def post_reel_to_facebook(video_path, ref, text, cat, cat_name, link_override=None):
     if not should_post("facebook"):
         print("⏭️  Facebook reel skip (filtro)")
@@ -1866,13 +1906,7 @@ def post_reel_to_facebook(video_path, ref, text, cat, cat_name, link_override=No
         return
     chapter_url = link_override or parse_ref_to_chapter_url(ref)
     desc = social_caption(ref, text, cat, cat_name, chapter_url, "fb")
-    with open(video_path, "rb") as f:
-        r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
-            data={"description": desc, "access_token": FB_PAGE_TOKEN}, files={"source": f}, timeout=120)
-    if r.status_code == 200:
-        print(f"\u2705 Facebook reel publi\u00e9 \u2014 {r.json().get('id')}")
-    else:
-        signaler_echec("Facebook reel", f"HTTP {r.status_code} — {r.text[:200]}")
+    publier_reel_facebook(video_path, desc, "Facebook reel")
 
 
 # ---------------------------------------------------

@@ -49,6 +49,7 @@ from bot import (
     # l'import — sans lui, le `while response is None: next_chunk()`
     # de l'upload YouTube peut bloquer indefiniment.
     signaler_echec, publier, finaliser,
+    publier_reel_facebook,
 )
 # Reutiliza helpers de render + musica das meditacoes de Salmos
 from psaume_meditation import (
@@ -509,16 +510,9 @@ def post_to_facebook(video_path, theme_key, verses):
         f"#Bible #{th['tag']} #M\u00e9ditation #LSG1910 #ParoleDeDieu #Foi"
     )
     try:
-        with open(video_path, "rb") as f:
-            r = requests.post(
-                f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
-                data={"title": f"{th['title']} | LSG1910",
-                      "description": desc, "access_token": FB_PAGE_TOKEN},
-                files={"source": f}, timeout=300)
-        if r.status_code == 200:
-            print(f"\u2705 Facebook publi\u00e9 \u2014 {r.json().get('id')}")
-        else:
-            signaler_echec("Facebook th\u00e9matique", f"HTTP {r.status_code} \u2014 {r.text[:200]}")
+        # Video verticale de 51 s : publiee en Reel (voir bot.publier_reel_facebook).
+        publier_reel_facebook(video_path, desc, "Facebook th\u00e9matique",
+                              page_id=FB_PAGE_ID, token=FB_PAGE_TOKEN)
     except Exception as e:
         signaler_echec("Facebook th\u00e9matique", f"{type(e).__name__} : {e}")
 

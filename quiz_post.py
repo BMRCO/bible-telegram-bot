@@ -105,15 +105,7 @@ def fb_reel(video_path, caption):
     if not bot.FB_PAGE_TOKEN:
         signaler_echec("Facebook quiz", "FB_PAGE_TOKEN vide ou absent")
         return
-    with open(video_path, "rb") as f:
-        r = requests.post(
-            f"https://graph.facebook.com/v25.0/{bot.FB_PAGE_ID}/videos",
-            data={"description": caption, "access_token": bot.FB_PAGE_TOKEN},
-            files={"source": f}, timeout=180)
-    if r.status_code == 200:
-        print(f"✅ Facebook publié — {r.json().get('id')}")
-    else:
-        signaler_echec("Facebook quiz", f"HTTP {r.status_code} — {r.text[:200]}")
+    bot.publier_reel_facebook(video_path, caption, "Facebook quiz")
 
 
 def ig_reel(video_url, caption):
