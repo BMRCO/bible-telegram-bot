@@ -1,0 +1,63 @@
+name: Test de voix neuronales (audio)
+
+# Echantillon d'un Psaume avec les voix neuronales de Microsoft (edge-tts).
+# Ne publie RIEN sur les reseaux : les MP3 vont sur la branche echantillons-voix.
+on:
+  workflow_dispatch:
+    inputs:
+      psaume:
+        description: 'Numero du Psaume'
+        required: false
+        type: string
+        default: '23'
+      voix:
+        description: 'Voix, separees par des espaces'
+        required: false
+        type: string
+        default: 'fr-FR-HenriNeural fr-FR-DeniseNeural fr-FR-RemyMultilingualNeural fr-FR-VivienneMultilingualNeural'
+
+permissions:
+  contents: write
+
+jobs:
+  voix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            bible/lsg1910.json
+            scripts/test_voix_edge.py
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install edge-tts and ffmpeg
+        run: |
+          python -m pip install --upgrade pip
+          pip install edge-tts==7.3.1
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Generate samples
+        env:
+          PSAUME: ${{ inputs.psaume }}
+          VOIX: ${{ inputs.voix }}
+        run: python scripts/test_voix_edge.py "$PSAUME" echantillons $VOIX
+
+      - name: Publish samples on the echantillons-voix branch
+        run: |
+          mkdir -p /tmp/ech && cp echantillons/*.mp3 /tmp/ech/
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan echantillons-voix
+          git rm -rq --cached . || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp /tmp/ech/*.mp3 .
+          git add --sparse *.mp3
+          git commit -q -m "Echantillons de voix neuronales"
+          git push -f origin echantillons-voix

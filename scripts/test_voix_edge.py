@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""
+test_voix_edge.py : echantillon d'un Psaume avec les voix neuronales Microsoft
+(celles de « Lecture a voix haute » d'Edge), via le paquet edge-tts.
+
+Ne publie rien. Ne modifie pas bible/lsg1910.json : seuls le pied-de-mouche (¶)
+et les espaces typographiques sont retires de l'entree donnee a la synthese.
+Les references (« 23:1 ») ne sont jamais lues : edge-tts les prend pour des heures.
+
+Usage : python scripts/test_voix_edge.py PSAUME DOSSIER_SORTIE VOIX [VOIX...]
+"""
+
+import asyncio
+import json
+import os
+import subprocess
+import sys
+import tempfile
+
+import edge_tts
+
+BIBLE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bible", "lsg1910.json")
+PAUSE_TITRE = 1.0
+PAUSE_VERSET = 0.5
+DEBIT = "-8%"   # un peu plus lent que la normale : lecture, pas annonce
+
+
+def versets(num):
+    data = json.load(open(BIBLE, encoding="utf-8"))["verses"]
+    out = [v for v in data if v["book_name"] in ("Psaume", "Psaumes") and int(v["chapter"]) == num]
+    out.sort(key=lambda v: int(v["verse"]))
+    if not out:
+        sys.exit(f"Psaume {num} introuvable")
+    return [v["text"] for v in out]
+
+
+def entree_synthese(texte):
+    t = texte.replace("¶", "")
+    for esp in (" ", " ", " ", " ", " "):
+        t = t.replace(esp, " ")
+    return " ".join(t.split())
+
+
+async def segment(texte, voix, chemin):
+    await edge_tts.Communicate(texte, voix, rate=DEBIT).save(chemin)
+
+
+def silence(chemin, secondes):
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i",
+                    "anullsrc=r=24000:cl=mono", "-t", str(secondes), chemin], check=True)
+
+
+def main():
+    if len(sys.argv) < 4:
+        sys.exit(__doc__)
+    num, sortie, voix_liste = int(sys.argv[1]), sys.argv[2], sys.argv[3:]
+    os.makedirs(sortie, exist_ok=True)
+    textes = [f"Psaume {num}."] + [entree_synthese(t) for t in versets(num)]
+    tmp = tempfile.mkdtemp()
+    p_titre, p_verset = os.path.join(tmp, "s1.wav"), os.path.join(tmp, "s2.wav")
+    silence(p_titre, PAUSE_TITRE)
+    silence(p_verset, PAUSE_VERSET)
+
+    for voix in voix_liste:
+        morceaux = []
+        for i, t in enumerate(textes):
+            mp3 = os.path.join(tmp, f"{voix}_{i}.mp3")
+            asyncio.run(segment(t, voix, mp3))
+            wav = mp3[:-4] + ".wav"
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", mp3,
+                            "-ar", "24000", "-ac", "1", wav], check=True)
+            morceaux += [wav, p_titre if i == 0 else p_verset]
+        liste = os.path.join(tmp, f"{voix}.txt")
+        with open(liste, "w") as f:
+            f.writelines(f"file '{m}'\n" for m in morceaux)
+        nom = voix.replace("fr-FR-", "").replace("Neural", "")
+        out = os.path.join(sortie, f"edge_{nom}_psaume{num}.mp3")
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
+                        "-i", liste, "-ac", "1", "-b:a", "64k", out], check=True)
+        print(f"OK {out}")
+
+
+if __name__ == "__main__":
+    main()
