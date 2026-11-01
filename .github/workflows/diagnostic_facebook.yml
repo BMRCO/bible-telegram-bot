@@ -22,16 +22,16 @@ jobs:
           import json, os, sys, urllib.request, urllib.parse
           pid = os.environ.get("FB_PAGE_ID", "").strip()
           tok = os.environ.get("FB_PAGE_TOKEN", "").strip()
-          print("FB_PAGE_ID est un nombre :", "OUI" if pid.isdigit() else "NON")
+          print("::notice::FB_PAGE_ID est un nombre : " + ("OUI" if pid.isdigit() else "NON"))
           if not tok:
               sys.exit("FB_PAGE_TOKEN vide")
           url = "https://graph.facebook.com/v25.0/me?fields=id&" + urllib.parse.urlencode({"access_token": tok})
           try:
               me = json.load(urllib.request.urlopen(url, timeout=30))
           except Exception as e:
-              print("Le jeton est refuse par Facebook :", type(e).__name__)
+              print("::error::Le jeton est refuse par Facebook : " + type(e).__name__)
               sys.exit(1)
           page = me.get("id") == pid
-          print("FB_PAGE_TOKEN est le jeton de la Page FB_PAGE_ID :", "OUI" if page else "NON (jeton d'utilisateur ou d'une autre Page)")
+          print("::notice::FB_PAGE_TOKEN est le jeton de la Page FB_PAGE_ID : " + ("OUI" if page else "NON (jeton d'utilisateur ou d'une autre Page)"))
           sys.exit(0 if page else 1)
           PY
