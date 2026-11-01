@@ -55,7 +55,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout --orphan echantillons-voix
-          git rm -rq --cached . || true
+          git rm -rq --cached --sparse . || true
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           cp /tmp/ech/*.mp3 .
           git add --sparse *.mp3
