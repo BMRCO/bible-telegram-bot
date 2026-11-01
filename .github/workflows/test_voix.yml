@@ -75,6 +75,6 @@ jobs:
           git rm -rq --cached . || true
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           cp /tmp/ech/*.mp3 .
-          git add *.mp3
+          git add --sparse *.mp3
           git commit -q -m "Echantillons de voix (Psaume ${{ inputs.psaume }})"
           git push -f origin echantillons-voix
