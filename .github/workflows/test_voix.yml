@@ -17,7 +17,7 @@ on:
         default: '23'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   voix:
@@ -65,3 +65,16 @@ jobs:
           name: echantillons-voix
           path: echantillons/*.mp3
           retention-days: 14
+
+      - name: Publish samples on the echantillons-voix branch
+        run: |
+          mkdir -p /tmp/ech && cp echantillons/*.mp3 /tmp/ech/
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan echantillons-voix
+          git rm -rq --cached . || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp /tmp/ech/*.mp3 .
+          git add *.mp3
+          git commit -q -m "Echantillons de voix (Psaume ${{ inputs.psaume }})"
+          git push -f origin echantillons-voix
