@@ -23,15 +23,16 @@ import edge_tts.communicate as _comm
 # edge-tts ecrit xml:lang='en-US' en dur dans le SSML. Les voix multilingues
 # (Remy, Vivienne) s'en servent pour deviner la langue : elles commencent alors
 # en anglais ou en espagnol avant de passer au francais. On force le francais.
+# (La balise <lang> n'est pas acceptee par ce point d'acces : pas d'audio.)
 def _mkssml_fr(tc, escaped_text):
     if isinstance(escaped_text, bytes):
         escaped_text = escaped_text.decode("utf-8")
     return (
         "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='fr-FR'>"
-        f"<voice name='{tc.voice}'><lang xml:lang='fr-FR'>"
+        f"<voice name='{tc.voice}'>"
         f"<prosody pitch='{tc.pitch}' rate='{tc.rate}' volume='{tc.volume}'>"
         f"{escaped_text}"
-        "</prosody></lang></voice></speak>"
+        "</prosody></voice></speak>"
     )
 
 _comm.mkssml = _mkssml_fr
@@ -58,8 +59,8 @@ def entree_synthese(texte):
     return " ".join(t.split())
 
 
-async def segment(texte, voix, chemin):
-    await edge_tts.Communicate(texte, voix, rate=DEBIT).save(chemin)
+async def segment(texte, voix, chemin, debit=DEBIT, hauteur="+0Hz"):
+    await edge_tts.Communicate(texte, voix, rate=debit, pitch=hauteur).save(chemin)
 
 
 def silence(chemin, secondes):
@@ -78,19 +79,21 @@ def main():
     silence(p_titre, PAUSE_TITRE)
     silence(p_verset, PAUSE_VERSET)
 
-    for voix in voix_liste:
+    for spec in voix_liste:
+        # « Voix » ou « Voix@debit@hauteur », par ex. fr-FR-RemyMultilingualNeural@-15%@-6Hz
+        voix, debit, hauteur = (spec.split("@") + [DEBIT, "+0Hz"])[:3]
         morceaux = []
         for i, t in enumerate(textes):
-            mp3 = os.path.join(tmp, f"{voix}_{i}.mp3")
-            asyncio.run(segment(t, voix, mp3))
+            mp3 = os.path.join(tmp, f"{spec}_{i}.mp3")
+            asyncio.run(segment(t, voix, mp3, debit, hauteur))
             wav = mp3[:-4] + ".wav"
             subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", mp3,
                             "-ar", "24000", "-ac", "1", wav], check=True)
             morceaux += [wav, p_titre if i == 0 else p_verset]
-        liste = os.path.join(tmp, f"{voix}.txt")
+        liste = os.path.join(tmp, f"liste_{len(os.listdir(tmp))}.txt")
         with open(liste, "w") as f:
             f.writelines(f"file '{m}'\n" for m in morceaux)
-        nom = voix.replace("fr-FR-", "").replace("Neural", "")
+        nom = voix.split("-")[-1].replace("Neural", "") + ("" if spec == voix else "_lent_grave")
         out = os.path.join(sortie, f"edge_{nom}_psaume{num}.mp3")
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
                         "-i", liste, "-ac", "1", "-b:a", "64k", out], check=True)
