@@ -83,7 +83,17 @@ def main():
         # « Voix » ou « Voix@debit@hauteur », par ex. fr-FR-RemyMultilingualNeural@-15%@-6Hz
         voix, debit, hauteur = (spec.split("@") + [DEBIT, "+0Hz"])[:3]
         morceaux = []
-        for i, t in enumerate(textes):
+        if "Multilingual" in voix:
+            # Une voix multilingue devine la langue sur chaque requete. Sur un
+            # morceau court (« Psaume 23. ») elle se trompe : anglais, espagnol.
+            # On lui donne donc tout le Psaume d'un seul bloc, en francais.
+            mp3 = os.path.join(tmp, f"{spec}_bloc.mp3")
+            asyncio.run(segment(" ".join(textes), voix, mp3, debit, hauteur))
+            textes_v = []
+            morceaux = [mp3]
+        else:
+            textes_v = textes
+        for i, t in enumerate(textes_v):
             mp3 = os.path.join(tmp, f"{spec}_{i}.mp3")
             asyncio.run(segment(t, voix, mp3, debit, hauteur))
             wav = mp3[:-4] + ".wav"
