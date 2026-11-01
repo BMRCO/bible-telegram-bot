@@ -1,0 +1,67 @@
+name: Test de voix (audio)
+
+# Genere un echantillon audio d'un Psaume pour choisir une voix.
+# Ne publie RIEN : les MP3 sont joints au run, dans « Artifacts ».
+on:
+  workflow_dispatch:
+    inputs:
+      voix:
+        description: 'Voix Piper (chemin sur HuggingFace, sans .onnx)'
+        required: false
+        type: string
+        default: 'fr/fr_FR/upmc/medium/fr_FR-upmc-medium'
+      psaume:
+        description: 'Numero du Psaume'
+        required: false
+        type: string
+        default: '23'
+
+permissions:
+  contents: read
+
+jobs:
+  voix:
+    # Epingle le 9 octobre 2026 (voir les autres workflows).
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            bible/lsg1910.json
+            scripts/test_voix.py
+          sparse-checkout-cone-mode: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install piper and ffmpeg
+        run: |
+          python -m pip install --upgrade pip
+          pip install piper-tts==1.8.0
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Download voice
+        env:
+          VOIX: ${{ inputs.voix }}
+        run: |
+          base="https://huggingface.co/rhasspy/piper-voices/resolve/main/${VOIX}"
+          nom="$(basename "$VOIX")"
+          curl -fsSL -o "${nom}.onnx" "${base}.onnx"
+          curl -fsSL -o "${nom}.onnx.json" "${base}.onnx.json"
+          echo "MODELE=${nom}.onnx" >> "$GITHUB_ENV"
+
+      - name: Generate sample
+        env:
+          PSAUME: ${{ inputs.psaume }}
+        run: python scripts/test_voix.py "$MODELE" "$PSAUME" echantillons
+
+      - name: Upload samples
+        uses: actions/upload-artifact@v4
+        with:
+          name: echantillons-voix
+          path: echantillons/*.mp3
+          retention-days: 14
