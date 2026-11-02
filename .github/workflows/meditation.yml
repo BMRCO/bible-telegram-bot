@@ -92,14 +92,14 @@ jobs:
       - name: Publish test video on the echantillons-voix branch
         if: ${{ inputs.essai }}
         run: |
-          mkdir -p /tmp/ech && cp echantillons/*.mp4 /tmp/ech/
+          mkdir -p /tmp/ech && cp echantillons/* /tmp/ech/
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout --orphan echantillons-voix
           git rm -rq --cached . || true
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          cp /tmp/ech/*.mp4 .
-          git add *.mp4
+          cp /tmp/ech/* .
+          git add -A
           git commit -q -m "Essai meditation narree"
           git push -f origin echantillons-voix
 

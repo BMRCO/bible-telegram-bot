@@ -66,6 +66,18 @@ TITLES_FILE   = "psaumes_titres.json"   # frase da Parola (cartão)
 
 ESSAI = os.environ.get("ESSAI", "") == "1"   # gera o vídeo, não publica nada
 
+# Playlist da série narrada (criada pelo bot se não existir).
+PLAYLIST_NARREE = "🎙️ Les Psaumes lus à voix haute"
+PLAYLIST_DESC = (
+    "Les 150 Psaumes lus à voix haute, en entier, dans le texte de la Bible "
+    "Louis Segond 1910 (domaine public), sans commentaire ajouté. Un Psaume "
+    "chaque jour. Le texte complet est accessible gratuitement, hors ligne et "
+    "sans publicité sur LaBible.app."
+)
+
+# Linha de tempo do último vídeo gerado (capítulos e legendas do YouTube).
+TIMELINE = {}
+
 # Configuração
 W, H = 1920, 1080
 FPS = 30
@@ -415,6 +427,9 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     for d0, audio in zip(debuts, voix_versets):
         poser(audio, d0 + LEAD)
     piste = piste[:int(total_secs * SR)]
+    TIMELINE.clear()
+    TIMELINE.update(intro=intro_secs, debuts=debuts, durees=durees,
+                    versets=list(verses_with_idx), total=total_secs)
     narration_wav = "narration/narration.wav"
     with wave.open(narration_wav, "wb") as w:
         w.setnchannels(1)
@@ -707,6 +722,109 @@ def post_to_facebook(video_id, num, part_label=None):
         signaler_echec("Facebook méditation", f"HTTP {r.status_code} — {r.text[:200]}")
 
 
+def _hms(t, srt=False):
+    t = max(0.0, t)
+    h, m, sec = int(t // 3600), int(t % 3600 // 60), t % 60
+    if srt:
+        return f"{h:02d}:{m:02d}:{int(sec):02d},{int(round((sec % 1) * 1000)) % 1000:03d}"
+    return f"{h}:{m:02d}:{int(sec):02d}" if h else f"{m}:{int(sec):02d}"
+
+
+def _debut_verset(texte, n=6):
+    mots = texte_a_lire(clean_text(strip_rubric(texte))).rstrip(".").split()
+    return " ".join(mots[:n]) + ("…" if len(mots) > n else "")
+
+
+def chapitres_youtube():
+    """Capítulos (« moments clés » no YouTube e no Google). Regras do YouTube :
+    o primeiro em 0:00, pelo menos 3, cada um com 10 s ou mais. Os versículos
+    duram menos : juntam-se versículos seguidos até ~15 s."""
+    if not TIMELINE:
+        return ""
+    debuts, durees, versets = TIMELINE["debuts"], TIMELINE["durees"], TIMELINE["versets"]
+    groupes, cur = [], None
+    for i, (d0, du) in enumerate(zip(debuts, durees)):
+        if cur is None:
+            cur = [i, i, 0.0 if not groupes else d0]
+        cur[1] = i
+        if d0 + du - cur[2] >= 15:
+            groupes.append(cur)
+            cur = None
+    if cur is not None:
+        if groupes and (TIMELINE["total"] - cur[2]) < 10:
+            groupes[-1][1] = cur[1]          # trop court : fusion avec le précédent
+        else:
+            groupes.append(cur)
+    if len(groupes) < 3:
+        return ""
+    lignes = []
+    for a, b, t0 in groupes:
+        va, vb = versets[a][0], versets[b][0]
+        ref = f"v. {va}" if va == vb else f"v. {va}-{vb}"
+        lignes.append(f"{_hms(t0)} {ref} · {_debut_verset(versets[a][1])}")
+    return "\n".join(lignes)
+
+
+def sous_titres_srt(path):
+    """Legendas com o texto exato de cada versículo, sincronizadas com a voz.
+    O YouTube indexa este texto : é o que mais pesa na pesquisa."""
+    if not TIMELINE:
+        return None
+    blocs = []
+    for i, ((vnum, vtext), d0, du) in enumerate(
+            zip(TIMELINE["versets"], TIMELINE["debuts"], TIMELINE["durees"]), 1):
+        txt = texte_a_lire(clean_text(strip_rubric(vtext)))
+        blocs.append(f"{i}\n{_hms(d0 + LEAD - 0.2, True)} --> {_hms(d0 + du - FADE_DURATION, True)}\n{txt}\n")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(blocs))
+    return path
+
+
+def _extras_youtube(youtube, video_id, num):
+    """Legendas e playlist. Pedem o âmbito OAuth youtube.force-ssl : com o
+    token atual (youtube.upload) dão 403. NÃO é uma avaria : aviso no log,
+    o vídeo fica publicado e a run fica verde."""
+    from googleapiclient.http import MediaFileUpload
+    try:
+        srt = sous_titres_srt("psaume.srt")
+        if srt:
+            youtube.captions().insert(
+                part="snippet",
+                body={"snippet": {"videoId": video_id, "language": "fr",
+                                  "name": "Français", "isDraft": False}},
+                media_body=MediaFileUpload(srt, mimetype="application/octet-stream"),
+            ).execute()
+            print("✅ Legendas YouTube enviadas")
+    except Exception as e:
+        print(f"⚠️  Legendas não enviadas (âmbito OAuth ?) : {str(e)[:160]}")
+    try:
+        pl_id = None
+        req = youtube.playlists().list(part="snippet", mine=True, maxResults=50)
+        while req is not None and pl_id is None:
+            res = req.execute()
+            for it in res.get("items", []):
+                if it["snippet"]["title"] == PLAYLIST_NARREE:
+                    pl_id = it["id"]
+                    break
+            req = youtube.playlists().list_next(req, res)
+        if pl_id is None:
+            pl_id = youtube.playlists().insert(
+                part="snippet,status",
+                body={"snippet": {"title": PLAYLIST_NARREE, "description": PLAYLIST_DESC,
+                                  "defaultLanguage": "fr"},
+                      "status": {"privacyStatus": "public"}},
+            ).execute()["id"]
+            print(f"✅ Playlist criada : {PLAYLIST_NARREE}")
+        youtube.playlistItems().insert(
+            part="snippet",
+            body={"snippet": {"playlistId": pl_id,
+                              "resourceId": {"kind": "youtube#video", "videoId": video_id}}},
+        ).execute()
+        print("✅ Vídeo adicionado à playlist")
+    except Exception as e:
+        print(f"⚠️  Playlist não atualizada (âmbito OAuth ?) : {str(e)[:160]}")
+
+
 def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
     """Upload do vídeo para YouTube como vídeo normal (não Short)."""
     if not YT_CLIENT_ID or not YT_CLIENT_SECRET or not YT_REFRESH_TOKEN:
@@ -736,31 +854,58 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
 
     head = _meditation_head(num, part_label)
     chapter_url = f"{APP_URL}/lsg/psaumes/{num}"
+    theme = get_psaume_theme(num)
+    chapitres = chapitres_youtube()
+    # Les deux premières lignes sont celles que YouTube et Google affichent :
+    # le nom du Psaume, ce que c'est, la traduction. Les 3 premiers hashtags
+    # s'affichent au-dessus du titre.
     description = (
-        f"🎵 Méditation · {head}\n"
-        f"Bible Louis Segond 1910 · lecture à voix haute (voix de synthèse)\n\n"
-        f"━━━━━━━━━━━━━━━━━━━━━\n\n"
+        f"Psaume {num} lu à voix haute, en entier"
+        + (f" : {theme}" if theme else "") + ".\n"
+        f"Bible Louis Segond 1910 (LSG 1910), texte intégral, sans commentaire. "
+        f"Voix de synthèse, musique douce.\n\n"
+        f"📖 Lire le Psaume {num} gratuitement : {chapter_url}\n"
+        f"🎙️ Tous les Psaumes lus à voix haute : la playlist « {PLAYLIST_NARREE} »\n\n"
+        + (f"━━━━━━━━━━━━━━━━━━━━━\n{chapitres}\n\n" if chapitres else "")
+        + f"━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{verses_text}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"{PSAUME_CTA}\n\n"
-        f"📖 Lire le psaume complet : {chapter_url}\n"
-        f"🔔 Abonnez-vous pour une méditation chaque jour 🙏\n\n"
+        f"{PSAUME_CTA}\n"
+        f"🔔 Abonnez-vous : un Psaume chaque jour.\n"
         f"🔗 {APP_URL}/liens\n\n"
-        f"#LaBibleApp #Psaumes #Méditation #Bible #ParoleDeDieu #LSG1910"
+        f"#Psaume{num} #Psaumes #Bible #LSG1910 #ParoleDeDieu #BibleAudio #LaBibleApp"
     )
-    # YouTube limita descrição a 5000 chars
+    # YouTube limita descrição a 5000 chars : corta-se na lista de versículos,
+    # nunca nos capítulos nem nas primeiras linhas.
     if len(description) > 5000:
-        description = description[:4997] + "..."
+        excesso = len(description) - 5000 + 40
+        corte = verses_text[:max(0, len(verses_text) - excesso)]
+        corte = corte[:corte.rfind("\n")] if "\n" in corte else corte
+        description = description.replace(
+            verses_text, corte + f"\n… (suite : {chapter_url})")
+        description = description[:5000]
+
+    tags = [
+        f"Psaume {num}", f"Psaume {num} lecture", f"Psaume {num} audio",
+        f"Psaume {num} Louis Segond", f"Psaume {num} lu",
+    ]
+    if theme:
+        tags.append(theme)
+    tags += ["Psaumes", "Psaumes audio", "Bible audio", "Bible audio français",
+             "Bible Louis Segond 1910", "LSG 1910", "lecture de la Bible",
+             "Parole de Dieu", "méditation biblique", "Bible en français"]
+    # Limite YouTube : 500 caractères pour l'ensemble des tags.
+    while len(",".join(tags)) > 480:
+        tags.pop()
 
     body = {
         "snippet": {
             "title": title,
             "description": description,
-            "tags": [
-                "Bible", "Psaumes", "Méditation", "LSG1910",
-                "ParoleDeDieu", "Foi", "Prière", "Chrétien", "BibleFrancaise",
-            ],
+            "tags": tags,
             "categoryId": "22",
+            "defaultLanguage": "fr",
+            "defaultAudioLanguage": "fr",
         },
         "status": {
             "privacyStatus": "public",
@@ -797,6 +942,7 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
     except Exception as e:
         print(f"⚠️  Vignette non definie : {str(e)[:200]}")
 
+    _extras_youtube(youtube, video_id, num)
     return video_id
 
 
@@ -893,6 +1039,9 @@ def main():
     if ESSAI:
         os.makedirs("echantillons", exist_ok=True)
         shutil.copy(video_path, os.path.join("echantillons", os.path.basename(video_path)))
+        sous_titres_srt(os.path.join("echantillons", f"psaume_{num}.srt"))
+        with open(os.path.join("echantillons", f"psaume_{num}_chapitres.txt"), "w", encoding="utf-8") as f:
+            f.write(_video_title(num, part_label) + "\n\n" + chapitres_youtube() + "\n")
         print("🧪 ESSAI : vidéo dans echantillons/, rien n'est publié.")
         return
 
