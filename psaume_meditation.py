@@ -660,9 +660,10 @@ def post_to_telegram(video_path, num, part_label=None):
     # formule retiree partout ailleurs — et se retrouvait empilee avec la
     # cloture tournante. On garde la phrase de fond, la cloture varie.
     # Les hashtags restent : la legende est recopiee a la main vers TikTok.
+    # Meme titre que sur YouTube (demande de BC, 2 novembre 2026).
+    titre = _video_title(num, part_label).replace("&", "&amp;").replace("<", "&lt;")
     caption = (
-        f"🎵 <b>{head}</b>\n"
-        f"Bible Louis Segond 1910\n\n"
+        f"🎙️ <b>{titre}</b>\n\n"
         f"{_strip_share_clause(PSAUME_CTA)} "
         f"{_rotate(TG_CLOSERS, f'psaume-{num}')}\n"
         f"📖 {chapter_url}\n\n"
