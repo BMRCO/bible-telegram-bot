@@ -113,7 +113,7 @@ def _mkssml_fr(tc, escaped_text):
 _comm.mkssml = _mkssml_fr
 
 # Sufixo padronizado do título (igual aos vídeos já publicados)
-TITLE_SUFFIX = "Lecture Complète | Bible LSG1910"
+TITLE_SUFFIX = "Lecture Audio | Bible LSG1910"   # serie narree (2 nov. 2026)
 
 # CTA partilhado da série (vouvoiement, sem clickbait)
 PSAUME_CTA = "Que ce Psaume vous accompagne aujourd'hui. Partagez-le 🙏"
@@ -638,7 +638,7 @@ def _meditation_head(num, part_label=None):
 
 
 def _video_title(num, part_label=None):
-    """Título YouTube: 'Psaume N : Thème (part) | Lecture Complète | Bible LSG1910'."""
+    """Título YouTube: 'Psaume N : Thème (part) | Lecture Audio | Bible LSG1910'."""
     theme = get_psaume_theme(num)
     title = f"Psaume {num}" + (f" : {theme}" if theme else "")
     if part_label:
@@ -932,6 +932,7 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
         sub = theme if theme else "Bible Louis Segond 1910"
         if part_label:
             sub = f"{sub} ({part_label})"
+        sub = f"{sub} · Lecture audio"
         thumb = make_thumbnail(f"Psaume {num}", subtitle=sub,
                                palette=get_palette(num), out="thumb_psaume.png")
         youtube.thumbnails().set(
