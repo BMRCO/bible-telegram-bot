@@ -613,18 +613,19 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
 
 
 def _meditation_head(num, part_label=None):
-    """Cabeçalho legível p/ captions: 'Psaume N — Thème (part)' com fallback."""
+    """Cabeçalho legível p/ captions: 'Psaume N : Thème (part)' com fallback.
+    Sem travessão (decisão de BC, 2 de novembro de 2026)."""
     theme = get_psaume_theme(num)
-    head = f"Psaume {num}" + (f" — {theme}" if theme else "")
+    head = f"Psaume {num}" + (f" : {theme}" if theme else "")
     if part_label:
         head += f" ({part_label})"
     return head
 
 
 def _video_title(num, part_label=None):
-    """Título YouTube/Facebook: 'Psaume N — Thème (part) | Lecture Complète | Bible LSG1910'."""
+    """Título YouTube: 'Psaume N : Thème (part) | Lecture Complète | Bible LSG1910'."""
     theme = get_psaume_theme(num)
-    title = f"Psaume {num}" + (f" — {theme}" if theme else "")
+    title = f"Psaume {num}" + (f" : {theme}" if theme else "")
     if part_label:
         title += f" ({part_label})"
     title += f" | {TITLE_SUFFIX}"
@@ -729,14 +730,14 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
 
     # Lista de versículos para descrição
     verses_text = "\n".join(
-        f"Psaume {num}:{vnum} — {clean_text(strip_rubric(vtext)).rstrip('.')}."
+        f"Psaume {num}:{vnum} · {clean_text(strip_rubric(vtext)).rstrip('.')}."
         for vnum, vtext in verses_with_idx
     )
 
     head = _meditation_head(num, part_label)
     chapter_url = f"{APP_URL}/lsg/psaumes/{num}"
     description = (
-        f"🎵 Méditation — {head}\n"
+        f"🎵 Méditation · {head}\n"
         f"Bible Louis Segond 1910 · lecture à voix haute (voix de synthèse)\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{verses_text}\n\n"
