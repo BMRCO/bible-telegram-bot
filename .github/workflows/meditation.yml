@@ -19,6 +19,11 @@ on:
         required: false
         type: string
         default: ''
+      essai:
+        description: 'Essai : genere la video sans rien publier (branche echantillons-voix)'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -51,7 +56,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pillow requests numpy google-api-python-client google-auth-httplib2 google-auth-oauthlib
+          pip install pillow requests numpy edge-tts==7.3.1 google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
@@ -69,6 +74,7 @@ jobs:
           IN_PSAUME: ${{ inputs.psaume }}
           # Par l'environnement : une entree libre ne doit jamais etre interpolee dans un script.
           IN_VERSES: ${{ inputs.verses }}
+          ESSAI: ${{ inputs.essai && '1' || '' }}
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
@@ -83,6 +89,20 @@ jobs:
             python psaume_meditation.py
           fi
 
+      - name: Publish test video on the echantillons-voix branch
+        if: ${{ inputs.essai }}
+        run: |
+          mkdir -p /tmp/ech && cp echantillons/*.mp4 /tmp/ech/
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan echantillons-voix
+          git rm -rq --cached . || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp /tmp/ech/*.mp4 .
+          git add *.mp4
+          git commit -q -m "Essai meditation narree"
+          git push -f origin echantillons-voix
+
       - name: Commit progress
         # Ajoute le 10 octobre 2026. SANS CE `if:`, GitHub saute ce pas des
         # que le pas precedent echoue. Depuis que finaliser() sort en code 1
@@ -91,7 +111,7 @@ jobs:
         # deja recu. Republier est pire que rater. !cancelled() = on commite
         # en succes ET en echec, mais pas si le job a ete tue (timeout) :
         # dans ce cas on ne sait pas ou le script s'est arrete.
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && !inputs.essai }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

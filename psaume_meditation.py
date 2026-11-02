@@ -2,12 +2,14 @@
 psaume_meditation.py
 ====================
 Gera vídeo horizontal 1920×1080 de meditação completa de um Salmo.
-Versículo a versículo com fade lento, música suave de fundo.
+Versículo a versículo com fade lento, NARRADO (voz neuronal Henri, edge-tts)
+e música suave por baixo. Cada versículo fica no ecrã o tempo da sua leitura.
 
 Uso:
     python psaume_meditation.py            → Salmo seguinte (progresso automático)
     python psaume_meditation.py 23         → Salmo 23 específico
     python psaume_meditation.py 119 1-22   → Salmo 119 versos 1-22 (para divisão)
+    ESSAI=1 python psaume_meditation.py 23 → gera o vídeo em echantillons/, NÃO publica
 
 Estado salvo em: progress_meditation.json
 Temas dos Salmos:  psaumes_themes.json   (tema editorial -> título/caption)
@@ -23,8 +25,15 @@ import random
 import subprocess
 import glob
 import shutil
+import asyncio
+import time
+import wave
+import bisect
 
+import numpy as np
 import requests
+import edge_tts
+import edge_tts.communicate as _comm
 from PIL import Image, ImageDraw, ImageFont
 
 # Reutiliza utilitários do bot
@@ -55,13 +64,41 @@ PROGRESS_FILE = "progress_meditation.json"
 THEMES_FILE   = "psaumes_themes.json"   # tema editorial (título/caption)
 TITLES_FILE   = "psaumes_titres.json"   # frase da Parola (cartão)
 
+ESSAI = os.environ.get("ESSAI", "") == "1"   # gera o vídeo, não publica nada
+
 # Configuração
 W, H = 1920, 1080
 FPS = 30
-SECS_PER_VERSE = 10        # 10s por versículo (meditação lenta)
-SECS_INTRO     = 5
+SECS_INTRO     = 5          # mínimo: cresce se « Psaume N » demorar mais
 SECS_OUTRO     = 5
-FADE_DURATION  = 1.0        # 1s de fade in/out por versículo
+SECS_VERSE_MIN = 4.0        # um versículo curto fica pelo menos 4 s
+FADE_DURATION  = 0.8        # fade in/out por versículo
+
+# ─── Narração ───
+# Escolhida por BC a 2 de novembro de 2026 (amostras do Salmo 23) :
+# Henri, débito -8 %, tom normal. Remy (multilingue) foi afastado : começa
+# em inglês ou espanhol. Gérard e as vozes Piper também foram afastados.
+VOIX          = "fr-FR-HenriNeural"
+DEBIT_VOIX    = "-8%"
+SR            = 24000       # Hz, mono
+LEAD          = 0.8         # silêncio antes da voz (o texto aparece primeiro)
+TAIL          = 1.4         # silêncio depois da voz, antes do versículo seguinte
+VOLUME_MUSIQUE = 0.12       # a música fica por baixo da voz (antes : 0.5 sem voz)
+
+# edge-tts escreve xml:lang='en-US' no SSML. Forçamos o francês (mesmo SSML
+# que as amostras aprovadas ; a balise <lang> é recusada pelo serviço).
+def _mkssml_fr(tc, escaped_text):
+    if isinstance(escaped_text, bytes):
+        escaped_text = escaped_text.decode("utf-8")
+    return (
+        "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='fr-FR'>"
+        f"<voice name='{tc.voice}'>"
+        f"<prosody pitch='{tc.pitch}' rate='{tc.rate}' volume='{tc.volume}'>"
+        f"{escaped_text}"
+        "</prosody></voice></speak>"
+    )
+
+_comm.mkssml = _mkssml_fr
 
 # Sufixo padronizado do título (igual aos vídeos já publicados)
 TITLE_SUFFIX = "Lecture Complète | Bible LSG1910"
@@ -283,6 +320,44 @@ def fetch_psaume_verses(num, vfrom=None, vto=None):
     return verses
 
 
+def texte_a_lire(texte):
+    """Entrada da síntese = o texto mostrado no ecrã, com espaços normais.
+    O ficheiro bíblico nunca é alterado : só esta cópia em memória."""
+    t = texte
+    for esp in ("\u00a0", "\u202f", "\u2009", "\u2007", "\u200a"):
+        t = t.replace(esp, " ")
+    return " ".join(t.split())
+
+
+async def _tts(texte, chemin):
+    await edge_tts.Communicate(texte, VOIX, rate=DEBIT_VOIX).save(chemin)
+
+
+def synthese(texte, base):
+    """Lê `texte` com a voz escolhida. Devolve um array float32 mono a SR Hz.
+    3 tentativas : o serviço da Microsoft falha de vez em quando."""
+    mp3, wav = base + ".mp3", base + ".wav"
+    derniere = None
+    for essai in range(3):
+        try:
+            asyncio.run(_tts(texte, mp3))
+            r = subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", mp3,
+                                "-ar", str(SR), "-ac", "1", "-sample_fmt", "s16", wav],
+                               capture_output=True, text=True)
+            if r.returncode != 0:
+                raise RuntimeError(f"ffmpeg : {r.stderr[-200:]}")
+            with wave.open(wav, "rb") as w:
+                data = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16)
+            if len(data) < SR // 10:
+                raise RuntimeError("áudio vazio")
+            return data.astype(np.float32) / 32768.0
+        except Exception as e:
+            derniere = e
+            print(f"⚠️  Síntese falhou (tentativa {essai + 1}/3) : {e}")
+            time.sleep(5 * (essai + 1))
+    raise RuntimeError(f"síntese de voz impossível : {derniere}")
+
+
 def make_meditation_video(num, verses_with_idx, part_label=None):
     """
     Gera vídeo de meditação.
@@ -290,7 +365,6 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     part_label: ex. "1-22" se for Salmo 119 dividido
     """
     n_verses = len(verses_with_idx)
-    TOTAL = FPS * (SECS_INTRO + n_verses * SECS_PER_VERSE + SECS_OUTRO)
 
     # Paleta por rotação (número do Salmo)
     BG_TOP, BG_BOTTOM, GOLD, GOLD_BRIGHT, WHITE, SIL = get_palette(num)
@@ -309,6 +383,44 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
         text_q = f"« {cleaned} »"
         fv, lines, lh = autosize_font(d_tmp, text_q, MAX_TW, max_text_h)
         verse_layouts.append((vnum, fv, lines, lh))
+
+    # ─── Narração : uma síntese por versículo, para saber quanto dura cada um ───
+    os.makedirs("narration", exist_ok=True)
+    voix_titre = synthese(f"Psaume {num}.", "narration/titre")
+    voix_versets = []
+    for i, (vnum, vtext) in enumerate(verses_with_idx):
+        lu = texte_a_lire(clean_text(strip_rubric(vtext)))
+        voix_versets.append(synthese(lu, f"narration/v{i:03d}"))
+        print(f"  🎙️  {i + 1}/{n_verses}", end="\r")
+    print()
+
+    # Linha de tempo : intro, depois cada versículo = LEAD + voz + TAIL.
+    T_TITRE = 1.0                                   # depois do fade-in do cartão
+    intro_secs = max(SECS_INTRO, T_TITRE + len(voix_titre) / SR + 1.5)
+    durees = [max(SECS_VERSE_MIN, LEAD + len(a) / SR + TAIL) for a in voix_versets]
+    debuts = []
+    t = intro_secs
+    for d in durees:
+        debuts.append(t)
+        t += d
+    fin_versets = t
+    total_secs = fin_versets + SECS_OUTRO
+    TOTAL = int(round(total_secs * FPS))
+
+    piste = np.zeros(int(total_secs * SR) + SR, dtype=np.float32)
+    def poser(audio, a_secs):
+        i0 = int(a_secs * SR)
+        piste[i0:i0 + len(audio)] += audio
+    poser(voix_titre, T_TITRE)
+    for d0, audio in zip(debuts, voix_versets):
+        poser(audio, d0 + LEAD)
+    piste = piste[:int(total_secs * SR)]
+    narration_wav = "narration/narration.wav"
+    with wave.open(narration_wav, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(SR)
+        w.writeframes((np.clip(piste, -1, 1) * 32767).astype(np.int16).tobytes())
 
     f_title     = ImageFont.truetype(FONT_SERIF_BOLD, 88)
     f_theme     = ImageFont.truetype(FONT_SERIF, 50)   # tema editorial (intro)
@@ -348,8 +460,8 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
         )
 
         # ---------- INTRO ----------
-        if s < SECS_INTRO:
-            a = ease(s / 1.0) if s < 1.0 else (ease((SECS_INTRO - s) / 1.0) if s > SECS_INTRO - 1.0 else 1.0)
+        if s < intro_secs:
+            a = ease(s / 1.0) if s < 1.0 else (ease((intro_secs - s) / 1.0) if s > intro_secs - 1.0 else 1.0)
             c_title  = lerp_color(BG_TOP, GOLD_BRIGHT, a)
             c_theme  = lerp_color(BG_TOP, GOLD, a)
             c_phrase = lerp_color(BG_TOP, WHITE, a)
@@ -398,17 +510,16 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
             draw.text(((W - (bb2[2] - bb2[0])) // 2, y), sub, font=f_subsmall, fill=c_sub)
 
         # ---------- VERSÍCULOS ----------
-        elif s < SECS_INTRO + n_verses * SECS_PER_VERSE:
-            verse_s = s - SECS_INTRO
-            verse_idx = int(verse_s / SECS_PER_VERSE)
-            verse_idx = min(verse_idx, n_verses - 1)
-            local_s = verse_s - verse_idx * SECS_PER_VERSE
+        elif s < fin_versets:
+            verse_idx = min(bisect.bisect_right(debuts, s) - 1, n_verses - 1)
+            local_s = s - debuts[verse_idx]
+            duree_v = durees[verse_idx]
 
             # Fade in / hold / fade out
             if local_s < FADE_DURATION:
                 a = ease(local_s / FADE_DURATION)
-            elif local_s > SECS_PER_VERSE - FADE_DURATION:
-                a = ease((SECS_PER_VERSE - local_s) / FADE_DURATION)
+            elif local_s > duree_v - FADE_DURATION:
+                a = ease((duree_v - local_s) / FADE_DURATION)
             else:
                 a = 1.0
 
@@ -446,7 +557,7 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
 
         # ---------- OUTRO ----------
         else:
-            outro_s = s - SECS_INTRO - n_verses * SECS_PER_VERSE
+            outro_s = s - fin_versets
             a = ease(outro_s / 1.0) if outro_s < 1.0 else 1.0
             color_app = lerp_color(BG_TOP, GOLD_BRIGHT, a)
             color_sub = lerp_color(BG_TOP, SIL, a * 0.7)
@@ -467,38 +578,36 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
             sw2 = bb3[2] - bb3[0]
             draw.text(((W - sw2) // 2, H // 2 + 110), sub2, font=f_outro_sub, fill=color_sub)
 
-        img.save(f"frames/frame_{f:04d}.png")
+        img.save(f"frames/frame_{f:05d}.png")
 
-    # Música — rotação por número do Salmo (cada Salmo usa uma faixa diferente,
-    # nunca duas seguidas iguais quando há ≥2 faixas). A música faz loop
-    # automático (-stream_loop -1) para cobrir toda a duração do vídeo, por isso
-    # o comprimento de cada faixa não importa.
+    # Voz + música. A música (rotação por nº do Salmo, em loop) fica por baixo
+    # da voz e desaparece nos 3 últimos segundos. A duração é a da narração,
+    # que cobre exatamente o vídeo.
     output_path = f"meditation_psaume_{num}{'_' + part_label.replace('-', '_') if part_label else ''}.mp4"
-    video_duration = SECS_INTRO + n_verses * SECS_PER_VERSE + SECS_OUTRO
-    print(f"⏱️  Duração do vídeo: {video_duration}s ({video_duration/60:.1f} min)")
+    print(f"⏱️  Duração do vídeo: {total_secs:.0f}s ({total_secs/60:.1f} min)")
 
-    # Só faixas "seguras" (Pixabay), rotação por nº do Salmo. Ignora ficheiros
-    # com nome de título de vídeo do YouTube (risco de reclamação Content ID).
     music_file = pick_safe_music(num)
-
+    cmd = ['ffmpeg', '-y', '-loglevel', 'error',
+           '-framerate', str(FPS), '-i', 'frames/frame_%05d.png',
+           '-i', narration_wav]
     if music_file:
-        subprocess.run([
-            'ffmpeg', '-framerate', str(FPS), '-i', 'frames/frame_%04d.png',
-            '-stream_loop', '-1', '-i', music_file,
-            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
-            '-c:a', 'aac', '-b:a', '192k',
-            '-af', 'volume=0.5',
-            '-shortest', output_path, '-y',
-        ], capture_output=True)
+        fondu = max(0.0, total_secs - 3)
+        cmd += ['-stream_loop', '-1', '-i', music_file,
+                '-filter_complex',
+                f"[2:a]volume={VOLUME_MUSIQUE},afade=t=out:st={fondu:.2f}:d=3[m];"
+                f"[1:a][m]amix=inputs=2:duration=first:normalize=0[a]",
+                '-map', '0:v', '-map', '[a]']
     else:
-        print("⚠️  Sem música disponível")
-        subprocess.run([
-            'ffmpeg', '-framerate', str(FPS), '-i', 'frames/frame_%04d.png',
-            '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
-            output_path, '-y',
-        ], capture_output=True)
+        print("⚠️  Sem música disponível : só a voz")
+        cmd += ['-map', '0:v', '-map', '1:a']
+    cmd += ['-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '20',
+            '-c:a', 'aac', '-b:a', '192k', '-shortest', output_path]
+    r = subprocess.run(cmd, capture_output=True, text=True)
 
     shutil.rmtree("frames", ignore_errors=True)
+    shutil.rmtree("narration", ignore_errors=True)
+    if r.returncode != 0 or not os.path.exists(output_path):
+        raise RuntimeError(f"ffmpeg (montagem) : {r.stderr[-300:]}")
     print(f"✅ Vídeo: {output_path}")
     return output_path
 
@@ -562,34 +671,39 @@ def post_to_telegram(video_path, num, part_label=None):
         signaler_echec("Telegram méditation", f"{type(e).__name__} : {e}")
 
 
-def post_to_facebook(video_path, num, part_label=None):
-    """Publica a meditação como vídeo na página Facebook."""
-    if not FB_PAGE_TOKEN:
-        signaler_echec("Facebook méditation", "FB_PAGE_TOKEN vide ou absent")
+def post_to_facebook(video_id, num, part_label=None):
+    """Publica na página Facebook um post com o link do vídeo YouTube.
+
+    O vídeo em si não vai para o Facebook : /videos pede publish_video, que a
+    app já não oferece, e os Reels limitam-se a 90 s. Um Salmo narrado dura
+    vários minutos. O post de link só pede pages_manage_posts."""
+    if not FB_PAGE_TOKEN or not FB_PAGE_ID:
+        signaler_echec("Facebook méditation", "FB_PAGE_TOKEN ou FB_PAGE_ID vide")
+        return
+    if not video_id:
+        signaler_echec("Facebook méditation", "pas de vidéo YouTube : rien à partager")
         return
     head = _meditation_head(num, part_label)
     chapter_url = f"{APP_URL}/lsg/psaumes/{num}"
-    desc = (
-        f"🎵 {head}\n"
-        f"Bible Louis Segond 1910\n\n"
-        f"{PSAUME_CTA}\n\n"
+    message = (
+        f"🎙️ {head}\n"
+        f"Lecture à voix haute · Bible Louis Segond 1910\n\n"
+        f"{_strip_share_clause(PSAUME_CTA)}\n\n"
         f"📖 Lisez le psaume complet gratuitement → {chapter_url}\n\n"
         f"#LaBibleApp #Psaumes #Méditation #Bible #LSG1910 #ParoleDeDieu"
     )
-    try:
-        with open(video_path, "rb") as f:
-            r = requests.post(
-                f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/videos",
-                data={"title": _video_title(num, part_label),
-                      "description": desc, "access_token": FB_PAGE_TOKEN},
-                files={"source": f}, timeout=300,
-            )
-        if r.status_code == 200:
-            print(f"✅ Facebook publié — {r.json().get('id')}")
-        else:
-            signaler_echec("Facebook méditation", f"HTTP {r.status_code} — {r.text[:200]}")
-    except Exception as e:
-        signaler_echec("Facebook méditation", f"{type(e).__name__} : {e}")
+    r = requests.post(
+        f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/feed",
+        data={"message": message,
+              "link": f"https://www.youtube.com/watch?v={video_id}",
+              "access_token": FB_PAGE_TOKEN},
+        timeout=60,
+    )
+    if r.status_code == 200:
+        print(f"✅ Facebook publié — {r.json().get('id')}")
+    else:
+        # Nunca o URL do pedido : leva o token.
+        signaler_echec("Facebook méditation", f"HTTP {r.status_code} — {r.text[:200]}")
 
 
 def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
@@ -623,7 +737,7 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
     chapter_url = f"{APP_URL}/lsg/psaumes/{num}"
     description = (
         f"🎵 Méditation — {head}\n"
-        f"Bible Louis Segond 1910\n\n"
+        f"Bible Louis Segond 1910 · lecture à voix haute (voix de synthèse)\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{verses_text}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n\n"
@@ -766,16 +880,29 @@ def main():
     print(f"📖 {len(verses)} versículos")
 
     # ─── Gerar vídeo ───
-    video_path = make_meditation_video(num, verses, part_label)
+    # Sem vídeo (voz ou ffmpeg em falha) nada é publicado e a progressão não
+    # avança : o mesmo Salmo volta a ser tentado amanhã.
+    try:
+        video_path = make_meditation_video(num, verses, part_label)
+    except Exception as e:
+        signaler_echec("Méditation (vidéo)", f"{type(e).__name__} : {e}")
+        finaliser("méditation psaume")
+        sys.exit(1)
+
+    if ESSAI:
+        os.makedirs("echantillons", exist_ok=True)
+        shutil.copy(video_path, os.path.join("echantillons", os.path.basename(video_path)))
+        print("🧪 ESSAI : vidéo dans echantillons/, rien n'est publié.")
+        return
 
     # ─── Upload YouTube ───
     # publier() isole chaque plateforme : une panne reseau sur l'une ne
     # peut plus empecher les autres ni la sauvegarde de la progression.
-    publier("YouTube méditation", upload_to_youtube, video_path, num, verses, part_label)
+    video_id = publier("YouTube méditation", upload_to_youtube, video_path, num, verses, part_label)
 
-    # ─── Telegram + Facebook ───
+    # ─── Telegram + Facebook (lien vers la vidéo YouTube) ───
     publier("Telegram méditation", post_to_telegram, video_path, num, part_label)
-    publier("Facebook méditation", post_to_facebook, video_path, num, part_label)
+    publier("Facebook méditation", post_to_facebook, video_id, num, part_label)
 
     # ─── Progression (uniquement apres publication reussie) ───
     if progress is not None:
