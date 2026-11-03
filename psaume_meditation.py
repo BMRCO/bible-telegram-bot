@@ -627,96 +627,116 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     return output_path
 
 
-# ─── Vignette de la serie narree (proposition « A », choisie le 3 nov. 2026) ───
+# ─── Vignette de la serie narree (style « B », choisi par BC le 3 nov. 2026) ───
 # Volontairement differente de la serie muette (cadre, fond uni, texte blanc) :
-# nuit bleue, halo dore derriere le titre, « Psaume N » en degrade d'or,
-# bandeau LECTURE AUDIO avec casque, onde sonore doree en bas.
-# Meme vignette pour tous les Psaumes : la serie se reconnait dans la liste.
+# un ciel d'aube ou de soir, un soleil sur des collines, une onde sonore qui
+# brille sur l'horizon, et le bandeau LECTURE AUDIO.
+# Le ciel change chaque jour : 10 ciels, et (num * 3) % 10 garantit que deux
+# Psaumes qui se suivent n'ont jamais le meme. La position du soleil et le
+# dessin des collines dependent du numero : aucune vignette n'en repete une autre.
+# La composition, elle, ne change pas : la serie se reconnait dans la liste.
 FONT_SANS_BOLD = FONT_SANS.replace("DejaVuSans.ttf", "DejaVuSans-Bold.ttf")
+
+# (haut du ciel, horizon, soleil, collines proches, collines lointaines)
+CIELS = [
+    ((22, 34, 78), (232, 150, 86), (255, 240, 170), (16, 18, 40), (8, 10, 26)),      # aube orangee
+    ((40, 20, 70), (236, 120, 140), (255, 220, 200), (30, 14, 44), (16, 8, 28)),     # crepuscule rose
+    ((14, 40, 90), (120, 190, 230), (255, 250, 220), (20, 44, 70), (10, 26, 44)),    # matin bleu
+    ((60, 24, 20), (240, 170, 60), (255, 236, 150), (40, 18, 14), (22, 10, 8)),      # coucher dore
+    ((10, 30, 50), (70, 150, 150), (220, 250, 230), (8, 30, 40), (4, 18, 26)),       # nuit turquoise
+    ((50, 16, 60), (250, 150, 90), (255, 230, 170), (34, 12, 40), (18, 6, 24)),      # soir pourpre
+    ((24, 44, 60), (214, 200, 170), (255, 250, 230), (30, 40, 50), (16, 22, 30)),    # brume du matin
+    ((80, 20, 30), (250, 110, 70), (255, 210, 150), (50, 14, 20), (28, 8, 12)),      # rouge du soir
+    ((16, 24, 60), (150, 140, 220), (240, 235, 255), (20, 20, 50), (10, 10, 30)),    # lavande
+    ((10, 50, 60), (240, 190, 110), (255, 240, 190), (10, 36, 44), (4, 22, 28)),     # lagune doree
+]
 
 
 def vignette_audio(num, part_label=None, out="thumb_psaume.png"):
     VW, VH = 1280, 720
+    haut, horizon, soleil, proche, loin = CIELS[(num * 3) % len(CIELS)]
+    rnd = random.Random(num)
     yy, xx = np.mgrid[0:VH, 0:VW].astype(np.float32)
 
-    def to_img(a):
-        return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
-
-    # Fond : degrade nuit + double halo dore centre sur le titre
+    # Ciel + soleil (double halo)
+    sx, sy = VW * rnd.uniform(0.62, 0.84), rnd.uniform(520, 575)
     t = (yy / VH)[..., None]
-    fond = np.array((14, 16, 44), np.float32) * (1 - t) + np.array((4, 5, 16), np.float32) * t
-    for r, col, k in ((620, (120, 80, 20), 1.0), (260, (90, 70, 30), 0.8)):
-        dist = np.sqrt((xx - VW / 2) ** 2 + (yy - 250) ** 2) / r
-        fond = fond + (np.clip(1 - dist, 0, 1) ** 2 * k)[..., None] * np.array(col, np.float32)
-    img = to_img(fond)
+    ciel = np.array(haut, np.float32) * (1 - t) + np.array(horizon, np.float32) * t
+    for r, k in ((700, 0.55), (150, 1.2)):
+        dist = np.sqrt((xx - sx) ** 2 + (yy - sy) ** 2) / r
+        ciel = ciel + (np.clip(1 - dist, 0, 1) ** 2 * k)[..., None] * (np.array(soleil, np.float32) * 0.5)
+    img = Image.fromarray(np.clip(ciel, 0, 255).astype(np.uint8))
 
-    # Onde sonore (deterministe par Psaume), avec lueur
-    rnd = random.Random(num)
+    # Onde sonore sur l'horizon, couleur du soleil, avec lueur
     calque = Image.new("RGB", (VW, VH), (0, 0, 0))
     dc = ImageDraw.Draw(calque)
-    n, bw, base = 64, 10, 615
+    n, bw, base = 64, 10, 500
     gap = (VW - 160 - n * bw) / (n - 1)
+    couleur_onde = tuple(int(c * 0.55) for c in soleil)
     for i in range(n):
         env = math.sin(math.pi * i / (n - 1)) ** 1.2
-        h = max(6, 36 * env * (0.45 + 0.55 * rnd.random()))
+        h = max(5, 40 * env * (0.45 + 0.55 * rnd.random()))
         x = 80 + i * (bw + gap)
-        dc.rounded_rectangle([x, base - h, x + bw, base + h], radius=5, fill=(150, 110, 40))
+        dc.rounded_rectangle([x, base - h, x + bw, base + h], radius=5, fill=couleur_onde)
     img = ImageChops.add(img, calque.filter(ImageFilter.GaussianBlur(8)))
     img = ImageChops.add(img, calque)
     d = ImageDraw.Draw(img)
 
-    # Titre « Psaume N » en degrade d'or, avec ombre portee floue
+    # Collines
+    p1, p2, p3 = rnd.uniform(0, 6), rnd.uniform(0, 6), rnd.uniform(140, 200)
+    d.polygon([(0, VH)] + [(x, 585 + 28 * math.sin(x / p3 + p1) + 16 * math.sin(x / 61 + p2))
+                           for x in range(0, VW + 10, 10)] + [(VW, VH)], fill=loin)
+    d.polygon([(0, VH)] + [(x, 640 + 20 * math.sin(x / 120 + p2))
+                           for x in range(0, VW + 10, 10)] + [(VW, VH)], fill=proche)
+
+    def texte_ombre(xy, texte, police, couleur, flou, force):
+        m = Image.new("L", (VW, VH), 0)
+        ImageDraw.Draw(m).text(xy, texte, font=police, fill=255)
+        img.paste((0, 0, 0), (0, 0), m.filter(ImageFilter.GaussianBlur(flou)).point(lambda v: int(v * force)))
+        ImageDraw.Draw(img).text(xy, texte, font=police, fill=couleur)
+
+    # Titre
     titre = f"Psaume {num}"
     f_titre = ImageFont.truetype(FONT_SERIF_BOLD, 80)
-    for size in range(150, 80, -6):
+    for size in range(170, 80, -6):
         f = ImageFont.truetype(FONT_SERIF_BOLD, size)
-        if d.textlength(titre, font=f) <= VW - 160:
+        if d.textlength(titre, font=f) <= VW * 0.66:
             f_titre = f
             break
-    ty = 215
-    masque = Image.new("L", (VW, VH), 0)
-    ImageDraw.Draw(masque).text(((VW - d.textlength(titre, font=f_titre)) / 2, ty), titre,
-                                font=f_titre, fill=255)
-    bb = masque.getbbox()
-    img.paste((0, 0, 0), (0, 0), masque.filter(ImageFilter.GaussianBlur(10)).point(lambda v: int(v * 0.7)))
-    tg = np.clip((yy - bb[1]) / max(1, bb[3] - bb[1]), 0, 1)[..., None]
-    or_ = to_img(np.array((255, 232, 160), np.float32) * (1 - tg) + np.array((196, 140, 40), np.float32) * tg)
-    img.paste(or_, (0, 0), masque)
-    d = ImageDraw.Draw(img)
+    texte_ombre((80, 210), titre, f_titre, (255, 250, 240), 12, 0.6)
 
     # Theme
     theme = get_psaume_theme(num) or "Bible Louis Segond 1910"
     if part_label:
         theme = f"{theme} ({part_label})"
-    f_theme = ImageFont.truetype(FONT_SERIF, 30)
-    for size in range(46, 28, -2):
+    f_theme = ImageFont.truetype(FONT_SERIF, 28)
+    for size in range(50, 28, -2):
         f = ImageFont.truetype(FONT_SERIF, size)
-        if d.textlength(theme, font=f) <= VW - 200:
+        if d.textlength(theme, font=f) <= VW - 170:
             f_theme = f
             break
-    d.text(((VW - d.textlength(theme, font=f_theme)) / 2, ty + f_titre.size + 30), theme,
-           font=f_theme, fill=(240, 232, 214))
+    texte_ombre((84, 210 + f_titre.size + 26), theme, f_theme, (255, 240, 214), 8, 0.5)
+    d = ImageDraw.Draw(img)
 
     # Bandeau LECTURE AUDIO avec casque
+    clair = (255, 250, 240)
     f_band = ImageFont.truetype(FONT_SANS_BOLD, 40)
     label = "LECTURE AUDIO"
-    lw = d.textlength(label, font=f_band)
-    bwid, bh = int(lw + 120), 76
-    bx, by = (VW - bwid) // 2, 82
-    fonce = (20, 18, 30)
-    d.rounded_rectangle([bx, by, bx + bwid, by + bh], radius=38, fill=(236, 196, 110))
+    bx, by, bh = 80, 96, 76
+    bwid = int(d.textlength(label, font=f_band) + 120)
+    d.rounded_rectangle([bx, by, bx + bwid, by + bh], radius=38, fill=proche)
     hx, hy, hs, hw = bx + 26, by + 16, 40, 6
-    d.arc([hx, hy, hx + hs, hy + hs], start=180, end=360, fill=fonce, width=hw)
-    d.rounded_rectangle([hx - hw // 2, hy + hs // 2 - 2, hx + hs * 0.26, hy + hs * 0.95], radius=hs // 10, fill=fonce)
-    d.rounded_rectangle([hx + hs * 0.74, hy + hs // 2 - 2, hx + hs + hw // 2, hy + hs * 0.95], radius=hs // 10, fill=fonce)
+    d.arc([hx, hy, hx + hs, hy + hs], start=180, end=360, fill=clair, width=hw)
+    d.rounded_rectangle([hx - hw // 2, hy + hs // 2 - 2, hx + hs * 0.26, hy + hs * 0.95], radius=hs // 10, fill=clair)
+    d.rounded_rectangle([hx + hs * 0.74, hy + hs // 2 - 2, hx + hs + hw // 2, hy + hs * 0.95], radius=hs // 10, fill=clair)
     tb = d.textbbox((0, 0), label, font=f_band)
-    d.text((bx + 86, by + (bh - (tb[3] - tb[1])) // 2 - tb[1]), label, font=f_band, fill=fonce)
+    d.text((bx + 86, by + (bh - (tb[3] - tb[1])) // 2 - tb[1]), label, font=f_band, fill=clair)
 
     # Pied
     f_pied = ImageFont.truetype(FONT_SANS, 24)
-    gris = (170, 160, 140)
-    d.text((60, VH - 48), "Bible Louis Segond 1910", font=f_pied, fill=gris)
-    d.text((VW - 60 - d.textlength(WATERMARK, font=f_pied), VH - 48), WATERMARK, font=f_pied, fill=gris)
+    gris = (200, 192, 182)
+    d.text((80, VH - 50), "Bible Louis Segond 1910", font=f_pied, fill=gris)
+    d.text((VW - 60 - d.textlength(WATERMARK, font=f_pied), VH - 50), WATERMARK, font=f_pied, fill=gris)
 
     img.save(out, "PNG")
     return out
