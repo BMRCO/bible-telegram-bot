@@ -34,7 +34,7 @@ import numpy as np
 import requests
 import edge_tts
 import edge_tts.communicate as _comm
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageChops
 
 # Reutiliza utilitários do bot
 from bot import (
@@ -627,6 +627,101 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     return output_path
 
 
+# ─── Vignette de la serie narree (proposition « A », choisie le 3 nov. 2026) ───
+# Volontairement differente de la serie muette (cadre, fond uni, texte blanc) :
+# nuit bleue, halo dore derriere le titre, « Psaume N » en degrade d'or,
+# bandeau LECTURE AUDIO avec casque, onde sonore doree en bas.
+# Meme vignette pour tous les Psaumes : la serie se reconnait dans la liste.
+FONT_SANS_BOLD = FONT_SANS.replace("DejaVuSans.ttf", "DejaVuSans-Bold.ttf")
+
+
+def vignette_audio(num, part_label=None, out="thumb_psaume.png"):
+    VW, VH = 1280, 720
+    yy, xx = np.mgrid[0:VH, 0:VW].astype(np.float32)
+
+    def to_img(a):
+        return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+
+    # Fond : degrade nuit + double halo dore centre sur le titre
+    t = (yy / VH)[..., None]
+    fond = np.array((14, 16, 44), np.float32) * (1 - t) + np.array((4, 5, 16), np.float32) * t
+    for r, col, k in ((620, (120, 80, 20), 1.0), (260, (90, 70, 30), 0.8)):
+        dist = np.sqrt((xx - VW / 2) ** 2 + (yy - 250) ** 2) / r
+        fond = fond + (np.clip(1 - dist, 0, 1) ** 2 * k)[..., None] * np.array(col, np.float32)
+    img = to_img(fond)
+
+    # Onde sonore (deterministe par Psaume), avec lueur
+    rnd = random.Random(num)
+    calque = Image.new("RGB", (VW, VH), (0, 0, 0))
+    dc = ImageDraw.Draw(calque)
+    n, bw, base = 64, 10, 615
+    gap = (VW - 160 - n * bw) / (n - 1)
+    for i in range(n):
+        env = math.sin(math.pi * i / (n - 1)) ** 1.2
+        h = max(6, 36 * env * (0.45 + 0.55 * rnd.random()))
+        x = 80 + i * (bw + gap)
+        dc.rounded_rectangle([x, base - h, x + bw, base + h], radius=5, fill=(150, 110, 40))
+    img = ImageChops.add(img, calque.filter(ImageFilter.GaussianBlur(8)))
+    img = ImageChops.add(img, calque)
+    d = ImageDraw.Draw(img)
+
+    # Titre « Psaume N » en degrade d'or, avec ombre portee floue
+    titre = f"Psaume {num}"
+    f_titre = ImageFont.truetype(FONT_SERIF_BOLD, 80)
+    for size in range(150, 80, -6):
+        f = ImageFont.truetype(FONT_SERIF_BOLD, size)
+        if d.textlength(titre, font=f) <= VW - 160:
+            f_titre = f
+            break
+    ty = 215
+    masque = Image.new("L", (VW, VH), 0)
+    ImageDraw.Draw(masque).text(((VW - d.textlength(titre, font=f_titre)) / 2, ty), titre,
+                                font=f_titre, fill=255)
+    bb = masque.getbbox()
+    img.paste((0, 0, 0), (0, 0), masque.filter(ImageFilter.GaussianBlur(10)).point(lambda v: int(v * 0.7)))
+    tg = np.clip((yy - bb[1]) / max(1, bb[3] - bb[1]), 0, 1)[..., None]
+    or_ = to_img(np.array((255, 232, 160), np.float32) * (1 - tg) + np.array((196, 140, 40), np.float32) * tg)
+    img.paste(or_, (0, 0), masque)
+    d = ImageDraw.Draw(img)
+
+    # Theme
+    theme = get_psaume_theme(num) or "Bible Louis Segond 1910"
+    if part_label:
+        theme = f"{theme} ({part_label})"
+    f_theme = ImageFont.truetype(FONT_SERIF, 30)
+    for size in range(46, 28, -2):
+        f = ImageFont.truetype(FONT_SERIF, size)
+        if d.textlength(theme, font=f) <= VW - 200:
+            f_theme = f
+            break
+    d.text(((VW - d.textlength(theme, font=f_theme)) / 2, ty + f_titre.size + 30), theme,
+           font=f_theme, fill=(240, 232, 214))
+
+    # Bandeau LECTURE AUDIO avec casque
+    f_band = ImageFont.truetype(FONT_SANS_BOLD, 40)
+    label = "LECTURE AUDIO"
+    lw = d.textlength(label, font=f_band)
+    bwid, bh = int(lw + 120), 76
+    bx, by = (VW - bwid) // 2, 82
+    fonce = (20, 18, 30)
+    d.rounded_rectangle([bx, by, bx + bwid, by + bh], radius=38, fill=(236, 196, 110))
+    hx, hy, hs, hw = bx + 26, by + 16, 40, 6
+    d.arc([hx, hy, hx + hs, hy + hs], start=180, end=360, fill=fonce, width=hw)
+    d.rounded_rectangle([hx - hw // 2, hy + hs // 2 - 2, hx + hs * 0.26, hy + hs * 0.95], radius=hs // 10, fill=fonce)
+    d.rounded_rectangle([hx + hs * 0.74, hy + hs // 2 - 2, hx + hs + hw // 2, hy + hs * 0.95], radius=hs // 10, fill=fonce)
+    tb = d.textbbox((0, 0), label, font=f_band)
+    d.text((bx + 86, by + (bh - (tb[3] - tb[1])) // 2 - tb[1]), label, font=f_band, fill=fonce)
+
+    # Pied
+    f_pied = ImageFont.truetype(FONT_SANS, 24)
+    gris = (170, 160, 140)
+    d.text((60, VH - 48), "Bible Louis Segond 1910", font=f_pied, fill=gris)
+    d.text((VW - 60 - d.textlength(WATERMARK, font=f_pied), VH - 48), WATERMARK, font=f_pied, fill=gris)
+
+    img.save(out, "PNG")
+    return out
+
+
 def _meditation_head(num, part_label=None):
     """Cabeçalho legível p/ captions: 'Psaume N : Thème (part)' com fallback.
     Sem travessão (decisão de BC, 2 de novembro de 2026)."""
@@ -929,13 +1024,7 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
     # Vignette : contrairement aux Shorts, une video longue affiche partout
     # la vignette definie. Echec sans consequence : la video reste publiee.
     try:
-        theme = get_psaume_theme(num)
-        sub = theme if theme else "Bible Louis Segond 1910"
-        if part_label:
-            sub = f"{sub} ({part_label})"
-        sub = f"{sub} · Lecture audio"
-        thumb = make_thumbnail(f"Psaume {num}", subtitle=sub,
-                               palette=get_palette(num), out="thumb_psaume.png")
+        thumb = vignette_audio(num, part_label, out="thumb_psaume.png")
         youtube.thumbnails().set(
             videoId=video_id,
             media_body=MediaFileUpload(thumb, mimetype="image/png"),
