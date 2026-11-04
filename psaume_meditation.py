@@ -303,9 +303,9 @@ def wrap(draw, text, font, max_w):
     return lines
 
 
-def autosize_font(draw, text, max_w, max_h):
-    """Tamanho de fonte que cabe no espaço."""
-    for size in range(78, 36, -2):
+def autosize_font(draw, text, max_w, max_h, max_size=78):
+    """Tamanho de fonte que cabe no espaço (max_size no máximo)."""
+    for size in range(max_size, 36, -2):
         fv = ImageFont.truetype(FONT_SERIF, size)
         lines = wrap(draw, text, fv, max_w)
         lh = size + 24
