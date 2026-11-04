@@ -338,9 +338,7 @@ def make_thematic_video(theme_key, verses, music):
     layouts = []
     for ref, text in verses:
         text_q = f"\u00ab {text.rstrip('.')} \u00bb"
-        # 62 au plus : a 78, un verset court remplissait toute la carte
-        # (avis de BC le 4 novembre 2026).
-        fv, lines, lh = autosize_font(d_tmp, text_q, MAX_TW, max_text_h, max_size=62)
+        fv, lines, lh = autosize_font(d_tmp, text_q, MAX_TW, max_text_h)
         layouts.append((ref, fv, lines, lh))
 
     f_brand    = ImageFont.truetype(FONT_SANS, 34)
