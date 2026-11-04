@@ -348,13 +348,12 @@ def make_thematic_video(theme_key, verses, music):
     f_lsg      = ImageFont.truetype(FONT_SERIF, 28)
     f_wm       = ImageFont.truetype(FONT_SANS, 28)
 
-    # Taille de la reference : 32 (40 etait trop gros, avis de BC le 4 nov.),
-    # reduite si elle ne tient pas sur la largeur de la carte.
+    # Taille de la reference : 44, reduite si elle ne tient pas sur la largeur.
     largeur_ref = W - 2 * (BORDER + CARD_PAD)
     refs_fonts = {}
     for ref_i, _fv, _l, _lh in layouts:
-        fr = ImageFont.truetype(FONT_SERIF_BOLD, 32)
-        for size in range(32, 22, -2):
+        fr = ImageFont.truetype(FONT_SERIF_BOLD, 44)
+        for size in range(44, 26, -2):
             fr = ImageFont.truetype(FONT_SERIF_BOLD, size)
             if d_tmp.textlength(ref_i, font=fr) <= largeur_ref:
                 break
@@ -421,18 +420,15 @@ def make_thematic_video(theme_key, verses, music):
                 draw.text((x, ty), line, font=fv, fill=col_text)
                 ty += lh
 
-            # Rodape: divisoria + referencia + LSG (esq.)  marca (dir.)
+            # Rodape centre (choix de BC, 4 nov. 2026) : trait, reference en
+            # grand, « LSG 1910 » dessous ; LaBible.app seul, en bas de la carte.
             col_acc = lerp(BG_TOP, ACCENT, a, 0.95)
-            lx = BORDER + CARD_PAD
-            draw.line([lx, H - BORDER - 140, lx + 200, H - BORDER - 140], fill=col_acc, width=2)
-            # La reference a toute la largeur de la carte (« 2 Thessaloniciens 3:16 »
-            # touchait la marque) ; LaBible.app descend sur la ligne de « LSG 1910 »,
-            # alignee sur sa base, pour que le pied se lise comme un bloc.
-            fr = refs_fonts[ref]
-            draw.text((lx, H - BORDER - 120), ref, font=fr, fill=col_acc)
-            base = H - BORDER - 78 + f_lsg.getbbox("LSG 1910")[3]   # ligne de base commune
-            draw.text((lx, base), "LSG 1910", font=f_lsg, fill=lerp(BG_TOP, SIL, a, 0.9), anchor="ls")
-            draw.text((W - BORDER - CARD_PAD, base), WATERMARK, font=f_wm, fill=col_acc, anchor="rs")
+            cx = W // 2
+            draw.line([cx - 70, H - BORDER - 290, cx + 70, H - BORDER - 290], fill=col_acc, width=2)
+            draw.text((cx, H - BORDER - 232), ref, font=refs_fonts[ref], fill=col_acc, anchor="ms")
+            draw.text((cx, H - BORDER - 190), "LSG 1910", font=f_lsg,
+                      fill=lerp(BG_TOP, SIL, a, 0.9), anchor="ms")
+            draw.text((cx, H - BORDER - 56), WATERMARK, font=f_wm, fill=col_acc, anchor="ms")
 
         # ---------- OUTRO ----------
         else:
