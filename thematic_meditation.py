@@ -420,11 +420,19 @@ def make_thematic_video(theme_key, verses, music):
                 draw.text((x, ty), line, font=fv, fill=col_text)
                 ty += lh
 
-            # Rodape centre (choix de BC, 4 nov. 2026) : trait, reference en
+            # Rodape centre (choix de BC, 4 nov. 2026) : ornement, reference en
             # grand, « LSG 1910 » dessous ; LaBible.app seul, en bas de la carte.
             col_acc = lerp(BG_TOP, ACCENT, a, 0.95)
             cx = W // 2
-            draw.line([cx - 70, H - BORDER - 290, cx + 70, H - BORDER - 290], fill=col_acc, width=2)
+            # Ornement (choix « C » de BC) : trois points, et de chaque cote un
+            # filet qui s'efface vers l'exterieur.
+            oy = H - BORDER - 290
+            for i in range(150):
+                c = lerp(BG_TOP, ACCENT, a, 0.95 * (1 - i / 150) ** 1.2)
+                draw.line([cx - 40 - i, oy - 1, cx - 40 - i, oy + 1], fill=c)
+                draw.line([cx + 40 + i, oy - 1, cx + 40 + i, oy + 1], fill=c)
+            for dx, r in ((-22, 3), (0, 5), (22, 3)):
+                draw.ellipse([cx + dx - r, oy - r, cx + dx + r, oy + r], fill=col_acc)
             draw.text((cx, H - BORDER - 232), ref, font=refs_fonts[ref], fill=col_acc, anchor="ms")
             draw.text((cx, H - BORDER - 190), "LSG 1910", font=f_lsg,
                       fill=lerp(BG_TOP, SIL, a, 0.9), anchor="ms")
