@@ -32,8 +32,9 @@ import bisect
 
 import numpy as np
 import requests
-import edge_tts
-import edge_tts.communicate as _comm
+# edge_tts est importe plus bas, seulement quand on synthetise la voix :
+# thematic_meditation.py importe ce module sans avoir besoin de la voix,
+# et son workflow n'installe pas edge-tts (panne des 2 au 4 novembre 2026).
 from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageChops
 
 # Reutiliza utilitários do bot
@@ -110,7 +111,6 @@ def _mkssml_fr(tc, escaped_text):
         "</prosody></voice></speak>"
     )
 
-_comm.mkssml = _mkssml_fr
 
 # Sufixo padronizado do título (igual aos vídeos já publicados)
 TITLE_SUFFIX = "Lecture Audio | Bible LSG1910"   # serie narree (2 nov. 2026)
@@ -342,6 +342,9 @@ def texte_a_lire(texte):
 
 
 async def _tts(texte, chemin):
+    import edge_tts
+    import edge_tts.communicate as _comm
+    _comm.mkssml = _mkssml_fr
     await edge_tts.Communicate(texte, VOIX, rate=DEBIT_VOIX).save(chemin)
 
 
