@@ -346,7 +346,18 @@ def make_thematic_video(theme_key, verses, music):
     f_sub      = ImageFont.truetype(FONT_SERIF, 42)
     f_ref      = ImageFont.truetype(FONT_SERIF_BOLD, 40)
     f_lsg      = ImageFont.truetype(FONT_SERIF, 28)
-    f_wm       = ImageFont.truetype(FONT_SANS, 32)
+    f_wm       = ImageFont.truetype(FONT_SANS, 28)
+
+    # Taille de la reference : 40 si elle tient sur la largeur de la carte.
+    largeur_ref = W - 2 * (BORDER + CARD_PAD)
+    refs_fonts = {}
+    for ref_i, _fv, _l, _lh in layouts:
+        fr = ImageFont.truetype(FONT_SERIF_BOLD, 40)
+        for size in range(40, 26, -2):
+            fr = ImageFont.truetype(FONT_SERIF_BOLD, size)
+            if d_tmp.textlength(ref_i, font=fr) <= largeur_ref:
+                break
+        refs_fonts[ref_i] = fr
     f_outro    = ImageFont.truetype(FONT_SERIF_BOLD, 110)
     f_outrosub = ImageFont.truetype(FONT_SERIF, 38)
 
@@ -413,10 +424,14 @@ def make_thematic_video(theme_key, verses, music):
             col_acc = lerp(BG_TOP, ACCENT, a, 0.95)
             lx = BORDER + CARD_PAD
             draw.line([lx, H - BORDER - 150, lx + 230, H - BORDER - 150], fill=col_acc, width=2)
-            draw.text((lx, H - BORDER - 128), ref, font=f_ref, fill=col_acc)
-            draw.text((lx, H - BORDER - 78), "LSG 1910", font=f_lsg, fill=lerp(BG_TOP, SIL, a, 0.9))
-            ww = draw.textlength(WATERMARK, font=f_wm)
-            draw.text((W - BORDER - CARD_PAD - ww, H - BORDER - 92), WATERMARK, font=f_wm, fill=col_acc)
+            # La reference a toute la largeur de la carte (« 2 Thessaloniciens 3:16 »
+            # touchait la marque) ; LaBible.app descend sur la ligne de « LSG 1910 »,
+            # alignee sur sa base, pour que le pied se lise comme un bloc.
+            fr = refs_fonts[ref]
+            draw.text((lx, H - BORDER - 128), ref, font=fr, fill=col_acc)
+            base = H - BORDER - 78 + f_lsg.getbbox("LSG 1910")[3]   # ligne de base commune
+            draw.text((lx, base), "LSG 1910", font=f_lsg, fill=lerp(BG_TOP, SIL, a, 0.9), anchor="ls")
+            draw.text((W - BORDER - CARD_PAD, base), WATERMARK, font=f_wm, fill=col_acc, anchor="rs")
 
         # ---------- OUTRO ----------
         else:
