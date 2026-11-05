@@ -23,13 +23,15 @@ nettoyees pour l'affichage et la synthese.
 
 import os
 import sys
+import math
+import colorsys
 import random
 import shutil
 import subprocess
 import wave
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter, ImageChops
 
 from bot import (
     load_json, save_json, clean_text, slugify_book,
@@ -39,7 +41,7 @@ from bot import (
 )
 from psaume_meditation import (
     synthese, texte_a_lire, gradient_bg, wrap, autosize_font, ease, lerp_color,
-    pick_safe_music, vignette_audio, PSAUME_PALETTES,
+    pick_safe_music, PSAUME_PALETTES,
     FPS, SR, LEAD, TAIL, SECS_VERSE_MIN, VOLUME_MUSIQUE,
 )
 
@@ -140,6 +142,104 @@ def liste_chapitres(par_chap):
 def texte_affiche(t):
     """Copie d'affichage : nettoyage typographique seulement (clean_text)."""
     return clean_text(t).rstrip(".")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  Vignette (differente de la serie des Psaumes, et propre a chaque livre)
+# ─────────────────────────────────────────────────────────────────────────────
+def teinte_livre(livre):
+    """Une couleur par livre, jamais la meme : la teinte avance du nombre d'or
+    a chaque livre (66 teintes distinctes, deux livres voisins tres eloignes)."""
+    h = (ORDRE.index(livre) * 0.6180339887) % 1.0
+
+    def c(s, v):
+        return tuple(int(x * 255) for x in colorsys.hsv_to_rgb(h, s, v))
+    # fond haut, fond bas, halo, titre clair, titre fonce, accent (bandeau, onde)
+    return c(0.75, 0.20), c(0.80, 0.06), c(0.85, 0.55), c(0.22, 1.0), c(0.75, 0.82), c(0.45, 0.93)
+
+
+def vignette_bible(livre, ch, rang, out):
+    """Style « lumiere » : nuit, halo de la couleur du livre, titre en degrade,
+    bandeau BIBLE AUDIO avec casque, onde sonore en bas."""
+    VW, VH = 1280, 720
+    top, bot, halo, c1, c2, acc = teinte_livre(livre)
+    yy, xx = np.mgrid[0:VH, 0:VW].astype(np.float32)
+
+    def to_img(a):
+        return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
+
+    t = (yy / VH)[..., None]
+    fond = np.array(top, np.float32) * (1 - t) + np.array(bot, np.float32) * t
+    # Deuxieme difference entre livres, en plus de la couleur : la place du
+    # halo (gauche, centre, droite), pour que deux teintes voisines ne se
+    # confondent pas.
+    hx_halo = VW * (0.5, 0.28, 0.72)[ORDRE.index(livre) % 3]
+    for r, k in ((620, 0.9), (260, 0.7)):
+        dist = np.sqrt((xx - hx_halo) ** 2 + (yy - 250) ** 2) / r
+        fond = fond + (np.clip(1 - dist, 0, 1) ** 2 * k)[..., None] * np.array(halo, np.float32)
+    img = to_img(fond)
+
+    rnd = random.Random(rang)
+    calque = Image.new("RGB", (VW, VH), (0, 0, 0))
+    dc = ImageDraw.Draw(calque)
+    n, bw, base = 64, 10, 615
+    gap = (VW - 160 - n * bw) / (n - 1)
+    onde = tuple(int(x * 0.62) for x in acc)
+    for i in range(n):
+        env = math.sin(math.pi * i / (n - 1)) ** 1.2
+        h = max(6, 36 * env * (0.45 + 0.55 * rnd.random()))
+        x = 80 + i * (bw + gap)
+        dc.rounded_rectangle([x, base - h, x + bw, base + h], radius=5, fill=onde)
+    img = ImageChops.add(img, calque.filter(ImageFilter.GaussianBlur(8)))
+    img = ImageChops.add(img, calque)
+    d = ImageDraw.Draw(img)
+
+    titre = f"{nom_affiche(livre)} {ch}"
+    f_t = ImageFont.truetype(FONT_SERIF_BOLD, 70)
+    for size in range(150, 70, -6):
+        f = ImageFont.truetype(FONT_SERIF_BOLD, size)
+        if d.textlength(titre, font=f) <= VW - 160:
+            f_t = f
+            break
+    ty = 215
+    m = Image.new("L", (VW, VH), 0)
+    ImageDraw.Draw(m).text(((VW - d.textlength(titre, font=f_t)) / 2, ty), titre, font=f_t, fill=255)
+    bb = m.getbbox()
+    img.paste((0, 0, 0), (0, 0), m.filter(ImageFilter.GaussianBlur(10)).point(lambda v: int(v * 0.7)))
+    tg = np.clip((yy - bb[1]) / max(1, bb[3] - bb[1]), 0, 1)[..., None]
+    img.paste(to_img(np.array(c1, np.float32) * (1 - tg) + np.array(c2, np.float32) * tg), (0, 0), m)
+    d = ImageDraw.Draw(img)
+
+    sous = nom_complet(livre)
+    if sous == nom_affiche(livre):
+        sous = "Nouveau Testament" if livre in NT else "Ancien Testament"
+    f_s = ImageFont.truetype(FONT_SERIF, 28)
+    for size in range(46, 26, -2):
+        f = ImageFont.truetype(FONT_SERIF, size)
+        if d.textlength(sous, font=f) <= VW - 200:
+            f_s = f
+            break
+    d.text(((VW - d.textlength(sous, font=f_s)) / 2, ty + f_t.size + 30), sous, font=f_s, fill=(240, 234, 224))
+
+    f_b = ImageFont.truetype(FONT_SANS.replace("DejaVuSans.ttf", "DejaVuSans-Bold.ttf"), 40)
+    lab = "BIBLE AUDIO"
+    bwid, bh = int(d.textlength(lab, font=f_b) + 120), 76
+    bx, by = (VW - bwid) // 2, 82
+    fo = (20, 18, 30)
+    d.rounded_rectangle([bx, by, bx + bwid, by + bh], radius=38, fill=acc)
+    hx, hy, hs, hw = bx + 26, by + 16, 40, 6
+    d.arc([hx, hy, hx + hs, hy + hs], start=180, end=360, fill=fo, width=hw)
+    d.rounded_rectangle([hx - hw // 2, hy + hs // 2 - 2, hx + hs * 0.26, hy + hs * 0.95], radius=hs // 10, fill=fo)
+    d.rounded_rectangle([hx + hs * 0.74, hy + hs // 2 - 2, hx + hs + hw // 2, hy + hs * 0.95], radius=hs // 10, fill=fo)
+    tb = d.textbbox((0, 0), lab, font=f_b)
+    d.text((bx + 86, by + (bh - (tb[3] - tb[1])) // 2 - tb[1]), lab, font=f_b, fill=fo)
+
+    f_p = ImageFont.truetype(FONT_SANS, 24)
+    gris = (175, 168, 155)
+    d.text((60, VH - 48), "Bible Louis Segond 1910", font=f_p, fill=gris)
+    d.text((VW - 60 - d.textlength(WATERMARK, font=f_p), VH - 48), WATERMARK, font=f_p, fill=gris)
+    img.save(out, "PNG")
+    return out
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -425,8 +525,7 @@ def upload(video, livre, ch, tl, rang):
     print(f"✅ YouTube : https://youtube.com/watch?v={vid}")
 
     try:
-        thumb = vignette_audio(rang + 1, out="thumb_bible.png",
-                               titre=f"{nom_affiche(livre)} {ch}", sous_titre=nom_complet(livre))
+        thumb = vignette_bible(livre, ch, rang, "thumb_bible.png")
         yt.thumbnails().set(videoId=vid, media_body=MediaFileUpload(thumb, mimetype="image/png")).execute()
         print("✅ Vignette définie")
     except Exception as e:
@@ -500,8 +599,7 @@ def main():
         srt(tl, f"echantillons/{os.path.splitext(os.path.basename(video))[0]}.srt")
         with open("echantillons/description.txt", "w", encoding="utf-8") as f:
             f.write(titre_video(livre, ch) + "\n\n" + description(livre, ch, tl))
-        vignette_audio(rang + 1, out="echantillons/vignette.png",
-                       titre=f"{nom_affiche(livre)} {ch}", sous_titre=nom_complet(livre))
+        vignette_bible(livre, ch, rang, "echantillons/vignette.png")
         print("🧪 ESSAI : rien n'est publié.")
         return
 
