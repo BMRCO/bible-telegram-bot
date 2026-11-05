@@ -2,9 +2,13 @@ name: Publication automatique
 
 on:
   schedule:
+    # 5 novembre 2026 : de 6 a 4 versets par jour, pour laisser la place a la
+    # Bible audio (3 chapitres par jour). Gardes : les categories qui font le
+    # plus de vues (Protection, Propheties, Psaumes du soir) et Jesus.
+    # Retires : Promesses et Proverbes (les viviers restent dans le depot).
     - cron: '37 3 * * *'    # 03h37 UTC - Protection (reel)
-    - cron: '29 5 * * *'    # 05h29 UTC - Promesses
-    - cron: '33 8 * * *'    # 08h33 UTC - Proverbes
+    # - cron: '29 5 * * *'  # 05h29 UTC - Promesses (retire)
+    # - cron: '33 8 * * *'  # 08h33 UTC - Proverbes (retire)
     - cron: '47 11 * * *'   # 11h47 UTC - Jesus
     - cron: '43 15 * * *'   # 15h43 UTC - Propheties
     - cron: '34 17 * * *'   # 17h34 UTC - Psaumes (reel)
