@@ -250,7 +250,22 @@ def vignette_bible(livre, ch, rang, out):
             break
     ys = ty + f_t.size + 28
     d.text((74, ys), sous, font=f_s, fill=acc)
-    d.line([(74, ys + f_s.size + 34), (74 + 120, ys + f_s.size + 34)], fill=acc, width=2)
+    # Onde sonore (dessin propre a chaque chapitre), avec lueur, sous le nom.
+    rnd = random.Random(rang)
+    calque = Image.new("RGB", (VW, VH), (0, 0, 0))
+    dc = ImageDraw.Draw(calque)
+    n_b, bw, x0, x1 = 36, 8, 76, int(VW * 0.46)
+    gap = (x1 - x0 - n_b * bw) / (n_b - 1)
+    yo = ys + f_s.size + 70
+    onde = tuple(int(c * 0.7) for c in acc)
+    for i in range(n_b):
+        env = math.sin(math.pi * (i + 0.5) / n_b) ** 0.9
+        hh = max(4, 30 * env * (0.4 + 0.6 * rnd.random()))
+        x = x0 + i * (bw + gap)
+        dc.rounded_rectangle([x, yo - hh, x + bw, yo + hh], radius=4, fill=onde)
+    img = ImageChops.add(img, calque.filter(ImageFilter.GaussianBlur(7)))
+    img = ImageChops.add(img, calque)
+    d = ImageDraw.Draw(img)
 
     f_p = ImageFont.truetype(FONT_SANS, 24)
     d.text((74, VH - 66), "Bible Louis Segond 1910  ·  " + WATERMARK, font=f_p, fill=tuple(int(c * 0.85) for c in acc))
