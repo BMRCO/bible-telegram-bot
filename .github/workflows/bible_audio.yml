@@ -1,0 +1,116 @@
+name: Bible audio (YouTube)
+
+# La Bible entiere lue a voix haute : un chapitre = une video YouTube.
+# Trois chapitres par jour. Evangiles d'abord, puis le reste du NT, puis l'AT.
+# Les Psaumes sont exclus (serie narree quotidienne, meditation.yml).
+# Ne publie que sur YouTube.
+on:
+  schedule:
+    - cron: '17 7 * * *'      # 07h17 UTC
+    - cron: '43 13 * * *'     # 13h43 UTC
+    - cron: '29 19 * * *'     # 19h29 UTC
+  workflow_dispatch:
+    inputs:
+      livre:
+        description: 'Livre (vide = automatique), ex. Marc, 1 Corinthiens'
+        required: false
+        type: string
+        default: ''
+      chapitre:
+        description: 'Chapitre (avec le livre)'
+        required: false
+        type: string
+        default: ''
+      essai:
+        description: 'Essai : genere la video sans rien publier (branche echantillons-voix)'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+# Un seul passage a la fois : deux passages simultanes liraient la meme
+# progression et publieraient le meme chapitre.
+concurrency:
+  group: bible-audio
+  cancel-in-progress: false
+
+jobs:
+  bible_audio:
+    # Epingle comme les autres workflows (voir meditation.yml).
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pillow requests numpy edge-tts==7.3.1 google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Run Bible audio
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
+          # Alertes de panne en prive (rien n'est publie sur le canal).
+          TELEGRAM_ALERT_CHAT_ID: ${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          # Par l'environnement : une entree libre ne doit jamais etre interpolee dans un script.
+          IN_LIVRE: ${{ inputs.livre }}
+          IN_CHAPITRE: ${{ inputs.chapitre }}
+          ESSAI: ${{ inputs.essai && '1' || '' }}
+        run: |
+          if [ -n "$IN_LIVRE" ] && [ -n "$IN_CHAPITRE" ]; then
+            python bible_audio.py "$IN_LIVRE" "$IN_CHAPITRE"
+          else
+            python bible_audio.py
+          fi
+
+      - name: Publish test video on the echantillons-voix branch
+        if: ${{ inputs.essai }}
+        run: |
+          mkdir -p /tmp/ech && cp echantillons/* /tmp/ech/
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan echantillons-voix
+          git rm -rq --cached . || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp /tmp/ech/* .
+          git add -A
+          git commit -q -m "Essai Bible audio"
+          git push -f origin echantillons-voix
+
+      - name: Commit progress
+        # Commite en succes ET en echec (voir meditation.yml) ; pas en essai.
+        if: ${{ !cancelled() && !inputs.essai }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add progress_bible_audio.json
+          if git diff --staged --quiet; then
+            echo "Aucun changement de progression."
+            exit 0
+          fi
+          git commit -m "Update Bible audio progress [skip ci]"
+          for i in 1 2 3; do
+            if git push; then
+              echo "Progression enregistree."
+              exit 0
+            fi
+            git pull --rebase origin main || true
+            sleep 5
+          done
+          echo "::error::Progression NON enregistree apres 3 tentatives."
+          exit 1

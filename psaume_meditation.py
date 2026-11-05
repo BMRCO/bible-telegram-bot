@@ -655,7 +655,9 @@ CIELS = [
 ]
 
 
-def vignette_audio(num, part_label=None, out="thumb_psaume.png"):
+def vignette_audio(num, part_label=None, out="thumb_psaume.png", titre=None, sous_titre=None):
+    """titre / sous_titre : pour la Bible audio (bible_audio.py), ex. « Marc 1 »
+    et « Évangile selon Marc ». Par defaut : « Psaume N » et son theme."""
     VW, VH = 1280, 720
     haut, horizon, soleil, proche, loin = CIELS[(num * 3) % len(CIELS)]
     rnd = random.Random(num)
@@ -699,7 +701,7 @@ def vignette_audio(num, part_label=None, out="thumb_psaume.png"):
         ImageDraw.Draw(img).text(xy, texte, font=police, fill=couleur)
 
     # Titre
-    titre = f"Psaume {num}"
+    titre = titre or f"Psaume {num}"
     f_titre = ImageFont.truetype(FONT_SERIF_BOLD, 80)
     for size in range(170, 80, -6):
         f = ImageFont.truetype(FONT_SERIF_BOLD, size)
@@ -709,7 +711,7 @@ def vignette_audio(num, part_label=None, out="thumb_psaume.png"):
     texte_ombre((80, 210), titre, f_titre, (255, 250, 240), 12, 0.6)
 
     # Theme
-    theme = get_psaume_theme(num) or "Bible Louis Segond 1910"
+    theme = sous_titre or get_psaume_theme(num) or "Bible Louis Segond 1910"
     if part_label:
         theme = f"{theme} ({part_label})"
     f_theme = ImageFont.truetype(FONT_SERIF, 28)
