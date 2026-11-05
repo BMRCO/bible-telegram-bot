@@ -2,15 +2,14 @@ name: Publication automatique
 
 on:
   schedule:
-    # 5 novembre 2026 : de 6 a 4 versets par jour, pour laisser la place a la
-    # Bible audio (3 chapitres par jour). Gardes : les categories qui font le
-    # plus de vues (Protection, Propheties, Psaumes du soir) et Jesus.
-    # Retires : Promesses et Proverbes (les viviers restent dans le depot).
+    # 5 novembre 2026 (decision de BC) : 5 versets par jour au lieu de 6,
+    # en alternance reel / image / reel / image / reel. Promesses retire
+    # (le vivier reste dans le depot).
     - cron: '37 3 * * *'    # 03h37 UTC - Protection (reel)
     # - cron: '29 5 * * *'  # 05h29 UTC - Promesses (retire)
-    # - cron: '33 8 * * *'  # 08h33 UTC - Proverbes (retire)
-    - cron: '47 11 * * *'   # 11h47 UTC - Jesus
-    - cron: '43 15 * * *'   # 15h43 UTC - Propheties
+    - cron: '33 8 * * *'    # 08h33 UTC - Proverbes (image)
+    - cron: '47 11 * * *'   # 11h47 UTC - Jesus (reel)
+    - cron: '43 15 * * *'   # 15h43 UTC - Propheties (image)
     - cron: '34 17 * * *'   # 17h34 UTC - Psaumes (reel)
   workflow_dispatch:
     inputs:
@@ -115,22 +114,15 @@ jobs:
             esac
           fi
 
-          # Calendrier hybride : toujours 4 reels / 2 images par jour.
-          # Fixes en reel : protection (matin), psaume (soir).
-          # Alternance jour pair/impair sur les 4 autres.
-          DAY=$(date +%j)
-          IS_EVEN=$((10#$DAY % 2))   # 0 = jour pair, 1 = jour impair
-
+          # Calendrier fixe depuis le 5 novembre 2026 : 3 reels et 2 images,
+          # en alternance dans la journee (reel, image, reel, image, reel).
           if [ -n "$MANUAL_MODE" ] && [ "$MANUAL_MODE" != "auto" ]; then
             MODE="$MANUAL_MODE"
           else
             case "$CAT" in
-              protection|psaume) MODE="reel" ;;
-              promise|jesus)
-                if [ $IS_EVEN -eq 0 ]; then MODE="reel"; else MODE="image"; fi ;;
-              proverbe|prophetie)
-                if [ $IS_EVEN -eq 0 ]; then MODE="image"; else MODE="reel"; fi ;;
-              *) MODE="image" ;;
+              protection|jesus|psaume) MODE="reel" ;;
+              proverbe|prophetie)      MODE="image" ;;
+              *)                       MODE="image" ;;
             esac
           fi
 
