@@ -1,0 +1,63 @@
+name: Annonce (toutes les plateformes)
+
+# Publie une annonce preparee dans annonce.py : video animee ou image,
+# avec un texte propre a chaque plateforme. Ne touche a aucune progression.
+on:
+  workflow_dispatch:
+    inputs:
+      annonce:
+        description: 'Annonce (cle dans annonce.py)'
+        required: true
+        type: string
+        default: 'bible_audio'
+      format:
+        description: 'Format'
+        required: true
+        type: choice
+        default: 'anime'
+        options:
+          - anime
+          - statique
+
+permissions:
+  contents: read
+
+jobs:
+  annonce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pillow requests numpy google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
+      - name: Publish
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
+          TELEGRAM_ALERT_CHAT_ID: ${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+          IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          IN_ANNONCE: ${{ inputs.annonce }}
+          IN_FORMAT: ${{ inputs.format }}
+        run: python annonce.py "$IN_ANNONCE" "$IN_FORMAT"
