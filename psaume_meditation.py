@@ -373,6 +373,65 @@ def synthese(texte, base):
     raise RuntimeError(f"síntese de voz impossível : {derniere}")
 
 
+# ─── Spectre de la voix (demande de BC, 5 nov. 2026) ───
+# Des barres qui suivent la voix reelle, a partir du centre. Partage avec
+# bible_audio.py.
+PAS_ENV = 0.01   # une valeur d'enveloppe toutes les 10 ms
+
+
+def enveloppe_voix(piste, fen=0.06):
+    """Volume de la narration (0 a 1) toutes les 10 ms."""
+    cs = np.concatenate([[0.0], np.cumsum(piste.astype(np.float64) ** 2)])
+    n = int(len(piste) / (SR * PAS_ENV)) + 1
+    out = np.zeros(n, dtype=np.float32)
+    demi = int(fen / 2 * SR)
+    for k in range(n):
+        c = int(k * PAS_ENV * SR)
+        i0, i1 = max(0, c - demi), min(len(piste), c + demi)
+        if i1 > i0:
+            out[k] = math.sqrt((cs[i1] - cs[i0]) / (i1 - i0))
+    ref = float(np.percentile(out[out > 0], 97)) if np.any(out > 0) else 1.0
+    return np.clip(out / max(ref, 1e-6), 0, 1)
+
+
+_JITTER = [0.55 + 0.45 * random.Random(3 + i).random() for i in range(200)]
+
+
+def dessiner_spectre(img, env, t, cy, couleur, largeur=560, amp=24, n=44, force=1.0):
+    """Barres centrees en (W/2, cy), hauteur selon la voix a l'instant t."""
+    VW = img.width
+    x0 = (VW - largeur) // 2
+    haut = int(amp + 24)
+    zone = (x0 - 30, cy - haut, x0 + largeur + 30, cy + haut)
+    cal = Image.new("RGB", (zone[2] - zone[0], zone[3] - zone[1]), (0, 0, 0))
+    dc = ImageDraw.Draw(cal)
+    bw = 6
+    gap = (largeur - n * bw) / (n - 1)
+    col = tuple(int(c * 0.75 * force) for c in couleur)
+    for i in range(n):
+        dist = abs(i - (n - 1) / 2) / ((n - 1) / 2)
+        k = int((t - dist * 0.15) / PAS_ENV)
+        lvl = float(env[k]) if 0 <= k < len(env) else 0.0
+        forme = math.sin(math.pi * (i + 0.5) / n) ** 1.1
+        h = max(2.5, amp * forme * _JITTER[i] * (0.12 + 0.88 * lvl))
+        x = 30 + i * (bw + gap)
+        dc.rounded_rectangle([x, haut - h, x + bw, haut + h], radius=3, fill=col)
+    morceau = img.crop(zone)
+    morceau = ImageChops.add(morceau, cal.filter(ImageFilter.GaussianBlur(6)))
+    morceau = ImageChops.add(morceau, cal)
+    img.paste(morceau, zone[:2])
+    return img
+
+
+def palette_ciel(num):
+    """Couleurs de la video = celles de la vignette du meme Psaume (CIELS)."""
+    haut, horizon, soleil, proche, loin = CIELS[(num * 3) % len(CIELS)]
+    top = tuple(int(haut[i] * 0.85 + horizon[i] * 0.10) for i in range(3))
+    blanc = (250, 246, 238)
+    sil = tuple(int(horizon[i] * 0.55 + blanc[i] * 0.45) for i in range(3))
+    return top, loin, horizon, soleil, blanc, sil
+
+
 def make_meditation_video(num, verses_with_idx, part_label=None):
     """
     Gera vídeo de meditação.
@@ -381,8 +440,8 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     """
     n_verses = len(verses_with_idx)
 
-    # Paleta por rotação (número do Salmo)
-    BG_TOP, BG_BOTTOM, GOLD, GOLD_BRIGHT, WHITE, SIL = get_palette(num)
+    # Paleta = a da vignette (ceu do mesmo Salmo), pedido de BC a 5 nov. 2026
+    BG_TOP, BG_BOTTOM, GOLD, GOLD_BRIGHT, WHITE, SIL = palette_ciel(num)
 
     BORDER = 80
     CARD_PAD = 120
@@ -433,6 +492,7 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     TIMELINE.clear()
     TIMELINE.update(intro=intro_secs, debuts=debuts, durees=durees,
                     versets=list(verses_with_idx), total=total_secs)
+    env_voix = enveloppe_voix(piste)
     narration_wav = "narration/narration.wav"
     with wave.open(narration_wav, "wb") as w:
         w.setnchannels(1)
@@ -466,9 +526,10 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
         phrase = None
     phrase_lines = wrap(d_tmp, f"« {phrase} »", f_phrase, W - BORDER * 2 - 260) if phrase else []
 
+    fond = gradient_bg(W, H, BG_TOP, BG_BOTTOM)
     for f in range(TOTAL):
         s = f / FPS
-        img = gradient_bg(W, H, BG_TOP, BG_BOTTOM)
+        img = fond.copy()
         draw = ImageDraw.Draw(img)
 
         # Border discreto
@@ -596,6 +657,10 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
             sw2 = bb3[2] - bb3[0]
             draw.text(((W - sw2) // 2, H // 2 + 110), sub2, font=f_outro_sub, fill=color_sub)
 
+        # Spectre de la voix, sous le texte ; il s'efface pendant la fin.
+        if s < fin_versets + 0.8:
+            force = 1.0 if s < fin_versets else max(0.0, 1 - (s - fin_versets) / 0.8)
+            dessiner_spectre(img, env_voix, s, H - BORDER - 138, GOLD, force=force)
         img.save(f"frames/frame_{f:05d}.png")
 
     # Voz + música. A música (rotação por nº do Salmo, em loop) fica por baixo

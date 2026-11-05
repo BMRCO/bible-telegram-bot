@@ -41,7 +41,7 @@ from bot import (
 )
 from psaume_meditation import (
     synthese, texte_a_lire, gradient_bg, wrap, autosize_font, ease, lerp_color,
-    pick_safe_music, PSAUME_PALETTES,
+    pick_safe_music, enveloppe_voix, dessiner_spectre,
     FPS, SR, LEAD, TAIL, SECS_VERSE_MIN, VOLUME_MUSIQUE,
 )
 
@@ -278,7 +278,12 @@ def vignette_bible(livre, ch, rang, out):
 # ─────────────────────────────────────────────────────────────────────────────
 def faire_video(livre, ch, versets, rang):
     """Rend la video du chapitre. Retourne (chemin_mp4, timeline)."""
-    BG_TOP, BG_BOTTOM, GOLD, GOLD_BRIGHT, WHITE, SIL = PSAUME_PALETTES[ORDRE.index(livre) % len(PSAUME_PALETTES)]
+    # Couleurs = celles de la vignette du livre (demande de BC, 5 nov. 2026).
+    haut, bas, sil_v, acc = teinte_livre(livre)
+    BG_TOP, BG_BOTTOM, GOLD = haut, bas, acc
+    GOLD_BRIGHT = tuple(int(c * 0.6 + 255 * 0.4) for c in acc)
+    WHITE = (246, 240, 228)
+    SIL = tuple(int(c * 0.6 + 246 * 0.4) for c in sil_v)
     n = len(versets)
 
     # ─── Narration : une synthese par verset ───
@@ -312,6 +317,7 @@ def faire_video(livre, ch, versets, rang):
     for d0, a in zip(debuts, voix):
         poser(a, d0 + LEAD)
     piste = piste[:int(total * SR)]
+    env_voix = enveloppe_voix(piste)
     wav_path = "narration/narration.wav"
     with wave.open(wav_path, "wb") as w:
         w.setnchannels(1)
@@ -422,8 +428,13 @@ def faire_video(livre, ch, versets, rang):
                 centre(dr, H // 2 + 110, "Gratuit · Sans publicité · LSG 1910", f_osub, lerp_color(BG_TOP, SIL, a * 0.7))
             if len(cache) > 400:
                 cache.clear()
-            cache[cle] = img.tobytes()
-        proc.stdin.write(cache[cle])
+            cache[cle] = img
+        # Spectre de la voix : redessine a chaque image (il suit la voix).
+        im = cache[cle].copy()
+        if s < fin_versets + 0.8:
+            force = 1.0 if s < fin_versets else max(0.0, 1 - (s - fin_versets) / 0.8)
+            dessiner_spectre(im, env_voix, s, H - BORDER - 138, GOLD, force=force)
+        proc.stdin.write(im.tobytes())
 
     proc.stdin.close()
     err = proc.stderr.read().decode(errors="replace")
