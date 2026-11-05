@@ -147,97 +147,113 @@ def texte_affiche(t):
 # ─────────────────────────────────────────────────────────────────────────────
 #  Vignette (differente de la serie des Psaumes, et propre a chaque livre)
 # ─────────────────────────────────────────────────────────────────────────────
+# Abreviations usuelles en francais (Esaie = Es et Ecclesiaste = Ec, comme
+# dans les Bibles Segond).
+ABREV = {
+    "Genèse": "Gn", "Exode": "Ex", "Lévitique": "Lv", "Nombres": "Nb", "Deutéronome": "Dt",
+    "Josué": "Jos", "Juges": "Jg", "Ruth": "Rt", "1 Samuel": "1 S", "2 Samuel": "2 S",
+    "1 Rois": "1 R", "2 Rois": "2 R", "1 Chroniques": "1 Ch", "2 Chroniques": "2 Ch",
+    "Esdras": "Esd", "Néhémie": "Né", "Esther": "Est", "Job": "Jb", "Proverbes": "Pr",
+    "Ecclésiaste": "Ec", "Cantique Des Cantiqu": "Ct", "Ésaïe": "Es", "Jérémie": "Jr",
+    "Lamentations": "Lm", "Ézéchiel": "Ez", "Daniel": "Dn", "Osée": "Os", "Joël": "Jl",
+    "Amos": "Am", "Abdias": "Ab", "Jonas": "Jon", "Michée": "Mi", "Nahum": "Na",
+    "Habacuc": "Ha", "Sophonie": "So", "Aggée": "Ag", "Zacharie": "Za", "Malachie": "Ml",
+    "Matthieu": "Mt", "Marc": "Mc", "Luc": "Lc", "Jean": "Jn", "Actes": "Ac",
+    "Romains": "Rm", "1 Corinthiens": "1 Co", "2 Corinthiens": "2 Co", "Galates": "Ga",
+    "Éphésiens": "Ep", "Philippiens": "Ph", "Colossiens": "Col",
+    "1 Thessaloniciens": "1 Th", "2 Thessaloniciens": "2 Th", "1 Timothée": "1 Tm",
+    "2 Timothée": "2 Tm", "Tite": "Tt", "Philémon": "Phm", "Hébreux": "Hé",
+    "Jacques": "Jc", "1 Pierre": "1 P", "2 Pierre": "2 P", "1 Jean": "1 Jn",
+    "2 Jean": "2 Jn", "3 Jean": "3 Jn", "Jude": "Jd", "Apocalypse": "Ap",
+}
+
+
 def teinte_livre(livre):
-    """Une couleur par livre, jamais la meme : la teinte avance du nombre d'or
-    a chaque livre (66 teintes distinctes, deux livres voisins tres eloignes)."""
+    """Une couleur par livre (la teinte avance du nombre d'or a chaque livre),
+    en tons doux : peu satures, comme de l'encre sur du papier ancien."""
     h = (ORDRE.index(livre) * 0.6180339887) % 1.0
 
     def c(s, v):
         return tuple(int(x * 255) for x in colorsys.hsv_to_rgb(h, s, v))
-    # fond haut, fond bas, halo, titre clair, titre fonce, accent (bandeau, onde)
-    return c(0.75, 0.20), c(0.80, 0.06), c(0.85, 0.55), c(0.22, 1.0), c(0.75, 0.82), c(0.45, 0.93)
+    # fond haut, fond bas, silhouette, accent (bandeau, sous-titre)
+    return c(0.38, 0.30), c(0.42, 0.11), c(0.30, 0.62), c(0.26, 0.86)
 
 
 def vignette_bible(livre, ch, rang, out):
-    """Style « lumiere » : nuit, halo de la couleur du livre, titre en degrade,
-    bandeau BIBLE AUDIO avec casque, onde sonore en bas."""
+    """Vignette de la Bible audio (choix de BC, 5 nov. 2026) : l'abreviation du
+    livre en tres grand, en silhouette a droite ; a gauche le bandeau BIBLE
+    AUDIO, « Livre N » et le nom complet. Couleurs douces, une par livre."""
     VW, VH = 1280, 720
-    top, bot, halo, c1, c2, acc = teinte_livre(livre)
+    haut, bas, sil, acc = teinte_livre(livre)
     yy, xx = np.mgrid[0:VH, 0:VW].astype(np.float32)
-
-    def to_img(a):
-        return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8))
-
     t = (yy / VH)[..., None]
-    fond = np.array(top, np.float32) * (1 - t) + np.array(bot, np.float32) * t
-    # Deuxieme difference entre livres, en plus de la couleur : la place du
-    # halo (gauche, centre, droite), pour que deux teintes voisines ne se
-    # confondent pas.
-    hx_halo = VW * (0.5, 0.28, 0.72)[ORDRE.index(livre) % 3]
-    for r, k in ((620, 0.9), (260, 0.7)):
-        dist = np.sqrt((xx - hx_halo) ** 2 + (yy - 250) ** 2) / r
-        fond = fond + (np.clip(1 - dist, 0, 1) ** 2 * k)[..., None] * np.array(halo, np.float32)
-    img = to_img(fond)
+    fond = np.array(haut, np.float32) * (1 - t) + np.array(bas, np.float32) * t
+    dist = np.sqrt((xx - VW * 0.74) ** 2 + (yy - VH * 0.45) ** 2) / 620
+    fond = fond + (np.clip(1 - dist, 0, 1) ** 2 * 0.35)[..., None] * np.array(acc, np.float32)
+    img = Image.fromarray(np.clip(fond, 0, 255).astype(np.uint8))
 
-    rnd = random.Random(rang)
-    calque = Image.new("RGB", (VW, VH), (0, 0, 0))
-    dc = ImageDraw.Draw(calque)
-    n, bw, base = 64, 10, 615
-    gap = (VW - 160 - n * bw) / (n - 1)
-    onde = tuple(int(x * 0.62) for x in acc)
-    for i in range(n):
-        env = math.sin(math.pi * i / (n - 1)) ** 1.2
-        h = max(6, 36 * env * (0.45 + 0.55 * rnd.random()))
-        x = 80 + i * (bw + gap)
-        dc.rounded_rectangle([x, base - h, x + bw, base + h], radius=5, fill=onde)
-    img = ImageChops.add(img, calque.filter(ImageFilter.GaussianBlur(8)))
-    img = ImageChops.add(img, calque)
+    # L'abreviation en silhouette, calee en bas a droite, entiere.
+    ab = ABREV[livre]
     d = ImageDraw.Draw(img)
-
-    titre = f"{nom_affiche(livre)} {ch}"
-    f_t = ImageFont.truetype(FONT_SERIF_BOLD, 70)
-    for size in range(150, 70, -6):
-        f = ImageFont.truetype(FONT_SERIF_BOLD, size)
-        if d.textlength(titre, font=f) <= VW - 160:
-            f_t = f
+    f_ab = ImageFont.truetype(FONT_SERIF_BOLD, 420)
+    for size in range(400, 140, -10):
+        f_ab = ImageFont.truetype(FONT_SERIF_BOLD, size)
+        bb0 = d.textbbox((0, 0), ab, font=f_ab)
+        if bb0[2] - bb0[0] <= VW * 0.46 and bb0[3] - bb0[1] <= VH * 0.5:
             break
-    ty = 215
-    m = Image.new("L", (VW, VH), 0)
-    ImageDraw.Draw(m).text(((VW - d.textlength(titre, font=f_t)) / 2, ty), titre, font=f_t, fill=255)
-    bb = m.getbbox()
-    img.paste((0, 0, 0), (0, 0), m.filter(ImageFilter.GaussianBlur(10)).point(lambda v: int(v * 0.7)))
-    tg = np.clip((yy - bb[1]) / max(1, bb[3] - bb[1]), 0, 1)[..., None]
-    img.paste(to_img(np.array(c1, np.float32) * (1 - tg) + np.array(c2, np.float32) * tg), (0, 0), m)
+    masque = Image.new("L", (VW, VH), 0)
+    md = ImageDraw.Draw(masque)
+    bb = md.textbbox((0, 0), ab, font=f_ab)
+    x = VW - 50 - (bb[2] - bb[0]) - bb[0]
+    y = VH - 60 - (bb[3] - bb[1]) - bb[1]
+    md.text((x, y), ab, font=f_ab, fill=255)
+    img.paste(sil, (0, 0), masque.point(lambda v: int(v * 0.42)))
+    lueur = masque.filter(ImageFilter.GaussianBlur(18)).point(lambda v: int(v * 0.18))
+    img.paste(acc, (0, 0), lueur)
     d = ImageDraw.Draw(img)
 
+    # Bandeau BIBLE AUDIO
+    fo = tuple(int(c * 0.5) for c in bas)
+    f_b = ImageFont.truetype(FONT_SANS.replace("DejaVuSans.ttf", "DejaVuSans-Bold.ttf"), 30)
+    lab = "BIBLE AUDIO"
+    bx, by, bh = 72, 92, 60
+    bwid = int(d.textlength(lab, font=f_b) + 96)
+    d.rounded_rectangle([bx, by, bx + bwid, by + bh], radius=30, fill=acc)
+    hx, hy, hs, hw = bx + 20, by + 13, 32, 5
+    d.arc([hx, hy, hx + hs, hy + hs], start=180, end=360, fill=fo, width=hw)
+    d.rounded_rectangle([hx - hw // 2, hy + hs // 2 - 2, hx + hs * 0.26, hy + hs * 0.95], radius=3, fill=fo)
+    d.rounded_rectangle([hx + hs * 0.74, hy + hs // 2 - 2, hx + hs + hw // 2, hy + hs * 0.95], radius=3, fill=fo)
+    tb = d.textbbox((0, 0), lab, font=f_b)
+    d.text((bx + 68, by + (bh - (tb[3] - tb[1])) // 2 - tb[1]), lab, font=f_b, fill=fo)
+
+    # Titre « Livre N », nom complet
+    creme = (246, 240, 228)
+    titre = f"{nom_affiche(livre)} {ch}"
+    f_t = ImageFont.truetype(FONT_SERIF_BOLD, 60)
+    for size in range(124, 60, -4):
+        f_t = ImageFont.truetype(FONT_SERIF_BOLD, size)
+        if d.textlength(titre, font=f_t) <= VW * 0.56:
+            break
+    ty = 250
+    ombre = Image.new("L", (VW, VH), 0)
+    ImageDraw.Draw(ombre).text((72, ty), titre, font=f_t, fill=255)
+    img.paste((0, 0, 0), (0, 0), ombre.filter(ImageFilter.GaussianBlur(10)).point(lambda v: int(v * 0.5)))
+    d = ImageDraw.Draw(img)
+    d.text((72, ty), titre, font=f_t, fill=creme)
     sous = nom_complet(livre)
     if sous == nom_affiche(livre):
         sous = "Nouveau Testament" if livre in NT else "Ancien Testament"
-    f_s = ImageFont.truetype(FONT_SERIF, 28)
-    for size in range(46, 26, -2):
-        f = ImageFont.truetype(FONT_SERIF, size)
-        if d.textlength(sous, font=f) <= VW - 200:
-            f_s = f
+    f_s = ImageFont.truetype(FONT_SERIF, 40)
+    for size in range(40, 24, -2):
+        f_s = ImageFont.truetype(FONT_SERIF, size)
+        if d.textlength(sous, font=f_s) <= VW * 0.6:
             break
-    d.text(((VW - d.textlength(sous, font=f_s)) / 2, ty + f_t.size + 30), sous, font=f_s, fill=(240, 234, 224))
-
-    f_b = ImageFont.truetype(FONT_SANS.replace("DejaVuSans.ttf", "DejaVuSans-Bold.ttf"), 40)
-    lab = "BIBLE AUDIO"
-    bwid, bh = int(d.textlength(lab, font=f_b) + 120), 76
-    bx, by = (VW - bwid) // 2, 82
-    fo = (20, 18, 30)
-    d.rounded_rectangle([bx, by, bx + bwid, by + bh], radius=38, fill=acc)
-    hx, hy, hs, hw = bx + 26, by + 16, 40, 6
-    d.arc([hx, hy, hx + hs, hy + hs], start=180, end=360, fill=fo, width=hw)
-    d.rounded_rectangle([hx - hw // 2, hy + hs // 2 - 2, hx + hs * 0.26, hy + hs * 0.95], radius=hs // 10, fill=fo)
-    d.rounded_rectangle([hx + hs * 0.74, hy + hs // 2 - 2, hx + hs + hw // 2, hy + hs * 0.95], radius=hs // 10, fill=fo)
-    tb = d.textbbox((0, 0), lab, font=f_b)
-    d.text((bx + 86, by + (bh - (tb[3] - tb[1])) // 2 - tb[1]), lab, font=f_b, fill=fo)
+    ys = ty + f_t.size + 28
+    d.text((74, ys), sous, font=f_s, fill=acc)
+    d.line([(74, ys + f_s.size + 34), (74 + 120, ys + f_s.size + 34)], fill=acc, width=2)
 
     f_p = ImageFont.truetype(FONT_SANS, 24)
-    gris = (175, 168, 155)
-    d.text((60, VH - 48), "Bible Louis Segond 1910", font=f_p, fill=gris)
-    d.text((VW - 60 - d.textlength(WATERMARK, font=f_p), VH - 48), WATERMARK, font=f_p, fill=gris)
+    d.text((74, VH - 66), "Bible Louis Segond 1910  ·  " + WATERMARK, font=f_p, fill=tuple(int(c * 0.85) for c in acc))
     img.save(out, "PNG")
     return out
 
