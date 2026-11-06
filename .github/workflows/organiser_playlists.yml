@@ -1,0 +1,37 @@
+name: Organiser les playlists YouTube (lecture audio)
+
+# Range les chapitres de la Bible audio et les Psaumes narres dans leurs
+# playlists (ajoute les manquants, retire les doublons). Ne publie rien
+# d'autre, ne touche a aucune autre playlist. Sans danger a relancer.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bible-audio
+  cancel-in-progress: false
+
+jobs:
+  organiser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: pip install pillow requests numpy google-api-python-client google-auth-httplib2 google-auth-oauthlib
+      - name: Organiser
+        env:
+          # bot.py exige ces variables a l'import ; rien n'est envoye sur Telegram.
+          TELEGRAM_BOT_TOKEN: "-"
+          TELEGRAM_CHANNEL: "-"
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: python scripts/organiser_playlists.py
