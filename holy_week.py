@@ -915,6 +915,8 @@ def post_youtube(path, day_data):
                             scopes=None)
         creds.refresh(Request())
         yt = build("youtube","v3",credentials=creds)
+        from youtube_garde import verifier_chaine
+        verifier_chaine(yt)
         title = f"{day_data['emoji']} {day_data['ref']} — {day_data['theme']}"
         desc  = (f"{day_data['emoji']} {day_data['theme']}\n\n"
                  f"« {day_data['verse']} »\n\n— {day_data['ref']} (LSG 1910)\n\n"

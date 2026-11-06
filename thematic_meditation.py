@@ -556,6 +556,8 @@ def upload_to_youtube(video_path, theme_key, verses):
         scopes=None)
     creds.refresh(Request())
     youtube = build("youtube", "v3", credentials=creds)
+    from youtube_garde import verifier_chaine
+    verifier_chaine(youtube)
 
     th = THEMES[theme_key]
     title = f"{th['emoji']} {th['title']} \u2014 Versets bibliques (LSG 1910)"

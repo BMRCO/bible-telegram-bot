@@ -558,6 +558,8 @@ def upload(video, livre, ch, tl, rang):
                         scopes=None)
     creds.refresh(Request())
     yt = build("youtube", "v3", credentials=creds)
+    from youtube_garde import verifier_chaine
+    verifier_chaine(yt)
     body = {
         "snippet": {"title": titre_video(livre, ch), "description": description(livre, ch, tl),
                     "tags": tags(livre, ch), "categoryId": "22",

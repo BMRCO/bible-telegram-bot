@@ -1029,6 +1029,8 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
     )
     creds.refresh(Request())
     youtube = build("youtube", "v3", credentials=creds)
+    from youtube_garde import verifier_chaine
+    verifier_chaine(youtube)
 
     title = _video_title(num, part_label)
 

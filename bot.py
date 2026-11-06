@@ -2886,6 +2886,8 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
             scopes=None)
         creds.refresh(Request())
         youtube = build("youtube", "v3", credentials=creds)
+        from youtube_garde import verifier_chaine
+        verifier_chaine(youtube)
         title = build_yt_title(cat_name, cat, ref, hour_utc)
         chapter_url = parse_ref_to_chapter_url(ref)
         description = (f"« {text} »\n"
@@ -3161,6 +3163,8 @@ def main_parabole():
                 scopes=None)
             creds.refresh(Request())
             youtube = build("youtube", "v3", credentials=creds)
+            from youtube_garde import verifier_chaine
+            verifier_chaine(youtube)
             ref_range = parabole.get("ref_range", verses[0][0] if verses else "")
             yt_title = f"✝️ {title} — {ref_range} | Bible LSG1910"[:100]
             _ref0 = verses[0][0] if verses else ""

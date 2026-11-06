@@ -188,6 +188,8 @@ def youtube(media, a):
                         scopes=None)
     creds.refresh(Request())
     yt = build("youtube", "v3", credentials=creds)
+    from youtube_garde import verifier_chaine
+    verifier_chaine(yt)
     resp = yt.videos().insert(part="snippet,status", body={
         "snippet": {"title": a["youtube_titre"], "description": a["youtube"], "categoryId": "22",
                     "tags": ["Bible audio", "Bible audio français", "Louis Segond 1910", "LaBible.app"],

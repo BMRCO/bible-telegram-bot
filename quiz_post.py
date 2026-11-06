@@ -222,6 +222,8 @@ def yt_upload(video_path, theme, q, seed):
             scopes=None)
         creds.refresh(Request())
         youtube = build("youtube", "v3", credentials=creds)
+        from youtube_garde import verifier_chaine
+        verifier_chaine(youtube)
 
         label = bank[theme]["label"]
         titles = {
