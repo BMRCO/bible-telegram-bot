@@ -60,6 +60,7 @@ FADE = 0.8
 SECS_INTRO_MIN = 5
 SECS_OUTRO = 5
 TITLE_SUFFIX = "Lecture Audio | Bible LSG1910"
+PLAYLIST_COMPLETE = "🎧 Bible audio complète | Louis Segond 1910"
 
 # ─── Ordre de lecture (nom du livre tel qu'il est dans lsg1910.json) ───
 NT = ["Marc", "Matthieu", "Luc", "Jean", "Actes", "Romains", "1 Corinthiens",
@@ -588,26 +589,33 @@ def upload(video, livre, ch, tl, rang):
         print("✅ Sous-titres envoyés")
     except Exception as e:
         print(f"⚠️  Sous-titres non envoyés (scope OAuth ?) : {str(e)[:160]}")
+    # Deux playlists (creees a la main le 6 nov. 2026, memes titres) : celle du
+    # livre, « 📖 Livre | Bible audio LSG 1910 », et la Bible complete.
+    # Une playlist de livre absente est creee (premier chapitre d'un livre).
     try:
-        nom_pl = f"📖 {nom_affiche(livre)} | Bible audio LSG 1910"
-        pl = None
+        mes_pl = {}
         r = yt.playlists().list(part="snippet", mine=True, maxResults=50)
-        while r is not None and pl is None:
+        while r is not None:
             res = r.execute()
-            pl = next((it["id"] for it in res.get("items", []) if it["snippet"]["title"] == nom_pl), None)
+            for it in res.get("items", []):
+                mes_pl.setdefault(it["snippet"]["title"], it["id"])
             r = yt.playlists().list_next(r, res)
-        if pl is None:
-            pl = yt.playlists().insert(part="snippet,status", body={
+        nom_pl = f"📖 {nom_affiche(livre)} | Bible audio LSG 1910"
+        if nom_pl not in mes_pl:
+            mes_pl[nom_pl] = yt.playlists().insert(part="snippet,status", body={
                 "snippet": {"title": nom_pl, "defaultLanguage": "fr",
-                            "description": f"{nom_complet(livre)}, lu à voix haute chapitre après chapitre, "
+                            "description": f"{nom_complet(livre)}, lu à voix haute, chapitre après chapitre, "
                                            f"dans le texte de la Bible Louis Segond 1910 (domaine public), "
-                                           f"sans commentaire ajouté. Texte complet gratuit sur LaBible.app."},
+                                           f"sans commentaire ajouté. Le texte complet est accessible "
+                                           f"gratuitement, hors ligne et sans publicité sur LaBible.app."},
                 "status": {"privacyStatus": "public"}}).execute()["id"]
-        yt.playlistItems().insert(part="snippet", body={"snippet": {
-            "playlistId": pl, "resourceId": {"kind": "youtube#video", "videoId": vid}}}).execute()
-        print("✅ Ajoutée à la playlist du livre")
+        for titre in (nom_pl, PLAYLIST_COMPLETE):
+            if titre in mes_pl:
+                yt.playlistItems().insert(part="snippet", body={"snippet": {
+                    "playlistId": mes_pl[titre], "resourceId": {"kind": "youtube#video", "videoId": vid}}}).execute()
+                print(f"✅ Ajoutée à la playlist « {titre} »")
     except Exception as e:
-        print(f"⚠️  Playlist non mise à jour (scope OAuth ?) : {str(e)[:160]}")
+        print(f"⚠️  Playlists non mises à jour (scope OAuth ?) : {str(e)[:160]}")
     return vid
 
 
