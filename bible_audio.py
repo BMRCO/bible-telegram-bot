@@ -510,7 +510,8 @@ def description(livre, ch, tl):
         f"{nom} chapitre {ch} lu à voix haute, en entier ({nom_complet(livre)}).\n"
         f"Bible Louis Segond 1910 (LSG 1910), texte intégral, sans commentaire. "
         f"Voix de synthèse, musique douce.\n\n"
-        f"📖 Lire {nom} {ch} gratuitement : {url}\n\n"
+        f"📖 Lire {nom} {ch} gratuitement : {url}\n"
+        f"🎧 Toute la Bible audio : {APP_URL}/bible-audio\n\n"
         + (f"━━━━━━━━━━━━━━━━━━━━━\n{ch_txt}\n\n" if ch_txt else "")
         + f"━━━━━━━━━━━━━━━━━━━━━\n\n{versets_txt}\n\n━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"🔔 Abonnez-vous : la Bible entière, lue chapitre après chapitre.\n"

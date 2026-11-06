@@ -1051,6 +1051,7 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
         f"Bible Louis Segond 1910 (LSG 1910), texte intégral, sans commentaire. "
         f"Voix de synthèse, musique douce.\n\n"
         f"📖 Lire le Psaume {num} gratuitement : {chapter_url}\n"
+        f"🎧 Toute la Bible audio : {APP_URL}/bible-audio\n"
         f"🎙️ Tous les Psaumes lus à voix haute : la playlist « {PLAYLIST_NARREE} »\n\n"
         + (f"━━━━━━━━━━━━━━━━━━━━━\n{chapitres}\n\n" if chapitres else "")
         + f"━━━━━━━━━━━━━━━━━━━━━\n\n"
