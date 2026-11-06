@@ -1230,6 +1230,12 @@ def main():
     # publier() isole chaque plateforme : une panne reseau sur l'une ne
     # peut plus empecher les autres ni la sauvegarde de la progression.
     video_id = publier("YouTube méditation", upload_to_youtube, video_path, num, verses, part_label)
+    # Pour la page https://labible.app/bible-audio : {"23": "<id>", "119:1-22": "<id>"}
+    if video_id:
+        vf = "videos_psaumes_audio.json"
+        videos = load_json(vf) if os.path.exists(vf) else {}
+        videos[f"{num}:{part_label}" if part_label else str(num)] = video_id
+        save_json(vf, videos)
 
     # ─── Telegram + Facebook (lien vers la vidéo YouTube) ───
     publier("Telegram méditation", post_to_telegram, video_path, num, part_label)

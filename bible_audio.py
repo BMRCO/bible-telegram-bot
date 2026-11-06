@@ -51,6 +51,9 @@ YT_REFRESH_TOKEN = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
 
 ESSAI = os.environ.get("ESSAI", "") == "1"
 PROGRESS_FILE = "progress_bible_audio.json"
+# Videos en ligne, lues par la page https://labible.app/bible-audio :
+# {"marc/1": "<id YouTube>", ...} (cle = adresse du chapitre sur le site).
+VIDEOS_FILE = "videos_bible_audio.json"
 
 W, H = 1920, 1080
 FADE = 0.8
@@ -646,6 +649,10 @@ def main():
         return
 
     vid = publier("YouTube Bible audio", upload, video, livre, ch, tl, rang)
+    if vid:
+        videos = load_json(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else {}
+        videos[f"{slugify_book(nom_affiche(livre))}/{ch}"] = vid
+        save_json(VIDEOS_FILE, videos)
     # La progression n'avance que si la video est en ligne : sinon le meme
     # chapitre est retente au prochain passage (quota YouTube epuise, etc.).
     if vid and progress is not None:
