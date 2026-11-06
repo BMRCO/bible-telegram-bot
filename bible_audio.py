@@ -75,7 +75,11 @@ AT = ["Genèse", "Exode", "Lévitique", "Nombres", "Deutéronome", "Josué",
       "Lamentations", "Ézéchiel", "Daniel", "Osée", "Joël", "Amos", "Abdias",
       "Jonas", "Michée", "Nahum", "Habacuc", "Sophonie", "Aggée", "Zacharie",
       "Malachie"]
-ORDRE = NT + AT   # « Psaume » volontairement absent
+# Ordre de publication (decision de BC, 6 nov. 2026) : un livre du Nouveau
+# Testament, puis un livre de l'Ancien, en alternance (Marc, Genese, Matthieu,
+# Exode, Luc, Levitique...). Quand le NT est fini, l'AT continue seul.
+# « Psaume » volontairement absent (serie narree quotidienne).
+ORDRE = [livre for paire in zip(NT, AT) for livre in paire] + AT[len(NT):]
 
 # Nom affiche (titres, URL) quand il differe du fichier, qui tronque ce titre.
 NOM_AFFICHE = {"Cantique Des Cantiqu": "Cantique des Cantiques"}
