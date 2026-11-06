@@ -185,7 +185,7 @@ def youtube(media, a):
     from google.auth.transport.requests import Request
     creds = Credentials(token=None, refresh_token=YT_REFRESH, client_id=YT_ID, client_secret=YT_SECRET,
                         token_uri="https://oauth2.googleapis.com/token",
-                        scopes=["https://www.googleapis.com/auth/youtube.upload"])
+                        scopes=None)
     creds.refresh(Request())
     yt = build("youtube", "v3", credentials=creds)
     resp = yt.videos().insert(part="snippet,status", body={

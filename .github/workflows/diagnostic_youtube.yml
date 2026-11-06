@@ -1,0 +1,32 @@
+name: Diagnostic YouTube (jeton)
+
+# Dit quels scopes a le jeton YOUTUBE_REFRESH_TOKEN et si les playlists et
+# les sous-titres sont accessibles. Ne publie rien, n'affiche aucun secret.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts/diagnostic_youtube.py
+          sparse-checkout-cone-mode: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: pip install requests google-api-python-client google-auth
+      - name: Check
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: python scripts/diagnostic_youtube.py

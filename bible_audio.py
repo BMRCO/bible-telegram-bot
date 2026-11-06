@@ -555,7 +555,7 @@ def upload(video, livre, ch, tl, rang):
 
     creds = Credentials(token=None, refresh_token=YT_REFRESH_TOKEN, client_id=YT_CLIENT_ID,
                         client_secret=YT_CLIENT_SECRET, token_uri="https://oauth2.googleapis.com/token",
-                        scopes=["https://www.googleapis.com/auth/youtube.upload"])
+                        scopes=None)
     creds.refresh(Request())
     yt = build("youtube", "v3", credentials=creds)
     body = {

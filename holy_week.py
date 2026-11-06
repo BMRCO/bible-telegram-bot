@@ -912,7 +912,7 @@ def post_youtube(path, day_data):
         creds = Credentials(token=None, refresh_token=YT_REFRESH_TOKEN,
                             client_id=YT_CLIENT_ID, client_secret=YT_CLIENT_SECRET,
                             token_uri="https://oauth2.googleapis.com/token",
-                            scopes=["https://www.googleapis.com/auth/youtube.upload"])
+                            scopes=None)
         creds.refresh(Request())
         yt = build("youtube","v3",credentials=creds)
         title = f"{day_data['emoji']} {day_data['ref']} — {day_data['theme']}"

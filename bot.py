@@ -2883,7 +2883,7 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
         from google.auth.transport.requests import Request
         creds = Credentials(token=None, refresh_token=YT_REFRESH_TOKEN, client_id=YT_CLIENT_ID,
             client_secret=YT_CLIENT_SECRET, token_uri="https://oauth2.googleapis.com/token",
-            scopes=["https://www.googleapis.com/auth/youtube.upload"])
+            scopes=None)
         creds.refresh(Request())
         youtube = build("youtube", "v3", credentials=creds)
         title = build_yt_title(cat_name, cat, ref, hour_utc)
@@ -3158,7 +3158,7 @@ def main_parabole():
         else:
             creds = Credentials(token=None, refresh_token=YT_REFRESH_TOKEN, client_id=YT_CLIENT_ID,
                 client_secret=YT_CLIENT_SECRET, token_uri="https://oauth2.googleapis.com/token",
-                scopes=["https://www.googleapis.com/auth/youtube.upload"])
+                scopes=None)
             creds.refresh(Request())
             youtube = build("youtube", "v3", credentials=creds)
             ref_range = parabole.get("ref_range", verses[0][0] if verses else "")
