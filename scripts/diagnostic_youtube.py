@@ -19,6 +19,15 @@ print("::notice::Scopes accordes : " + ", ".join(s.rsplit("/", 1)[-1] for s in s
 ok_complet = any(s.endswith(("/youtube", "/youtube.force-ssl")) for s in scopes)
 yt = build("youtube", "v3", credentials=creds)
 try:
+    ch = yt.channels().list(part="snippet,statistics", mine=True).execute().get("items", [])
+    if ch:
+        s = ch[0]
+        print(f"::notice::Chaine : {s['snippet']['title']} ({s['statistics'].get('videoCount', '?')} videos)")
+    else:
+        print("::warning::Chaine : aucune chaine sur ce compte")
+except Exception as e:
+    print(f"::notice::Chaine : erreur ({str(e)[:120]})")
+try:
     n = len(yt.playlists().list(part="snippet", mine=True, maxResults=50).execute().get("items", []))
     print(f"::notice::Playlists : OUI ({n} lues)")
 except Exception as e:
