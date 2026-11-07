@@ -25,6 +25,10 @@ import yt_playlists as ypl  # noqa: E402
 from youtube_garde import verifier_chaine  # noqa: E402
 
 DEPUIS = os.environ.get("DEPUIS", "2026-10-04")
+# La serie « Versets bibliques » est rattrapee depuis son debut, quelle que soit
+# DEPUIS : neuf de ses playlists de theme n'ont ete creees que le 7 novembre 2026.
+# Les autres series avant le 4 octobre ont ete rangees a la main : on n'y touche pas.
+DEPUIS_THEMES = "2026-01-01"
 APPLIQUER = os.environ.get("APPLIQUER") == "1"
 # Chaque ajout coute 50 unites du quota YouTube (10 000 par jour, partage avec les
 # envois du bot) : on plafonne par passage, et on relance les jours suivants.
@@ -107,13 +111,15 @@ def main():
         stop = False
         for it in rep.get("items", []):
             date = it["contentDetails"].get("videoPublishedAt") or it["snippet"]["publishedAt"]
-            if date[:10] < DEPUIS:
+            if date[:10] < min(DEPUIS, DEPUIS_THEMES):
                 stop = True
+                continue
+            if date[:10] < DEPUIS and "Versets bibliques" not in it["snippet"]["title"]:
                 continue
             videos.append((date, it["contentDetails"]["videoId"], it["snippet"]["title"]))
         req = None if stop else yt.playlistItems().list_next(req, rep)
     videos.sort()
-    print(f"::notice::{len(videos)} vidéo(s) publiée(s) depuis le {DEPUIS}")
+    print(f"::notice::{len(videos)} vidéo(s) retenue(s) (depuis le {DEPUIS}, « Versets bibliques » depuis le {DEPUIS_THEMES})")
 
     if APPLIQUER:
         ypl.creer_manquantes(yt)
