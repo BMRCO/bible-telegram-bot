@@ -26,6 +26,9 @@ from youtube_garde import verifier_chaine  # noqa: E402
 
 DEPUIS = os.environ.get("DEPUIS", "2026-10-04")
 APPLIQUER = os.environ.get("APPLIQUER") == "1"
+# Chaque ajout coute 50 unites du quota YouTube (10 000 par jour, partage avec les
+# envois du bot) : on plafonne par passage, et on relance les jours suivants.
+MAX = int(os.environ.get("MAX") or 80)
 
 PL = ypl.PLAYLISTS
 TH = ypl.PLAYLISTS_THEMATIQUES
@@ -159,10 +162,13 @@ def main():
         for cible, lst in a_ajouter.items():
             pid = index[ypl._norm(cible)]
             for vid, _ in lst:
+                if faits >= MAX:
+                    break
                 yt.playlistItems().insert(part="snippet", body={"snippet": {
                     "playlistId": pid, "resourceId": {"kind": "youtube#video", "videoId": vid}}}).execute()
                 faits += 1
-        print(f"::notice::{faits} vidéo(s) rangée(s)")
+        print(f"::notice::{faits} vidéo(s) rangée(s), {total - faits} restante(s)"
+              + (" : relancer demain" if total > faits else ""))
 
 
 if __name__ == "__main__":
