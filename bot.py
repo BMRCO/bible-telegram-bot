@@ -2909,6 +2909,8 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
                 print(f"  ⏳ YouTube : {int(status.progress()*100)}%")
         video_id = response.get("id")
         print(f"✅ YouTube Short — https://youtube.com/shorts/{video_id}")
+        import yt_playlists
+        yt_playlists.ranger(youtube, video_id, yt_playlists.cle_pour_categorie(cat_name, hour_utc))
 
         # Vignette : le cadre choisi par YouTube est illisible a la taille
         # d'un resultat de recherche. On impose une vignette lisible.
@@ -3186,6 +3188,8 @@ def main_parabole():
                 if status:
                     print(f"  ⏳ YouTube : {int(status.progress()*100)}%")
             print(f"✅ YouTube publié — https://youtube.com/watch?v={response.get('id')}")
+            import yt_playlists
+            yt_playlists.ranger(youtube, response.get('id'), "parabole")
     except Exception as e:
         signaler_echec("YouTube parabole", f"{type(e).__name__} : {e}")
 

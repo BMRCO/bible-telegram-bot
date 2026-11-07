@@ -598,6 +598,8 @@ def upload_to_youtube(video_path, theme_key, verses):
             print(f"  \u23f3 Upload: {int(status.progress() * 100)}%")
     vid = response.get("id")
     print(f"\u2705 YouTube: https://youtube.com/watch?v={vid}")
+    import yt_playlists
+    yt_playlists.ranger(youtube, vid, theme_key, thematique=True)
 
     # Vignette : une video longue affiche partout la vignette definie.
     try:

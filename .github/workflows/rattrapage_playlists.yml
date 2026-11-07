@@ -1,0 +1,42 @@
+name: Rattrapage des playlists YouTube
+
+# Range dans leur playlist les videos publiees depuis une date qui n'y sont
+# pas encore. Par defaut c'est un essai : la liste s'affiche, rien n'est ecrit.
+on:
+  workflow_dispatch:
+    inputs:
+      depuis:
+        description: "Videos publiees depuis (AAAA-MM-JJ)"
+        default: "2026-10-04"
+      appliquer:
+        description: "Ranger pour de vrai (sinon : essai)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  rattrapage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: pip install pillow requests numpy google-api-python-client google-auth-httplib2 google-auth-oauthlib
+      - name: Ranger
+        env:
+          # bot.py exige ces variables a l'import ; rien n'est envoye sur Telegram.
+          TELEGRAM_BOT_TOKEN: "-"
+          TELEGRAM_CHANNEL: "-"
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          DEPUIS: ${{ inputs.depuis }}
+          APPLIQUER: ${{ inputs.appliquer && '1' || '' }}
+        run: python scripts/rattrapage_playlists.py

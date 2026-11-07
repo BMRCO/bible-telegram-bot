@@ -930,6 +930,8 @@ def post_youtube(path, day_data):
         while response is None:
             _, response = req.next_chunk()
         print(f"✅ YouTube — https://youtube.com/shorts/{response.get('id','?')}")
+        import yt_playlists
+        yt_playlists.ranger(yt, response.get('id'), "semaine_sainte")
     except Exception as e:
         signaler_echec("YouTube", f"{type(e).__name__} : {e}")
 

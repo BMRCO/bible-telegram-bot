@@ -269,6 +269,8 @@ def yt_upload(video_path, theme, q, seed):
                 print(f"  ⏳ YouTube : {int(status.progress() * 100)}%")
         vid = resp.get("id")
         print(f"✅ YouTube Short — https://youtube.com/shorts/{vid}")
+        import yt_playlists
+        yt_playlists.ranger(youtube, vid, "quiz")
 
         # Vignette : la question, sans les options ni la reponse.
         try:
