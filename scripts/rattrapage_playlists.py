@@ -115,6 +115,8 @@ def main():
     videos.sort()
     print(f"::notice::{len(videos)} vidéo(s) publiée(s) depuis le {DEPUIS}")
 
+    if APPLIQUER:
+        ypl.creer_manquantes(yt)
     index = ypl._charger_index(yt)
     contenu = {}
 
@@ -159,7 +161,8 @@ def main():
 
     if APPLIQUER:
         faits = 0
-        for cible, lst in a_ajouter.items():
+        # Les petites playlists d'abord : elles sont completes des le premier passage.
+        for cible, lst in sorted(a_ajouter.items(), key=lambda kv: len(kv[1])):
             pid = index[ypl._norm(cible)]
             for vid, _ in lst:
                 if faits >= MAX:

@@ -51,10 +51,25 @@ PLAYLISTS_THEMATIQUES = {
     "guerison":   "\U0001f49a La Guérison de Dieu",
     "deuil":      "\U0001f56f️ Le Réconfort dans le Deuil",
     "peur":       "\U0001f499 Face à la Peur et l'Angoisse",
-    # Sans playlist pour l'instant :
-    "paix": None, "amour": None, "esperance": None, "confiance": None,
-    "force": None, "gratitude": None, "combat": None, "solitude": None,
-    "famille": None,
+    "paix":       "\U0001f54a️ La Paix de Dieu",
+    "amour":      "❤️ L'Amour de Dieu",
+    "esperance":  "\U0001f305 L'Espérance en Dieu",
+    "confiance":  "⚓ La Confiance en Dieu",
+    "force":      "\U0001f981 La Force et le Courage",
+    "gratitude":  "\U0001f64c La Gratitude",
+    "combat":     "⚔️ Le Combat Spirituel",
+    "solitude":   "\U0001f463 La Présence de Dieu",
+    "famille":    "\U0001f3e1 La Famille selon Dieu",
+}
+
+# Playlists de theme creees par creer_manquantes() si elles n'existent pas :
+# meme description que les cinq creees a la main le 5 octobre 2026.
+DESCRIPTIONS_THEMES = {
+    "paix": "de la paix de Dieu", "amour": "de l'amour de Dieu",
+    "esperance": "de l'espérance en Dieu", "confiance": "de la confiance en Dieu",
+    "force": "de la force et du courage", "gratitude": "de la gratitude",
+    "combat": "du combat spirituel", "solitude": "de la présence de Dieu",
+    "famille": "de la famille",
 }
 
 _index = None
@@ -117,3 +132,20 @@ def ranger(youtube, video_id, cle, thematique=False):
         print(f"✅ Ajoutée à la playlist « {titre} »")
     except Exception as e:
         print(f"⚠️  Playlist non rangée : {str(e)[:200]}")
+
+
+def creer_manquantes(youtube):
+    """Cree les playlists de theme de DESCRIPTIONS_THEMES absentes de la chaine."""
+    index = _charger_index(youtube)
+    for cle, sujet in DESCRIPTIONS_THEMES.items():
+        titre = PLAYLISTS_THEMATIQUES[cle]
+        if _norm(titre) in index:
+            continue
+        desc = (f"Ce que la Bible dit {sujet}. Les versets sont lus dans le texte Louis "
+                f"Segond 1910, domaine public, sans commentaire ajouté. Le texte complet est "
+                f"accessible gratuitement, hors ligne et sans publicité sur LaBible.app.")
+        pid = youtube.playlists().insert(part="snippet,status", body={
+            "snippet": {"title": titre, "description": desc, "defaultLanguage": "fr"},
+            "status": {"privacyStatus": "public"}}).execute()["id"]
+        index[_norm(titre)] = pid
+        print(f"➕ Playlist créée : {titre}")
