@@ -21,7 +21,7 @@ def serie(titre):
     t = titre
     if "Lecture Audio" in t and t.startswith("Psaume"):
         return "Psaumes narrés"
-    if "Bible audio" in t or "Bible Audio" in t or "BIBLE AUDIO" in t:
+    if "Lecture Audio" in t or "Bible audio" in t or "Bible Audio" in t:
         return "Bible audio"
     if "Quiz biblique" in t or "Quiz Biblique" in t:
         return "Quiz"
