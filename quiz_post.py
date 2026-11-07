@@ -167,9 +167,28 @@ def threads_reel(video_url, caption):
     if r.status_code != 200:
         signaler_echec("Threads quiz", f"container — HTTP {r.status_code} — {r.text[:200]}")
         return
+    # Threads traite la video avant de pouvoir la publier. Une attente fixe de
+    # 30 s ne suffisait pas toujours (7 nov. 2026 : « Media Not Found ») : on
+    # interroge le statut du container jusqu'a FINISHED, 3 minutes au plus.
     import time
-    time.sleep(30)
-    bot._threads_publish(r.json().get("id"))
+    container_id = r.json().get("id")
+    statut = ""
+    for _ in range(18):
+        time.sleep(10)
+        try:
+            rs = requests.get(f"https://graph.threads.net/v1.0/{container_id}",
+                              params={"fields": "status,error_message",
+                                      "access_token": bot.THREADS_ACCESS_TOKEN}, timeout=30)
+            statut = rs.json().get("status", "")
+        except Exception:
+            continue
+        if statut == "FINISHED":
+            bot._threads_publish(container_id)
+            return
+        if statut == "ERROR":
+            signaler_echec("Threads quiz", f"container — {rs.json().get('error_message')}")
+            return
+    signaler_echec("Threads quiz", f"container jamais prêt (dernier statut : {statut or 'inconnu'})")
 
 
 def pinterest_pin(image_path, title, description):
