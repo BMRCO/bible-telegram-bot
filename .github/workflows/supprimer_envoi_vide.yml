@@ -1,0 +1,31 @@
+name: Supprimer un envoi YouTube rate
+
+# Supprime une video dont l'envoi a ete interrompu (jamais traitee, zero vue).
+# Le script refuse toute video traitee ou deja vue.
+on:
+  workflow_dispatch:
+    inputs:
+      video_id:
+        description: "Identifiant de la video (11 caracteres)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  supprimer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install google-api-python-client google-auth-httplib2 google-auth-oauthlib
+      - name: Supprimer
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          VIDEO_ID: ${{ inputs.video_id }}
+        run: python scripts/supprimer_envoi_vide.py
