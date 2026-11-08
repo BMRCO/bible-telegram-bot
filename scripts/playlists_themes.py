@@ -178,6 +178,16 @@ def main():
     verifier_chaine(yt)
     etat = yth.etat()
     try:
+        if MODE == "test169":
+            # Essai unique : l'API accepte-t-elle une couverture 16:9 ? (la doc dit 1:1)
+            pid = etat["paix"]["id"]
+            chemin = os.path.join(RACINE, "assets", "playlists_169", "paix.jpg")
+            try:
+                poser_couverture(yt, pid, chemin)
+                print("::notice::16:9 ACCEPTE pour la playlist Paix")
+            except HttpError as e:
+                print(f"::warning::16:9 REFUSE : HTTP {e.resp.status} {str(e)[:300]}")
+            return
         if MODE in ("installer", "tout"):
             installer(yt, etat)
         if MODE in ("remplir", "tout"):
