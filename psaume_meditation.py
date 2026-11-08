@@ -1146,6 +1146,9 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
         print(f"⚠️  Vignette non definie : {str(e)[:200]}")
 
     _extras_youtube(youtube, video_id, num)
+    import yt_commentaire
+    yt_commentaire.commenter(youtube, video_id, f"{APP_URL}/lsg/psaumes/{num}",
+                             titre=f"Psaume {num}", audio=True)
     return video_id
 
 

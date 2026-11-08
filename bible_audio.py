@@ -576,6 +576,8 @@ def upload(video, livre, ch, tl, rang):
             print(f"  ⏳ Upload : {int(status.progress() * 100)}%")
     vid = resp["id"]
     print(f"✅ YouTube : https://youtube.com/watch?v={vid}")
+    import yt_commentaire
+    yt_commentaire.commenter(yt, vid, chapter_url(livre, ch), titre=f"{nom_affiche(livre)} {ch}", audio=True)
 
     try:
         thumb = vignette_bible(livre, ch, rang, "thumb_bible.png")
