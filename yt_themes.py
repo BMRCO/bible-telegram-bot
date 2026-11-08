@@ -42,6 +42,8 @@ EXISTANTES = {
     "combat": "⚔️ Le Combat Spirituel",
     "solitude": "\U0001f463 La Présence de Dieu",
     "sagesse": "\U0001f4a1 Sagesse Biblique",
+    "paroles-de-jesus": "✝️ Paroles de Jésus",
+    "propheties": "\U0001f4ef Prophéties Bibliques",
 }
 
 # Themes crees le 8 novembre 2026 : emoji devant le libelle de la page du site.
@@ -53,6 +55,7 @@ EMOJIS = {
     "humilite": "\U0001f33e", "colere": "⚖️", "argent": "\U0001f4b0", "mere": "\U0001f469‍\U0001f467",
     "pere": "\U0001f468‍\U0001f467", "jeunes": "\U0001f331", "femmes": "\U0001f338", "matin": "\U0001f324️",
     "soir": "\U0001f319", "repentance": "\U0001f647", "vie-eternelle": "♾️",
+    "psaumes": "\U0001f3b5",
 }
 
 _themes = None

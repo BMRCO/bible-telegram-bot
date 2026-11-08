@@ -62,6 +62,7 @@ def cible(titre, site, th):
     if "Versets bibliques" in titre:
         tete = re.sub(r"^[^\wÀ-ÿ']+", "", titre.split("—")[0]).strip().lower()
         for t, k in th.items():
+            k = {"jesus": "paroles-de-jesus"}.get(k, k)   # slug du site
             if tete.startswith(t) and k in site:
                 return f"{bot.APP_URL}/versets/{k}", None, None, False
         return None
