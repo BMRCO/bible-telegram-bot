@@ -2,15 +2,15 @@ name: Publication automatique
 
 on:
   schedule:
-    # 5 novembre 2026 (decision de BC) : 5 versets par jour au lieu de 6,
-    # en alternance reel / image / reel / image / reel. Promesses retire
-    # (le vivier reste dans le depot).
-    - cron: '37 3 * * *'    # 03h37 UTC - Protection (reel)
-    # - cron: '29 5 * * *'  # 05h29 UTC - Promesses (retire)
-    - cron: '33 8 * * *'    # 08h33 UTC - Proverbes (image)
-    - cron: '47 11 * * *'   # 11h47 UTC - Jesus (reel)
-    - cron: '43 15 * * *'   # 15h43 UTC - Propheties (image)
-    - cron: '34 17 * * *'   # 17h34 UTC - Psaumes (reel)
+    # 8 novembre 2026 (decision de BC) : 5 publications par jour EN TOUT,
+    # quiz, Psaume narre et meditation thematique compris. Ici : 2 versets,
+    # matin et soir, et les categories tournent sur 3 jours (« variar os temas
+    # por varios dias ») :
+    #   jour A : Protection (matin) + Jesus (soir)
+    #   jour B : Proverbes (matin)  + Psaumes (soir, le seul « Psaume du Soir »)
+    #   jour C : Promesses (matin)  + Propheties (soir)
+    - cron: '37 3 * * *'    # 03h37 UTC - verset du matin
+    - cron: '34 17 * * *'   # 17h34 UTC - verset du soir
   workflow_dispatch:
     inputs:
       mode:
@@ -103,14 +103,17 @@ jobs:
 
           # Categoria a partir do cron AGENDADO (fiavel apesar do atraso do GitHub:
           # usa o horario agendado, nao a hora de execucao).
+          # Rotation sur 3 jours, calculee sur la date UTC (meme jour = meme
+          # categorie, meme si GitHub retarde le run).
+          JOUR=$(( $(date -u +%s) / 86400 % 3 ))
           if [ -n "$SCHEDULE" ]; then
-            case "$SCHEDULE" in
-              "37 3 * * *")   CAT="protection" ;;
-              "29 5 * * *")   CAT="promise" ;;
-              "33 8 * * *")   CAT="proverbe" ;;
-              "47 11 * * *") CAT="jesus" ;;
-              "43 15 * * *") CAT="prophetie" ;;
-              "34 17 * * *")  CAT="psaume" ;;
+            case "$SCHEDULE:$JOUR" in
+              "37 3 * * *:0")  CAT="protection" ;;
+              "37 3 * * *:1")  CAT="proverbe" ;;
+              "37 3 * * *:2")  CAT="promise" ;;
+              "34 17 * * *:0") CAT="jesus" ;;
+              "34 17 * * *:1") CAT="psaume" ;;
+              "34 17 * * *:2") CAT="prophetie" ;;
             esac
           fi
 
@@ -120,9 +123,9 @@ jobs:
             MODE="$MANUAL_MODE"
           else
             case "$CAT" in
-              protection|jesus|psaume) MODE="reel" ;;
-              proverbe|prophetie)      MODE="image" ;;
-              *)                       MODE="image" ;;
+              protection|jesus|psaume|promise) MODE="reel" ;;
+              proverbe|prophetie)              MODE="image" ;;
+              *)                               MODE="image" ;;
             esac
           fi
 

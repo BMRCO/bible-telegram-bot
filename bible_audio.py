@@ -501,6 +501,33 @@ def srt(tl, path):
     return path
 
 
+def post_to_facebook(vid, livre, ch):
+    """Post Facebook avec le lien de la video YouTube (decision de BC, 8 nov. 2026 :
+    la Bible audio va sur YouTube, Facebook et le site). Meme methode que les
+    Psaumes narres : un post de lien ne demande que pages_manage_posts."""
+    import requests
+    jeton, page = os.environ.get("FB_PAGE_TOKEN", ""), os.environ.get("FB_PAGE_ID", "")
+    if not jeton or not page:
+        signaler_echec("Facebook Bible audio", "FB_PAGE_TOKEN ou FB_PAGE_ID vide")
+        return
+    nom = nom_affiche(livre)
+    message = (
+        f"🎧 {nom} {ch} | Lecture audio\n"
+        f"{NOM_COMPLET.get(livre, nom)}, chapitre {ch}, lu à voix haute · Bible Louis Segond 1910\n\n"
+        f"📖 Le texte : {chapter_url(livre, ch)}\n"
+        f"🎧 Toute la Bible audio : {APP_URL}/bible-audio\n\n"
+        f"#LaBibleApp #BibleAudio #Bible #LSG1910 #ParoleDeDieu"
+    )
+    r = requests.post(f"https://graph.facebook.com/v25.0/{page}/feed",
+                      data={"message": message, "link": f"https://www.youtube.com/watch?v={vid}",
+                            "access_token": jeton}, timeout=60)
+    if r.status_code == 200:
+        print(f"✅ Facebook publié : {r.json().get('id')}")
+    else:
+        # Jamais l'URL de la requete : elle porte le jeton.
+        signaler_echec("Facebook Bible audio", f"HTTP {r.status_code} {r.text[:200]}")
+
+
 def titre_video(livre, ch):
     return f"{nom_affiche(livre)} {ch} | {TITLE_SUFFIX}"
 
@@ -667,6 +694,7 @@ def main():
 
     vid = publier("YouTube Bible audio", upload, video, livre, ch, tl, rang)
     if vid:
+        publier("Facebook Bible audio", post_to_facebook, vid, livre, ch)
         videos = load_json(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else {}
         videos[f"{slugify_book(nom_affiche(livre))}/{ch}"] = vid
         save_json(VIDEOS_FILE, videos)
