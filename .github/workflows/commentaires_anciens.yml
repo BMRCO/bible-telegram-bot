@@ -1,0 +1,55 @@
+name: Commentaires de lien sous les anciennes videos
+
+# Premier commentaire (lien vers le texte) sous les videos publiees avant le
+# 9 novembre 2026. 60 par jour, 15 s entre deux. Quand le journal affiche
+# « 0 vidéo(s) sans commentaire de lien », ce cron peut etre retire.
+on:
+  schedule:
+    - cron: '41 10 * * *'
+  workflow_dispatch:
+    inputs:
+      max:
+        description: "Commentaires au plus"
+        default: "60"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: commentaires-anciens
+  cancel-in-progress: false
+
+jobs:
+  commentaires:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pillow requests numpy google-api-python-client google-auth-httplib2 google-auth-oauthlib
+      - name: Commentaires
+        env:
+          # bot.py exige ces variables a l'import ; rien n'est envoye sur Telegram.
+          TELEGRAM_BOT_TOKEN: "-"
+          TELEGRAM_CHANNEL: "-"
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          MAX: ${{ inputs.max || '60' }}
+        run: python scripts/commentaires_anciens.py
+      - name: Enregistrer
+        if: ${{ !cancelled() }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -f commentaires_faits.json ]; then git add commentaires_faits.json; fi
+          if git diff --cached --quiet; then echo "Rien a enregistrer"; exit 0; fi
+          git commit -m "commentaires_faits.json mis a jour"
+          for i in 1 2 3; do
+            git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0
+            sleep 5
+          done
+          echo "::error::Impossible d'enregistrer commentaires_faits.json"
+          exit 1

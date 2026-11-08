@@ -37,6 +37,12 @@ LECTURES = [
     "Suivez la lecture dans le texte : {url}",
 ]
 
+THEMES = [
+    "📖 Tous les versets de ce thème : {url}",
+    "Les versets de ce thème, Bible Louis Segond 1910 : {url}",
+    "📖 La liste complète des versets sur LaBible.app : {url}",
+]
+
 AUDIO = "🎧 Toute la Bible audio : https://labible.app/bible-audio"
 
 
@@ -46,6 +52,8 @@ def _rotate(pool, graine):
 
 
 def texte(video_id, url, ref=None, titre=None, audio=False):
+    if "/versets/" in url:
+        return _rotate(THEMES, video_id).format(url=url)
     if titre:
         t = _rotate(LECTURES, video_id).format(titre=titre, url=url)
         return t + ("\n" + AUDIO if audio else "")
