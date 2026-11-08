@@ -15,8 +15,8 @@ L'API ne permet pas d'epingler un commentaire : a faire a la main si voulu.
 """
 import hashlib
 
-# Interrupteur : False tant que BC n'a pas valide les phrases.
-ACTIF = False
+# Interrupteur. Phrases validees par BC le 8 novembre 2026 (« Frases ok »).
+ACTIF = True
 
 COURTS = [
     "📖 Le chapitre entier : {url}",
