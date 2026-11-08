@@ -2911,6 +2911,8 @@ def post_to_youtube(video_path, ref, text, cat, cat_name, hour_utc):
         print(f"✅ YouTube Short — https://youtube.com/shorts/{video_id}")
         import yt_playlists
         yt_playlists.ranger(youtube, video_id, yt_playlists.cle_pour_categorie(cat_name, hour_utc))
+        import yt_themes
+        yt_themes.ranger_reference(youtube, video_id, ref)
 
         # Vignette : le cadre choisi par YouTube est illisible a la taille
         # d'un resultat de recherche. On impose une vignette lisible.

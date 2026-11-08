@@ -1,0 +1,56 @@
+name: Playlists des themes (site /versets)
+
+# Une playlist YouTube par theme du site (44), avec titre, description (lien
+# vers labible.app/versets/<theme>) et couverture. Chaque jour : finit ce qui
+# reste (quota) et range les videos dont le verset est dans la liste d'un theme.
+on:
+  schedule:
+    - cron: '13 9 * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "installer, remplir ou tout"
+        default: "tout"
+      max:
+        description: "Ecritures YouTube au plus (50 unites de quota chacune)"
+        default: "60"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: playlists-themes
+  cancel-in-progress: false
+
+jobs:
+  playlists:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests google-api-python-client google-auth-httplib2 google-auth-oauthlib
+      - name: Playlists
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          MODE: ${{ inputs.mode || 'tout' }}
+          MAX: ${{ inputs.max || '60' }}
+        run: python scripts/playlists_themes.py
+      - name: Enregistrer les identifiants
+        if: ${{ !cancelled() }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if [ -f playlists_themes.json ]; then git add playlists_themes.json; fi
+          if git diff --cached --quiet; then echo "Rien a enregistrer"; exit 0; fi
+          git commit -m "playlists_themes.json mis a jour"
+          for i in 1 2 3; do
+            git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0
+            sleep 5
+          done
+          echo "::error::Impossible d'enregistrer playlists_themes.json"
+          exit 1
