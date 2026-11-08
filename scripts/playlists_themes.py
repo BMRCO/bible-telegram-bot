@@ -75,11 +75,9 @@ def poser_couverture(yt, pid, chemin):
     existantes = yt.playlistImages().list(part="snippet", parent=pid).execute().get("items", [])
     media = MediaFileUpload(chemin, mimetype="image/jpeg")
     if existantes:
-        img = existantes[0]
-        ecrire(yt.playlistImages().update(part="snippet", body={
-            "id": img["id"], "snippet": {"playlistId": pid, "type": img["snippet"].get("type", "hero")}},
-            media_body=media))
-        return
+        # update refuse « part=snippet » (unexpectedPart) : on retire l'image puis on la repose.
+        for img in existantes:
+            ecrire(yt.playlistImages().delete(id=img["id"]))
     derniere = None
     for typ in ("hero", "medium", "default"):
         try:
