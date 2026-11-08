@@ -30,7 +30,8 @@ from youtube_garde import verifier_chaine  # noqa: E402
 
 MODE = os.environ.get("MODE", "installer")
 MAX = int(os.environ.get("MAX") or 60)
-COUVERTURE = "v1"   # monter pour reposer toutes les couvertures
+COUVERTURE = "v2"   # monter pour reposer toutes les couvertures
+# Couverture carree obligatoire : un essai en 16:9 (8 nov. 2026) a ete refuse par l'API.
 
 
 class Plafond(Exception):
@@ -78,17 +79,9 @@ def poser_couverture(yt, pid, chemin):
         # update refuse « part=snippet » (unexpectedPart) : on retire l'image puis on la repose.
         for img in existantes:
             ecrire(yt.playlistImages().delete(id=img["id"]))
-    derniere = None
-    for typ in ("hero", "medium", "default"):
-        try:
-            ecrire(yt.playlistImages().insert(part="snippet", body={
-                "snippet": {"playlistId": pid, "type": typ}}, media_body=media))
-            return
-        except HttpError as e:
-            derniere = e
-            if e.resp.status != 400:
-                raise
-    raise derniere
+    # Seul type accepte (essai du 8 nov. 2026 : « default » refuse comme valeur invalide).
+    ecrire(yt.playlistImages().insert(part="snippet", body={
+        "snippet": {"playlistId": pid, "type": "hero"}}, media_body=media))
 
 
 def installer(yt, etat):
@@ -176,15 +169,11 @@ def main():
     verifier_chaine(yt)
     etat = yth.etat()
     try:
-        if MODE == "test169":
-            # Essai unique : l'API accepte-t-elle une couverture 16:9 ? (la doc dit 1:1)
-            pid = etat["paix"]["id"]
-            chemin = os.path.join(RACINE, "assets", "playlists_169", "paix.jpg")
-            try:
-                poser_couverture(yt, pid, chemin)
-                print("::notice::16:9 ACCEPTE pour la playlist Paix")
-            except HttpError as e:
-                print(f"::warning::16:9 REFUSE : HTTP {e.resp.status} {str(e)[:300]}")
+        if MODE == "paix":
+            # Reposer tout de suite la couverture de Paix (retiree par l'essai 16:9).
+            poser_couverture(yt, etat["paix"]["id"], os.path.join(RACINE, "assets", "playlists", "paix.jpg"))
+            etat["paix"]["couverture"] = COUVERTURE
+            print("::notice::Couverture de Paix reposee")
             return
         if MODE in ("installer", "tout"):
             installer(yt, etat)
