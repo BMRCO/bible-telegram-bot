@@ -759,18 +759,37 @@ def vignette_audio(num, part_label=None, out="thumb_psaume.png", titre=None, sou
     d.polygon([(0, VH)] + [(x, 640 + 20 * math.sin(x / 120 + p2))
                            for x in range(0, VW + 10, 10)] + [(VW, VH)], fill=proche)
 
+    # Abreviation du livre (« Ps ») en silhouette a droite, comme les vignettes
+    # de la Bible audio (demande de BC, 8 nov. 2026). Teinte des collines,
+    # lueur du soleil : elle reste derriere le texte sans le gener.
+    if titre is None:
+        masque = Image.new("L", (VW, VH), 0)
+        md = ImageDraw.Draw(masque)
+        f_ab = ImageFont.truetype(FONT_SERIF_BOLD, 330)
+        for size in range(330, 160, -10):
+            f_ab = ImageFont.truetype(FONT_SERIF_BOLD, size)
+            bb0 = md.textbbox((0, 0), "Ps", font=f_ab)
+            if bb0[2] - bb0[0] <= VW * 0.25:
+                break
+        bb = md.textbbox((0, 0), "Ps", font=f_ab)
+        md.text((VW - 70 - bb[2], 120 - bb[1]), "Ps", font=f_ab, fill=255)
+        img.paste(soleil, (0, 0), masque.filter(ImageFilter.GaussianBlur(16)).point(lambda v: int(v * 0.22)))
+        img.paste(loin, (0, 0), masque.point(lambda v: int(v * 0.5)))
+        d = ImageDraw.Draw(img)
+
     def texte_ombre(xy, texte, police, couleur, flou, force):
         m = Image.new("L", (VW, VH), 0)
         ImageDraw.Draw(m).text(xy, texte, font=police, fill=255)
         img.paste((0, 0, 0), (0, 0), m.filter(ImageFilter.GaussianBlur(flou)).point(lambda v: int(v * force)))
         ImageDraw.Draw(img).text(xy, texte, font=police, fill=couleur)
 
-    # Titre
+    # Titre (plus etroit pour un Psaume : la silhouette « Ps » occupe la droite)
+    largeur_titre = VW * (0.58 if titre is None else 0.66)
     titre = titre or f"Psaume {num}"
     f_titre = ImageFont.truetype(FONT_SERIF_BOLD, 80)
     for size in range(170, 80, -6):
         f = ImageFont.truetype(FONT_SERIF_BOLD, size)
-        if d.textlength(titre, font=f) <= VW * 0.66:
+        if d.textlength(titre, font=f) <= largeur_titre:
             f_titre = f
             break
     texte_ombre((80, 210), titre, f_titre, (255, 250, 240), 12, 0.6)

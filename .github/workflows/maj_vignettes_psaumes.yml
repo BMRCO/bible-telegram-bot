@@ -1,0 +1,29 @@
+name: Mettre a jour les vignettes des Psaumes narres
+
+# Remplace la vignette des Psaumes narres deja publies par le modele actuel
+# (vignette_audio de psaume_meditation.py). Ne touche ni a la video, ni au titre.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vignettes:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pillow requests numpy google-api-python-client google-auth-httplib2 google-auth-oauthlib
+      - name: Vignettes
+        env:
+          # bot.py exige ces variables a l'import ; rien n'est envoye sur Telegram.
+          TELEGRAM_BOT_TOKEN: "-"
+          TELEGRAM_CHANNEL: "-"
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: python scripts/maj_vignettes_psaumes.py
