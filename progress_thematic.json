@@ -3,7 +3,7 @@
     "protection": 42,
     "paix": 22,
     "esperance": 22,
-    "amour": 22,
+    "amour": 27,
     "priere": 24,
     "promesses": 44,
     "pardon": 17,
@@ -21,10 +21,9 @@
     "peur": 8,
     "confiance": 35
   },
-  "theme_index": 5,
+  "theme_index": 6,
   "rot": 17,
   "music_bag": [
-    "music_meditation/jessequinnmedia-beautiful-christian-worship-background-instrumental-piano-peaceful-joy-395073.mp3",
     "music_meditation/Christian instrumental music for prayer (Awakening Light) - Royalty-free Music.mp3",
     "music_meditation/Instrumental Christian music for prayer (12-56) - Royalty-free Music.mp3",
     "music_meditation/nickpanekaiassets-peaceful-piano-background-music-218762.mp3",
@@ -48,9 +47,10 @@
     "music_meditation/Christian instrumental music for prayer (FAITH) - Royalty-free Music.mp3",
     "music_meditation/Christian Live Streaming music (Light of Faith) - Royalty-free Music.mp3"
   ],
-  "last_music": "music_meditation/Christian instrumental music for prayer (God Is My Peace) - Royalty-free Music.mp3",
+  "last_music": "music_meditation/jessequinnmedia-beautiful-christian-worship-background-instrumental-piano-peaceful-joy-395073.mp3",
   "music_played": [
     "music_meditation/Christian instrumental music for prayer (God Is My Strength) - Royalty-free Music.mp3",
-    "music_meditation/Christian instrumental music for prayer (God Is My Peace) - Royalty-free Music.mp3"
+    "music_meditation/Christian instrumental music for prayer (God Is My Peace) - Royalty-free Music.mp3",
+    "music_meditation/jessequinnmedia-beautiful-christian-worship-background-instrumental-piano-peaceful-joy-395073.mp3"
   ]
 }
