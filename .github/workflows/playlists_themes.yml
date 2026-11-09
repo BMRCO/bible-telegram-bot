@@ -38,7 +38,7 @@ jobs:
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
           MODE: ${{ inputs.mode || 'tout' }}
-          MAX: ${{ inputs.max || '60' }}
+          MAX: ${{ inputs.max || '30' }}
         run: python scripts/playlists_themes.py
       - name: Enregistrer les identifiants
         if: ${{ !cancelled() }}

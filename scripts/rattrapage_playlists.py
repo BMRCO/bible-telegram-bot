@@ -32,7 +32,7 @@ DEPUIS_THEMES = "2026-01-01"
 APPLIQUER = os.environ.get("APPLIQUER") == "1"
 # Chaque ajout coute 50 unites du quota YouTube (10 000 par jour, partage avec les
 # envois du bot) : on plafonne par passage, et on relance les jours suivants.
-MAX = int(os.environ.get("MAX") or 80)
+MAX = int(os.environ.get("MAX") or 40)
 
 PL = ypl.PLAYLISTS
 TH = ypl.PLAYLISTS_THEMATIQUES
