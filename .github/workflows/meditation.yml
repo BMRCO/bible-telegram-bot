@@ -3,8 +3,9 @@ name: Meditation Psaume YouTube
 on:
   # Reprise le 2 novembre 2026 : deuxieme cycle des 150 Psaumes, NARRES
   # (voix Henri). Pause du 29 octobre au 2 novembre (premier cycle termine).
-  schedule:
-    - cron: '39 4 * * *'      # 04h39 UTC - Meditation Psaume (manha cedo)
+  # Plus de « schedule » GitHub depuis le 9 novembre 2026 : il arrivait 4 a 8 h
+  # en retard. Le Worker Cloudflare labible-horloge (horloge/worker.js) lance
+  # ce workflow a l'heure exacte par workflow_dispatch. Horaires : voir PLAN.
   workflow_dispatch:
     inputs:
       psaume:
@@ -33,6 +34,7 @@ concurrency:
 
 jobs:
   meditation:
+    if: github.event_name != 'schedule'
     # Epingle le 9 octobre 2026. ubuntu-latest passe a Ubuntu 26 entre le
     # 19 octobre et le 19 novembre 2026, progressivement : la bascule peut
     # arriver SANS AUCUN COMMIT et casser ffmpeg, Pillow ou les polices.

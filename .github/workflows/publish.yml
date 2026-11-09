@@ -1,16 +1,15 @@
 name: Publication automatique
 
 on:
-  schedule:
-    # 8 novembre 2026 (decision de BC) : 5 publications par jour EN TOUT,
-    # quiz, Psaume narre et meditation thematique compris. Ici : 2 versets,
-    # matin et soir, et les categories tournent sur 3 jours (« variar os temas
-    # por varios dias ») :
-    #   jour A : Protection (matin) + Jesus (soir)
-    #   jour B : Proverbes (matin)  + Psaumes (soir, le seul « Psaume du Soir »)
-    #   jour C : Promesses (matin)  + Propheties (soir)
-    - cron: '37 3 * * *'    # 03h37 UTC - verset du matin
-    - cron: '34 17 * * *'   # 17h34 UTC - verset du soir
+  # Plus de « schedule » GitHub depuis le 9 novembre 2026 : il arrivait 4 a 8 h
+  # en retard. Le Worker Cloudflare labible-horloge (horloge/worker.js) lance
+  # ce workflow a l'heure exacte par workflow_dispatch. Horaires : voir PLAN.
+  # 8 novembre 2026 (decision de BC) : 5 publications par jour EN TOUT, quiz,
+  # Psaume narre et meditation thematique compris. Ici : 2 versets, matin et
+  # soir (creneau=matin|soir), categories en rotation sur 3 jours :
+  #   jour A : Protection (matin) + Jesus (soir)
+  #   jour B : Proverbes (matin)  + Psaumes (soir)
+  #   jour C : Promesses (matin)  + Propheties (soir)
   workflow_dispatch:
     inputs:
       mode:
@@ -70,6 +69,7 @@ concurrency:
 
 jobs:
   publish:
+    if: github.event_name != 'schedule'
     # Epingle le 9 octobre 2026. ubuntu-latest passe a Ubuntu 26 entre le
     # 19 octobre et le 19 novembre 2026, progressivement : la bascule peut
     # arriver SANS AUCUN COMMIT et casser ffmpeg, Pillow ou les polices.

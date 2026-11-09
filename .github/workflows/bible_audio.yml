@@ -6,10 +6,9 @@ name: Bible audio (YouTube)
 # Ne publie que sur YouTube.
 on:
   # Active le 5 novembre 2026 (essai Marc 1 valide).
-  schedule:
-    - cron: '17 7 * * *'      # 07h17 UTC
-    - cron: '43 13 * * *'     # 13h43 UTC
-    - cron: '29 19 * * *'     # 19h29 UTC
+  # Plus de « schedule » GitHub depuis le 9 novembre 2026 : il arrivait 4 a 8 h
+  # en retard. Le Worker Cloudflare labible-horloge (horloge/worker.js) lance
+  # ce workflow a l'heure exacte par workflow_dispatch. Horaires : voir PLAN.
   workflow_dispatch:
     inputs:
       livre:
@@ -39,6 +38,7 @@ concurrency:
 
 jobs:
   bible_audio:
+    if: github.event_name != 'schedule'
     # Epingle comme les autres workflows (voir meditation.yml).
     runs-on: ubuntu-24.04
     timeout-minutes: 90

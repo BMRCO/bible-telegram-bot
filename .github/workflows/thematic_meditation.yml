@@ -1,9 +1,8 @@
 name: Meditation thematique
 on:
-  schedule:
-    # 16h13 UTC  18h13 FR (verao). Com o atraso do GitHub Actions deve cair a noite.
-    # AJUSTA este horario depois de veres a que horas cai na realidade.
-    - cron: '27 16 * * *'
+  # Plus de « schedule » GitHub depuis le 9 novembre 2026 : il arrivait 4 a 8 h
+  # en retard. Le Worker Cloudflare labible-horloge (horloge/worker.js) lance
+  # ce workflow a l'heure exacte par workflow_dispatch. Horaires : voir PLAN.
   workflow_dispatch:
     inputs:
       theme:
@@ -19,6 +18,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   thematic:
+    if: github.event_name != 'schedule'
     # Epingle le 9 octobre 2026. ubuntu-latest passe a Ubuntu 26 entre le
     # 19 octobre et le 19 novembre 2026, progressivement : la bascule peut
     # arriver SANS AUCUN COMMIT et casser ffmpeg, Pillow ou les polices.
