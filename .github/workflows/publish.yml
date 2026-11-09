@@ -36,6 +36,15 @@ on:
           - proverbe
           - prophetie
           - protection
+      creneau:
+        description: 'Creneau du jour (lance par le Worker labible-horloge) : matin ou soir'
+        required: false
+        type: choice
+        default: ''
+        options:
+          - ''
+          - matin
+          - soir
       platform:
         description: 'Plataforma (all = todas)'
         required: false
@@ -98,6 +107,7 @@ jobs:
           SCHEDULE:     ${{ github.event.schedule }}
           MANUAL_MODE:  ${{ inputs.mode }}
           INPUT_CAT:    ${{ inputs.category }}
+          CRENEAU:      ${{ inputs.creneau }}
         run: |
           CAT="$INPUT_CAT"
 
@@ -106,7 +116,14 @@ jobs:
           # Rotation sur 3 jours, calculee sur la date UTC (meme jour = meme
           # categorie, meme si GitHub retarde le run).
           JOUR=$(( $(date -u +%s) / 86400 % 3 ))
-          if [ -n "$SCHEDULE" ]; then
+          # Depuis le 9 novembre 2026, le Worker Cloudflare labible-horloge
+          # lance ce workflow a l'heure exacte avec creneau=matin|soir
+          # (le planificateur GitHub arrivait 4 a 8 h en retard).
+          case "$CRENEAU" in
+            matin) SCHEDULE="37 3 * * *" ;;
+            soir)  SCHEDULE="34 17 * * *" ;;
+          esac
+          if [ -n "$SCHEDULE" ] && [ -z "$CAT" ]; then
             case "$SCHEDULE:$JOUR" in
               "37 3 * * *:0")  CAT="protection" ;;
               "37 3 * * *:1")  CAT="proverbe" ;;
