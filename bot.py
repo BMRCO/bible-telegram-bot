@@ -1604,7 +1604,7 @@ def category_label(cat_name, hour_utc=None):
     if cat_name == "psaume":
         return "Psaume du Matin" if hour_utc == 5 else "Psaume du Soir"
     return {
-        "promise":    "Promesses de Dieu",
+        "promise":    "Promesses",
         "jesus":      "Paroles de Jésus",
         "proverbe":   "Sagesse Biblique",
         "prophetie":  "Prophéties Bibliques",

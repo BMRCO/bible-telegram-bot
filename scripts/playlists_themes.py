@@ -31,6 +31,8 @@ from youtube_garde import verifier_chaine  # noqa: E402
 MODE = os.environ.get("MODE", "installer")
 MAX = int(os.environ.get("MAX") or 60)
 COUVERTURE = "v2"   # monter pour reposer toutes les couvertures
+# Couvertures refaites pour un seul theme (9 nov. 2026 : nom sans « de Dieu »).
+COUVERTURES = {"protection": "v3", "amour": "v3", "promesses": "v3", "confiance": "v3", "solitude": "v3"}
 # Couverture carree obligatoire : un essai en 16:9 (8 nov. 2026) a ete refuse par l'API.
 
 
@@ -86,6 +88,17 @@ def poser_couverture(yt, pid, chemin):
 
 def installer(yt, etat):
     pls = mes_playlists(yt)
+    par_id = {it["id"]: it for it in pls.values()}
+    # Titres a renommer d'abord (9 nov. 2026 : « de Dieu » retire des titres) :
+    # yt_playlists.py retrouve les playlists par leur titre.
+    for slug in yth.themes():
+        pid = (etat.get(slug) or {}).get("id")
+        it = par_id.get(pid)
+        titre = yth.titre_playlist(slug)
+        if it and " ".join(it["snippet"]["title"].split()) != " ".join(titre.split()):
+            ecrire(yt.playlists().update(part="snippet", body={"id": pid, "snippet": {
+                "title": titre, "description": it["snippet"].get("description", ""), "defaultLanguage": "fr"}}))
+            print(f"✏️  Renommée : {it['snippet']['title']} → {titre}")
     for slug in yth.themes():
         e = etat.setdefault(slug, {})
         titre = yth.titre_playlist(slug)
@@ -110,11 +123,11 @@ def installer(yt, etat):
             e["seo"] = 1
             sauver(etat)
             print(f"✏️  Description : {titre}")
-        if e.get("couverture") != COUVERTURE:
+        if e.get("couverture") != COUVERTURES.get(slug, COUVERTURE):
             chemin = os.path.join(RACINE, "assets", "playlists", f"{slug}.jpg")
             if os.path.exists(chemin):
                 poser_couverture(yt, e["id"], chemin)
-                e["couverture"] = COUVERTURE
+                e["couverture"] = COUVERTURES.get(slug, COUVERTURE)
                 sauver(etat)
                 print(f"🖼️  Couverture : {titre}")
 

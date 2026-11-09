@@ -21,7 +21,7 @@ rangement dans bible_audio.py et psaume_meditation.py.
 # absente de la chaine n'est pas creee : elle est signalee et ignoree.
 PLAYLISTS = {
     # Shorts « verset du jour » : bot.py
-    "promise":        "\U0001f33f Promesses de Dieu",
+    "promise":        "\U0001f33f Les Promesses",
     "jesus":          "✝️ Paroles de Jésus",
     "proverbe":       "\U0001f4a1 Sagesse Biblique",
     "prophetie":      "\U0001f4ef  Prophéties Bibliques",
@@ -41,25 +41,25 @@ PLAYLISTS = {
 # Les themes sans playlist sont a None : ils sont ignores sans bruit.
 PLAYLISTS_THEMATIQUES = {
     "protection": "\U0001f6e1️ Protection Divine",
-    "promesses":  "\U0001f33f Promesses de Dieu",
+    "promesses":  "\U0001f33f Les Promesses",
     "sagesse":    "\U0001f4a1 Sagesse Biblique",
     "jesus":      "✝️ Paroles de Jésus",
     "propheties": "\U0001f4ef  Prophéties Bibliques",
     "psaumes":    "\U0001f3b5 Les Psaumes — Lectures Bibliques | Bible LSG1910",
     "priere":     "\U0001f64f La Prière",
-    "pardon":     "\U0001f90d Le Pardon de Dieu",
-    "guerison":   "\U0001f49a La Guérison de Dieu",
+    "pardon":     "\U0001f90d Le Pardon",
+    "guerison":   "\U0001f49a La Guérison",
     "deuil":      "\U0001f56f️ Le Réconfort dans le Deuil",
     "peur":       "\U0001f499 Face à la Peur et l'Angoisse",
-    "paix":       "\U0001f54a️ La Paix de Dieu",
-    "amour":      "❤️ L'Amour de Dieu",
-    "esperance":  "\U0001f305 L'Espérance en Dieu",
-    "confiance":  "⚓ La Confiance en Dieu",
+    "paix":       "\U0001f54a️ La Paix",
+    "amour":      "❤️ L'Amour",
+    "esperance":  "\U0001f305 L'Espérance",
+    "confiance":  "⚓ La Confiance",
     "force":      "\U0001f981 La Force et le Courage",
     "gratitude":  "\U0001f64c La Gratitude",
     "combat":     "⚔️ Le Combat Spirituel",
-    "solitude":   "\U0001f463 La Présence de Dieu",
-    "famille":    "\U0001f3e1 La Famille selon Dieu",
+    "solitude":   "\U0001f463 La Présence",
+    "famille":    "\U0001f3e1 La Famille",
 }
 
 # Playlists de theme creees par creer_manquantes() si elles n'existent pas :

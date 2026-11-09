@@ -41,6 +41,7 @@ PSAUMES_LECTURE = TH["psaumes"]
 # Libelle du titre (bot.category_label) -> playlist
 LIBELLES = {
     "Promesses de Dieu": PL["promise"],
+    "Promesses": PL["promise"],
     "Paroles de Jésus": PL["jesus"],
     "Sagesse Biblique": PL["proverbe"],
     "Prophéties Bibliques": PL["prophetie"],
