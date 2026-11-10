@@ -3,11 +3,9 @@ name: Rattrapage des playlists YouTube
 # Range dans leur playlist les videos publiees depuis une date qui n'y sont
 # pas encore. Par defaut c'est un essai : la liste s'affiche, rien n'est ecrit.
 on:
-  # Passage quotidien juste apres la remise a zero du quota YouTube (minuit,
-  # heure du Pacifique) : 80 videos par jour jusqu'a ce qu'il ne reste rien.
-  # Quand le journal affiche « 0 vidéo(s) à ranger », ce cron peut etre retire.
-  schedule:
-    - cron: '23 8 * * *'
+  # Rattrapage termine le 9 novembre 2026 (« 20 video(s) rangee(s), 0 restante(s) »).
+  # Le passage quotidien est retire ; le bot range lui-meme chaque nouvelle video.
+  # Reste disponible a la main (essai par defaut).
   workflow_dispatch:
     inputs:
       depuis:
@@ -43,5 +41,5 @@ jobs:
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
           DEPUIS: ${{ inputs.depuis || '2026-10-04' }}
-          APPLIQUER: ${{ (github.event_name == 'schedule' || inputs.appliquer) && '1' || '' }}
+          APPLIQUER: ${{ inputs.appliquer && '1' || '' }}
         run: python scripts/rattrapage_playlists.py
