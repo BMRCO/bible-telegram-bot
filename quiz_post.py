@@ -46,7 +46,7 @@ MUSIC_DIR = "music_meditation"
 # Pistes ayant deja fait l'objet d'une revendication Content ID sur la chaine :
 # elles restent dans le dossier pour les anciennes videos mais ne sont plus
 # utilisees pour les nouvelles publications.
-CLAIMED = ("heaven's whisper", "heavens whisper", "flute meditation music 8")
+# Liste unique dans musique_revendiquee.py (11 novembre 2026).
 
 
 def pick_music(seed):
@@ -58,8 +58,8 @@ def pick_music(seed):
         os.path.join(MUSIC_DIR, f) for f in os.listdir(MUSIC_DIR)
         if f.lower().endswith((".mp3", ".m4a", ".ogg", ".wav"))
     )
-    tracks = [t for t in tracks
-              if not any(c in os.path.basename(t).lower() for c in CLAIMED)]
+    from musique_revendiquee import libres
+    tracks = libres(tracks)
     if not tracks:
         print("⚠️  Aucune piste disponible — vidéo sans musique.")
         return None

@@ -197,8 +197,8 @@ CLAIMED_TRACKS = ("heaven's whisper", "heavens whisper", "flute meditation music
 
 
 def is_claimed(path):
-    name = os.path.basename(path).lower()
-    return any(c in name for c in CLAIMED_TRACKS)
+    from musique_revendiquee import est_revendiquee
+    return est_revendiquee(path)
 
 
 def is_safe_music(path):
@@ -255,7 +255,8 @@ def pick_safe_music(num):
             print(f"🚫 {skipped} faixa(s) com reivindicação Content ID ignorada(s).")
         safe = filtered
     else:
-        print("⚠️  Todas as faixas estão reivindicadas — uso na mesma.")
+        print("⚠️  Todas as faixas estão reivindicadas — vídeo sem música.")
+        return None
     idx = (num - 1) % len(safe)
     print(f"🎵 Música: {safe[idx]} ({idx + 1}/{len(safe)} faixas)")
     return safe[idx]

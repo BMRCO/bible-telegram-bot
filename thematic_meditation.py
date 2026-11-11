@@ -287,7 +287,9 @@ def _distinct_safe_tracks():
             continue
         seen.add(h)
         uniq.append(p)
-    return uniq
+    # Pistes revendiquees (Content ID) ecartees : voir musique_revendiquee.py.
+    from musique_revendiquee import libres
+    return libres(uniq)
 
 
 def pick_music_varied(progress):
