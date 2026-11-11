@@ -97,20 +97,20 @@ jobs:
           pip install pillow requests numpy cloudinary google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
       - name: Install ffmpeg
-        # 11 novembre 2026 : apt-get est reste bloque 1 h 19 (miroir Ubuntu muet) et
-        # le job a ete tue sans rien publier. Chaque essai est borne, 3 essais.
-        timeout-minutes: 15
+        # 11 novembre 2026 : apt-get est reste bloque 1 h 19 (miroirs Ubuntu muets) et
+        # le job a ete tue sans rien publier. apt-get est donc borne (un essai), et
+        # s'il echoue on prend le ffmpeg statique du paquet PyPI imageio-ffmpeg
+        # (libx264 + aac, tout ce que les scripts utilisent ; pas de ffprobe, inutilise).
+        timeout-minutes: 12
         run: |
-          command -v ffmpeg >/dev/null && { ffmpeg -version | head -1; exit 0; }
-          APT="sudo timeout 240 apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2"
-          for essai in 1 2 3; do
-            if $APT update -qq && $APT install -y -qq ffmpeg; then ffmpeg -version | head -1; exit 0; fi
-            echo "::warning::Installation de ffmpeg : essai $essai echoue"
-            sudo dpkg --configure -a || true
-            sleep 15
-          done
-          echo "::error::ffmpeg n'a pas pu etre installe (apt-get)"
-          exit 1
+          APT="sudo timeout 150 apt-get -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::Retries=1"
+          if command -v ffmpeg >/dev/null || { $APT update -qq && $APT install -y -qq ffmpeg; }; then
+            ffmpeg -version | head -1; exit 0
+          fi
+          echo "::warning::apt-get indisponible : ffmpeg statique (imageio-ffmpeg) utilise a la place"
+          python3 -m pip install -q imageio-ffmpeg
+          sudo ln -sf "$(python3 -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')" /usr/local/bin/ffmpeg
+          ffmpeg -version | head -1
 
       - name: Determine publication mode and category
         id: schedule
