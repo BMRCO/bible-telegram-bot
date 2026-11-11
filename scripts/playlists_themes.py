@@ -51,7 +51,10 @@ def ecrire(req):
     try:
         r = req.execute()
     except HttpError as e:
-        if e.resp.status == 403 and b"quota" in (e.content or b"").lower():
+        # 403 quotaExceeded = quota du jour ; 429 « Resource has been exhausted » =
+        # limite de YouTube sur les creations de playlists (10 nov. 2026, apres 11).
+        if e.resp.status in (403, 429) and (b"quota" in (e.content or b"").lower()
+                                            or b"exhausted" in (e.content or b"").lower()):
             raise Plafond()
         raise
     ecritures += 1
