@@ -9,9 +9,19 @@
   "id": "PLYosHUWjkSxI",
   "seo": 1
  },
+ "argent": {
+  "couverture": "v2",
+  "id": "PLJvL4rBecu1Y",
+  "seo": 1
+ },
  "benediction": {
   "couverture": "v2",
   "id": "PLQg-4JLx-cr0",
+  "seo": 1
+ },
+ "colere": {
+  "couverture": "v2",
+  "id": "PLCoUXSy5JAIs",
   "seo": 1
  },
  "combat": {
@@ -59,6 +69,11 @@
   "id": "PLJUYlvo2lsMI",
   "seo": 1
  },
+ "grace": {
+  "couverture": "v2",
+  "id": "PLYQZ2V56AKX0",
+  "seo": 1
+ },
  "gratitude": {
   "couverture": "v2",
   "id": "PLX5lTkWe_-hk",
@@ -67,6 +82,11 @@
  "guerison": {
   "couverture": "v2",
   "id": "PLC9znMbV-EAM",
+  "seo": 1
+ },
+ "humilite": {
+  "couverture": "v2",
+  "id": "PLAXAPQ5B4Lno",
   "seo": 1
  },
  "joie": {
@@ -79,6 +99,21 @@
   "id": "PLNKhkXcoqIS0",
   "seo": 1
  },
+ "mere": {
+  "couverture": "v2",
+  "id": "PLZcJgj5cMMVk",
+  "seo": 1
+ },
+ "naissance-de-jesus": {
+  "couverture": "v2",
+  "id": "PLRBHsuNNhcvo",
+  "seo": 1
+ },
+ "nouvel-an": {
+  "couverture": "v2",
+  "id": "PLNRnpCeUjdWs",
+  "seo": 1
+ },
  "paix": {
   "couverture": "v2",
   "id": "PLKi7Qokg0J0g",
@@ -89,6 +124,12 @@
   "id": "PLQ79F_PpMFWM",
   "seo": 1
  },
+ "patience": {
+  "couverture": "v2",
+  "id": "PLYXhUlDR6rlo",
+  "seo": 1
+ },
+ "pere": {},
  "peur": {
   "couverture": "v2",
   "id": "PLfhSHgPyuiD8",
@@ -109,12 +150,21 @@
   "id": "PLC4HWzotSkNHBl79IdCNX0nZ6yFa_QPEO",
   "seo": 1
  },
+ "resurrection": {
+  "couverture": "v2",
+  "id": "PLcbgraNwEgSg",
+  "seo": 1
+ },
  "sagesse": {
   "couverture": "v2",
   "id": "PLC4HWzotSkNH26v4a-7O3jhIxPel43d8C",
   "seo": 1
  },
- "saint-esprit": {},
+ "saint-esprit": {
+  "couverture": "v2",
+  "id": "PLS4atk7ySpDU",
+  "seo": 1
+ },
  "salut": {
   "couverture": "v2",
   "id": "PLB-pZp849c5g",
