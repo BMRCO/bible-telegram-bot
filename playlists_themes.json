@@ -110,6 +110,7 @@
   "seo": 1
  },
  "matin": {
+  "couverture": "v2",
   "id": "PLMyG00ofhrGw",
   "seo": 1
  },
@@ -138,6 +139,11 @@
   "id": "PLQ79F_PpMFWM",
   "seo": 1
  },
+ "paroles-de-jesus": {
+  "couverture": "v2",
+  "id": "PLC4HWzotSkNFFasdnAwcUrYv1i_zgkb3r",
+  "seo": 1
+ },
  "patience": {
   "couverture": "v2",
   "id": "PLYXhUlDR6rlo",
@@ -163,9 +169,24 @@
   "id": "PLC4HWzotSkNFCMs1ikYZ7xtcxW1R_Z4Py",
   "seo": 1
  },
+ "propheties": {
+  "couverture": "v2",
+  "id": "PLC4HWzotSkNEz1gQ2tqsX-vKDaEPEsmsc",
+  "seo": 1
+ },
  "protection": {
   "couverture": "v3",
   "id": "PLC4HWzotSkNHBl79IdCNX0nZ6yFa_QPEO",
+  "seo": 1
+ },
+ "psaumes": {
+  "couverture": "v2",
+  "id": "PLU8KlQl9UJ4w",
+  "seo": 1
+ },
+ "repentance": {
+  "couverture": "v2",
+  "id": "PLbGRnnWbk4jk",
   "seo": 1
  },
  "resurrection": {
@@ -188,6 +209,11 @@
   "id": "PLB-pZp849c5g",
   "seo": 1
  },
+ "soir": {
+  "couverture": "v2",
+  "id": "PLHM1zQ02OSrU",
+  "seo": 1
+ },
  "solitude": {
   "couverture": "v4",
   "id": "PLWno25olu9ZA",
@@ -201,6 +227,11 @@
  "tristesse": {
   "couverture": "v2",
   "id": "PLYKy8vjFAbCI",
+  "seo": 1
+ },
+ "vie-eternelle": {
+  "couverture": "v2",
+  "id": "PLGn36-Hi6W4E",
   "seo": 1
  }
 }
