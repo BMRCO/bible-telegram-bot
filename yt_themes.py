@@ -40,7 +40,7 @@ EXISTANTES = {
     "famille": "\U0001f3e1 La Famille",
     "gratitude": "\U0001f64c La Gratitude",
     "combat": "⚔️ Le Combat Spirituel",
-    "solitude": "\U0001f463 La Présence",
+    "solitude": "\U0001f463 La Présence de Dieu",
     "sagesse": "\U0001f4a1 Sagesse Biblique",
     "paroles-de-jesus": "✝️ Paroles de Jésus",
     "propheties": "\U0001f4ef Prophéties Bibliques",

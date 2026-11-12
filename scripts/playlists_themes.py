@@ -32,7 +32,7 @@ MODE = os.environ.get("MODE", "installer")
 MAX = int(os.environ.get("MAX") or 60)
 COUVERTURE = "v2"   # monter pour reposer toutes les couvertures
 # Couvertures refaites pour un seul theme (9 nov. 2026 : nom sans « de Dieu »).
-COUVERTURES = {"protection": "v3", "amour": "v3", "promesses": "v3", "confiance": "v3", "solitude": "v3"}
+COUVERTURES = {"protection": "v3", "amour": "v3", "promesses": "v3", "confiance": "v3", "solitude": "v4"}  # v4 : « Présence de Dieu » (12 nov. 2026, exception voulue par BC)
 # Couverture carree obligatoire : un essai en 16:9 (8 nov. 2026) a ete refuse par l'API.
 
 

@@ -58,7 +58,7 @@ PLAYLISTS_THEMATIQUES = {
     "force":      "\U0001f981 La Force et le Courage",
     "gratitude":  "\U0001f64c La Gratitude",
     "combat":     "⚔️ Le Combat Spirituel",
-    "solitude":   "\U0001f463 La Présence",
+    "solitude":   "\U0001f463 La Présence de Dieu",
     "famille":    "\U0001f3e1 La Famille",
 }
 

@@ -158,8 +158,8 @@ THEMES = {
         lines=["Le combat", "spirituel"], emoji="\u2694\ufe0f", tag="CombatSpirituel",
         palette=((28, 10, 12), (15, 5, 6), (200, 90, 90), (225, 120, 120), (245, 232, 232), (160, 95, 98))),
     "solitude": dict(
-        file="solitude_curated.json", title="La pr\u00e9sence",
-        lines=["La pr\u00e9sence", ""], emoji="\U0001f463", tag="Pr\u00e9sence",
+        file="solitude_curated.json", title="La pr\u00e9sence de Dieu",
+        lines=["La pr\u00e9sence", "de Dieu"], emoji="\U0001f463", tag="Pr\u00e9sence",
         palette=((26, 22, 16), (14, 12, 8), (200, 180, 150), (222, 205, 178), (246, 242, 234), (160, 148, 125))),
     "famille": dict(
         file="famille_curated.json", title="La famille",
