@@ -324,6 +324,8 @@ def upload(video, ref, texte, livre, ch):
         assurer_playlist(yt)
     except Exception as e:
         print(f"⚠️  Playlist de la série non créée : {str(e)[:200]}")
+    import time
+    time.sleep(8)   # une playlist toute neuve n'est pas lisible tout de suite
     yt_themes.ranger_reference(yt, vid, ref)
     yt_commentaire.commenter(yt, vid, f"https://labible.app/versets/{SLUG}", ref=ref)
     return vid

@@ -138,16 +138,25 @@ def ranger_reference(youtube, video_id, ref):
         if not slugs:
             return
         ids = etat()
-        for slug in slugs:
-            pid = (ids.get(slug) or {}).get("id")
-            if not pid:
-                continue
-            deja = youtube.playlistItems().list(part="id", playlistId=pid, videoId=video_id,
-                                                maxResults=1).execute().get("items")
+    except Exception as e:
+        print(f"⚠️  Playlist de thème non rangée : {str(e)[:200]}")
+        return
+    # Un echec sur une playlist n'empeche pas les autres (14 nov. 2026 : une
+    # playlist creee la seconde d'avant repondait 404 et bloquait toute la suite).
+    for slug in slugs:
+        pid = (ids.get(slug) or {}).get("id")
+        if not pid:
+            continue
+        try:
+            try:
+                deja = youtube.playlistItems().list(part="id", playlistId=pid, videoId=video_id,
+                                                    maxResults=1).execute().get("items")
+            except Exception:
+                deja = None   # playlist toute neuve : la lecture peut echouer, l'ajout passe
             if deja:
                 continue
             youtube.playlistItems().insert(part="snippet", body={"snippet": {
                 "playlistId": pid, "resourceId": {"kind": "youtube#video", "videoId": video_id}}}).execute()
             print(f"✅ Ajoutée à la playlist du thème « {slug} »")
-    except Exception as e:
-        print(f"⚠️  Playlist de thème non rangée : {str(e)[:200]}")
+        except Exception as e:
+            print(f"⚠️  Playlist du thème « {slug} » non rangée : {str(e)[:160]}")
