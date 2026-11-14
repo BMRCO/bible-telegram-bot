@@ -21,6 +21,15 @@ on:
         required: false
         type: string
         default: ''
+      testament:
+        description: 'Lecture : at (Ancien Testament), nt (Nouveau) ; vide = selon l heure'
+        required: false
+        type: choice
+        default: ''
+        options:
+          - ''
+          - at
+          - nt
       essai:
         description: 'Essai : genere la video sans rien publier (branche echantillons-voix)'
         required: false
@@ -85,13 +94,27 @@ jobs:
           FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
           # Par l'environnement : une entree libre ne doit jamais etre interpolee dans un script.
           IN_LIVRE: ${{ inputs.livre }}
+          IN_TESTAMENT: ${{ inputs.testament }}
           IN_CHAPITRE: ${{ inputs.chapitre }}
           ESSAI: ${{ inputs.essai && '1' || '' }}
         run: |
           if [ -n "$IN_LIVRE" ] && [ -n "$IN_CHAPITRE" ]; then
             python bible_audio.py "$IN_LIVRE" "$IN_CHAPITRE"
           else
-            python bible_audio.py
+            # 14 nov. 2026 (decision de BC) : chaque jour 3 chapitres de l'Ancien
+            # Testament et 2 du Nouveau. Le Worker lance ce workflow 3 fois
+            # (08h15, 14h15, 20h15 UTC) sans precision : les deux premiers
+            # passages publient un chapitre de chaque, le dernier un de l'AT.
+            if [ -n "$IN_TESTAMENT" ]; then LECTURES="$IN_TESTAMENT"
+            elif [ "$(date -u +%H)" -lt 18 ]; then LECTURES="at nt"
+            else LECTURES="at"; fi
+            RC=0
+            for T in $LECTURES; do
+              echo "::group::Lecture $T"
+              TESTAMENT=$T python bible_audio.py || RC=1
+              echo "::endgroup::"
+            done
+            exit $RC
           fi
 
       - name: Publish test video on the echantillons-voix branch

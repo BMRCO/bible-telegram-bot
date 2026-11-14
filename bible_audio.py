@@ -5,18 +5,21 @@ La Bible entiere lue a voix haute sur YouTube : un chapitre = une video.
 
 Voix Henri (la meme que la serie des Psaumes, voir psaume_meditation.py),
 musique douce sous la voix, texte du verset a l'ecran le temps de sa lecture.
-Ordre : les quatre Evangiles (Marc, Matthieu, Luc, Jean), le reste du Nouveau
-Testament, puis l'Ancien Testament. Les Psaumes sont exclus : la serie narree
-quotidienne les couvre deja.
+Deux lectures en parallele (decision de BC, 14 nov. 2026) : chaque jour 3
+chapitres de l'Ancien Testament (Genese, Exode...) et 2 du Nouveau (apres Marc,
+l'Apocalypse, puis Matthieu, Luc, Jean, Actes...). Les Psaumes sont exclus : la
+serie narree quotidienne les couvre deja.
 
 Ne publie que sur YouTube.
 
 Usage :
-    python bible_audio.py                 -> chapitre suivant (progression)
+    TESTAMENT=at python bible_audio.py    -> chapitre suivant de l'Ancien Testament
+    TESTAMENT=nt python bible_audio.py    -> chapitre suivant du Nouveau Testament
     python bible_audio.py Marc 1          -> chapitre precis (ne touche pas a la progression)
     ESSAI=1 python bible_audio.py Marc 1  -> video dans echantillons/, rien n'est publie
 
-Etat : progress_bible_audio.json ({"index": N} = rang du prochain chapitre).
+Etat : progress_bible_audio.json ({"at": N, "nt": M} = rang du prochain
+chapitre dans chaque lecture).
 Le texte biblique n'est jamais modifie : seules des copies en memoire sont
 nettoyees pour l'affichage et la synthese.
 """
@@ -79,7 +82,17 @@ AT = ["Genèse", "Exode", "Lévitique", "Nombres", "Deutéronome", "Josué",
 # Testament, puis un livre de l'Ancien, en alternance (Marc, Genese, Matthieu,
 # Exode, Luc, Levitique...). Quand le NT est fini, l'AT continue seul.
 # « Psaume » volontairement absent (serie narree quotidienne).
+# ORDRE ne sert plus qu'a la couleur de chaque livre (vignettes) : on le garde
+# tel quel pour que les livres deja publies gardent leur teinte.
 ORDRE = [livre for paire in zip(NT, AT) for livre in paire] + AT[len(NT):]
+
+# Depuis le 14 nov. 2026 : deux lectures paralleles. Marc est fini (16
+# chapitres) ; le Nouveau Testament reprend par l'Apocalypse (choix de BC).
+PISTES = {
+    "nt": ["Marc", "Apocalypse"] + [l for l in NT if l not in ("Marc", "Apocalypse")],
+    "at": list(AT),
+}
+NOM_PISTE = {"nt": "Nouveau Testament", "at": "Ancien Testament"}
 
 # Nom affiche (titres, URL) quand il differe du fichier, qui tronque ce titre.
 NOM_AFFICHE = {"Cantique Des Cantiqu": "Cantique des Cantiques"}
@@ -144,6 +157,13 @@ def liste_chapitres(par_chap):
         if not chs:
             raise RuntimeError(f"livre introuvable dans la Bible : {livre}")
         out += [(livre, c) for c in chs]
+    return out
+
+
+def chapitres_piste(par_chap, piste):
+    out = []
+    for livre in PISTES[piste]:
+        out += [(livre, c) for c in sorted(c for (b, c) in par_chap if b == livre)]
     return out
 
 
@@ -668,12 +688,23 @@ def main():
         rang = chapitres_ordre.index((livre, ch))
     else:
         progress = load_json(PROGRESS_FILE) if os.path.exists(PROGRESS_FILE) else {}
-        rang = int(progress.get("index", 0) or 0)
-        if rang >= len(chapitres_ordre):
+        piste = (os.environ.get("TESTAMENT") or "at").strip().lower()
+        if piste not in PISTES:
+            sys.exit(f"TESTAMENT inconnu : {piste} (at ou nt)")
+        # Une lecture terminee laisse sa place a l'autre.
+        for p in (piste, "nt" if piste == "at" else "at"):
+            liste = chapitres_piste(par_chap, p)
+            pos = int(progress.get(p, 0) or 0)
+            if pos < len(liste):
+                piste = p
+                break
+        else:
             print("🏁 Toute la Bible a été publiée.")
             return
-        livre, ch = chapitres_ordre[rang]
-    print(f"📖 {nom_affiche(livre)} {ch} ({rang + 1}/{len(chapitres_ordre)})")
+        livre, ch = liste[pos]
+        rang = chapitres_ordre.index((livre, ch))
+        print(f"📖 {NOM_PISTE[piste]} : {pos + 1}/{len(liste)}")
+    print(f"📖 {nom_affiche(livre)} {ch}")
 
     try:
         video, tl = faire_video(livre, ch, par_chap[(livre, ch)], rang)
@@ -701,9 +732,10 @@ def main():
     # La progression n'avance que si la video est en ligne : sinon le meme
     # chapitre est retente au prochain passage (quota YouTube epuise, etc.).
     if vid and progress is not None:
-        progress["index"] = rang + 1
+        progress.pop("index", None)
+        progress[piste] = pos + 1
         save_json(PROGRESS_FILE, progress)
-        print(f"💾 Prochain chapitre : {rang + 2}/{len(chapitres_ordre)}")
+        print(f"💾 {NOM_PISTE[piste]} : prochain chapitre {pos + 2}/{len(liste)}")
     finaliser("bible audio")
 
 
