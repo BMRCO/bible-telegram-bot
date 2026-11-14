@@ -17,10 +17,11 @@ Versets : la liste du theme « derniers-temps » du site (data/versets_themes.js
 du depot labible.app, page labible.app/versets/derniers-temps), dans l'ordre de
 la page. Progression : progress_derniers_temps.json ({"index": N}).
 
-Publication : YouTube seulement (Short), playlist « ⏳ Les derniers temps »
-(creee si elle manque), playlists des autres themes qui contiennent le verset,
-premier commentaire avec le lien. Les autres reseaux restent a 5 publications
-par jour (decision du 8 novembre 2026) : cette serie n'y va pas.
+Publication (decision de BC, 14 nov. 2026 : « em todas as plataformas ») :
+YouTube (Short, playlist « ⏳ Les derniers temps » creee si elle manque,
+playlists des autres themes qui contiennent le verset, premier commentaire),
+Telegram, Facebook (reel), Instagram (reel), Threads et Pinterest (image tiree
+de la video). Une plateforme qui echoue n'empeche pas les autres.
 
     python derniers_temps.py                    -> verset suivant
     python derniers_temps.py "Matthieu 24:35"   -> verset precis (progression intacte)
@@ -44,6 +45,7 @@ from bot import (APP_URL, clean_text, strip_rubric, load_verse, slugify_book, pu
                  signaler_echec, finaliser, load_json, save_json, wrap_text_with_quotes)
 from musique_revendiquee import libres
 import yt_themes
+import bot
 
 SLUG = "derniers-temps"
 PROGRESS_FILE = "progress_derniers_temps.json"
@@ -255,6 +257,70 @@ def faire_video(livre, ch, v, texte, ref, sortie):
     return sortie
 
 
+# ─── Legendes des autres reseaux ────────────────────────────────────────────
+PAGE_SERIE = f"https://labible.app/versets/{SLUG}"
+HASHTAGS = "#DerniersTemps #RetourDeJésus #Bible #ParoleDeDieu #LSG1910 #LaBibleApp"
+
+
+def legende(ref, texte, chapitre, reseau):
+    """Legende propre a la serie. Rien d'autre que le verset, sa reference, le
+    nom de la serie et ou lire la suite."""
+    tete = f"« {texte} »\n{ref}\n\n⏳ Les derniers temps · Bible Louis Segond 1910"
+    if reseau == "ig":
+        return f"{tete}\n\n📖 Le chapitre entier sur LaBible.app : lien en bio.\n\n{HASHTAGS}"
+    if reseau == "threads":
+        return f"{tete}\n\n📖 {chapitre}"
+    return f"{tete}\n\n📖 Le chapitre entier : {chapitre}\n⏳ Tous les versets sur les derniers temps : {PAGE_SERIE}\n\n{HASHTAGS}"
+
+
+def legende_telegram(ref, texte, chapitre):
+    return (f"⏳ <b>Les derniers temps</b>\n\n<b>{ref}</b>\n\n« {texte} »\n\n"
+            f"📖 {chapitre}\n⏳ {PAGE_SERIE}")
+
+
+def publier_autres_reseaux(video, ref, texte, livre, ch):
+    chapitre = chapter_url(livre, ch)
+    # Les fonctions de bot.py construisent leur legende par social_caption :
+    # on la remplace, pour ce passage, par celle de la serie.
+    bot.social_caption = lambda r, t, c, cn, url=None, reseau="fb": legende(ref, texte, chapitre, reseau)
+    cat = {"emoji": "⏳", "tag": "#DerniersTemps"}
+    publier("Telegram", bot.send_video, video, legende_telegram(ref, texte, chapitre), ref)
+    publier("Facebook reel", bot.post_reel_to_facebook, video, ref, texte, cat, "prophetie", chapitre)
+    publier("Instagram reel", bot.post_reel_to_instagram, video, ref, texte, cat, "prophetie", chapitre)
+    publier("Threads reel", bot.post_reel_to_threads, video, ref, texte, cat, "prophetie", chapitre)
+    publier("Pinterest", epingle, video, ref, texte, chapitre)
+
+
+def epingle(video, ref, texte, chapitre):
+    if not bot.should_post("pinterest"):
+        print("⏭️  Pinterest skip (filtro)")
+        return
+    if not bot.PINTEREST_ACCESS_TOKEN:
+        signaler_echec("Pinterest", "PINTEREST_ACCESS_TOKEN vide ou absent")
+        return
+    image = "derniers_temps_pin.jpg"
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-ss", "9", "-i", video,
+                    "-frames:v", "1", "-q:v", "3", image], check=True)
+    url = bot.heberger_image(image, "Pinterest")
+    if not url:
+        return
+    import requests
+    r = requests.post("https://api.pinterest.com/v5/pins",
+                      headers={"Authorization": f"Bearer {bot.PINTEREST_ACCESS_TOKEN}",
+                               "Content-Type": "application/json"},
+                      json={"board_id": bot.PINTEREST_BOARD_ID,
+                            "title": f"{ref} | Les derniers temps | Bible Louis Segond 1910"[:100],
+                            "description": (f"« {texte} »\n{ref} (Bible Louis Segond 1910)\n\n"
+                                            f"Les derniers temps et le retour de Jésus-Christ dans la Bible. "
+                                            f"Tous les versets : {PAGE_SERIE}")[:800],
+                            "link": chapitre,
+                            "media_source": {"source_type": "image_url", "url": url}}, timeout=60)
+    if r.status_code in (200, 201):
+        print(f"✅ Pinterest publié — {r.json().get('id')}")
+    else:
+        signaler_echec("Pinterest", f"HTTP {r.status_code} — {r.text[:200]}")
+
+
 # ─── YouTube ────────────────────────────────────────────────────────────────
 def titre_video(ref):
     return f"{ref} | Les derniers temps | Bible Louis Segond 1910"
@@ -360,7 +426,13 @@ def main():
         print("🧪 ESSAI : rien n'est publié.")
         return
 
+    if os.environ.get("SANS_YOUTUBE") == "1":
+        # Rattrapage : verset deja sur YouTube, publie seulement sur les autres reseaux.
+        publier_autres_reseaux(video, ref, texte, livre, ch)
+        finaliser("derniers temps")
+        return
     vid = publier("YouTube Derniers temps", upload, video, ref, texte, livre, ch)
+    publier_autres_reseaux(video, ref, texte, livre, ch)
     if vid:
         videos = load_json(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else {}
         videos[ref] = vid

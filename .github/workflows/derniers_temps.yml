@@ -2,7 +2,7 @@ name: Derniers temps (Shorts YouTube)
 
 # Serie speciale « Les derniers temps » (14 novembre 2026, decision de BC) :
 # un Short YouTube par passage, versets du theme labible.app/versets/derniers-temps.
-# YouTube seulement. Voir derniers_temps.py. Un par jour, 12h00 UTC (13h en hiver),
+# Toutes les plateformes depuis le 14 nov. 2026. Voir derniers_temps.py. Un par jour, 12h00 UTC (13h en hiver),
 # lance par le Worker labible-horloge (decision de BC, 14 nov. 2026).
 on:
   workflow_dispatch:
@@ -12,6 +12,11 @@ on:
         required: false
         type: string
         default: ''
+      sans_youtube:
+        description: 'Rattrapage : publier ce verset partout sauf sur YouTube (deja publie)'
+        required: false
+        type: boolean
+        default: false
       essai:
         description: 'Essai : genere la video sans rien publier'
         required: false
@@ -59,14 +64,25 @@ jobs:
 
       - name: Short
         env:
-          # bot.py exige ces variables a l'import ; rien n'est envoye sur Telegram.
-          TELEGRAM_BOT_TOKEN: "-"
-          TELEGRAM_CHANNEL: "-"
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
+          TELEGRAM_ALERT_CHAT_ID: ${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+          IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
           IN_REF: ${{ inputs.reference }}
           ESSAI: ${{ inputs.essai && '1' || '' }}
+          SANS_YOUTUBE: ${{ inputs.sans_youtube && '1' || '' }}
         run: |
           if [ -n "$IN_REF" ]; then python derniers_temps.py "$IN_REF"; else python derniers_temps.py; fi
 
