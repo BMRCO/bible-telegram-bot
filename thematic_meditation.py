@@ -243,7 +243,8 @@ def _ref_label(book, ch, vs):
 
 
 def load_theme_verses(theme_key, n, offset):
-    """Devolve (total_entradas, [(ref, texto), ...]) \u2014 n vers\u00edculos a partir de offset, ciclando."""
+    """Devolve (total_entradas, [(ref, texto), ...]) \u2014 n vers\u00edculos a partir de offset, ciclando.
+    Garde pour le mode manuel avec offset explicite."""
     entries = load_json(THEMES[theme_key]["file"])
     total = len(entries)
     out = []
@@ -262,6 +263,95 @@ def load_theme_verses(theme_key, n, offset):
             signaler_echec("M\u00e9ditation th\u00e9matique",
                            f"verset ignor\u00e9 \u2014 {ref} : {type(exc).__name__} : {exc}")
     return total, out
+
+
+# Regle de BC (14 novembre 2026) : un verset ne sort jamais deux fois dans la
+# meme serie. Chaque theme de meditation est sa propre serie
+# (« thematique_<theme> » dans versets_publies.json). Quand la liste du theme
+# est epuisee, on prend dans les pages de theme du site (data/versets_themes.json
+# du depot labible.app) ; s'il manque encore des versets, le theme suivant de
+# la rotation prend la place du jour.
+SECOURS_THEMATIQUE = {
+    "protection": ["protection", "peur", "confiance", "force", "combat"],
+    "paix":       ["paix", "tristesse", "soir"],
+    "amour":      ["amour", "famille", "amitie", "mariage"],
+    "esperance":  ["esperance", "encouragement", "vie-eternelle", "resurrection"],
+    "priere":     ["priere", "matin", "soir", "saint-esprit"],
+    "promesses":  ["promesses", "benediction", "foi", "grace", "encouragement"],
+    "sagesse":    ["sagesse", "patience", "humilite", "travail"],
+    "jesus":      ["paroles-de-jesus", "salut", "vie-eternelle"],
+    "psaumes":    ["psaumes", "matin", "soir"],
+    "propheties": ["propheties", "naissance-de-jesus", "resurrection"],
+    "guerison":   ["guerison", "tristesse", "encouragement"],
+    "peur":       ["peur", "protection", "confiance"],
+    "pardon":     ["pardon", "repentance", "grace"],
+    "deuil":      ["deuil", "tristesse", "vie-eternelle", "resurrection"],
+    "confiance":  ["confiance", "foi", "protection"],
+    "force":      ["force", "encouragement", "combat"],
+    "gratitude":  ["gratitude", "joie", "benediction"],
+    "combat":     ["combat", "force", "protection"],
+    "solitude":   ["solitude", "saint-esprit", "priere"],
+    "famille":    ["famille", "enfants", "mariage", "mere", "pere"],
+}
+
+
+def serie_thematique(theme_key):
+    return f"thematique_{theme_key}"
+
+
+def versets_inedits(theme_key, n, offset):
+    """n versets jamais publies dans la serie du theme : d'abord la liste du
+    theme a partir de offset (un seul tour, sans recommencer), puis les pages
+    de theme du site. Renvoie (versets, nouvel_offset) ; moins de n versets =
+    theme epuise."""
+    import deja_publie
+    serie = serie_thematique(theme_key)
+    entries = load_json(THEMES[theme_key]["file"])
+    total = len(entries)
+    out, pris = [], set()
+
+    def essayer(book, ch, vs):
+        ref = _ref_label(book, ch, vs)
+        cles = tuple(deja_publie.cles(ref))
+        if not cles or deja_publie.deja(serie, ref) or any(k in pris for k in cles):
+            return False
+        try:
+            texte = _verse_text(book, ch, vs)
+        except Exception as exc:
+            signaler_echec("M\u00e9ditation th\u00e9matique",
+                           f"verset ignor\u00e9 \u2014 {ref} : {type(exc).__name__} : {exc}")
+            return False
+        if not texte:
+            return False
+        pris.update(cles)
+        out.append((ref, texte))
+        return True
+
+    nouvel_offset = offset
+    for i in range(total):
+        if len(out) >= n:
+            break
+        j = (offset + i) % total
+        e = entries[j]
+        essayer(e[0], e[1], e[2:] if len(e) > 2 else [1])
+        nouvel_offset = (j + 1) % max(total, 1)
+
+    if len(out) < n:
+        import yt_themes
+        try:
+            site = yt_themes.themes()
+        except Exception as exc:
+            print(f"\u26a0\ufe0f  Th\u00e8mes du site illisibles : {exc}")
+            site = {}
+        for slug in SECOURS_THEMATIQUE.get(theme_key, []):
+            for b, c, v in site.get(slug, {}).get("refs", []):
+                if len(out) >= n:
+                    break
+                if essayer(b, int(c), [int(v)]):
+                    print(f"\U0001f4da Verset pris dans le th\u00e8me \u00ab {slug} \u00bb du site")
+            if len(out) >= n:
+                break
+    return out, nouvel_offset
 
 
 # 
@@ -627,22 +717,41 @@ def main():
     offsets = progress.get("offsets", {})
     theme_index = progress.get("theme_index", 0)
 
+    manuel_offset = False
     if args and args[0] in THEMES:
         # Modo manual: tema indicado (e offset opcional)
         theme_key = args[0]
-        offset = int(args[1]) if len(args) >= 2 and args[1].isdigit() else offsets.get(theme_key, 0)
+        if len(args) >= 2 and args[1].isdigit():
+            manuel_offset = True
+            offset = int(args[1])
+        else:
+            offset = offsets.get(theme_key, 0)
+        candidats = [theme_key]
     else:
-        # Modo automatico: rotacao de temas
-        theme_key = ROTATION[theme_index % len(ROTATION)]
-        offset = offsets.get(theme_key, 0)
+        # Modo automatico: rotacao de temas. Si le theme du jour n'a plus
+        # assez de versets jamais publies, le suivant prend la place.
+        candidats = [ROTATION[(theme_index + k) % len(ROTATION)] for k in range(len(ROTATION))]
         theme_index = (theme_index + 1) % len(ROTATION)
 
-    print(f"\U0001f3ac M\u00e9ditation th\u00e9matique \u2014 {THEMES[theme_key]['title']} (offset {offset})")
+    verses = []
+    for theme_key in candidats:
+        if manuel_offset:
+            _, verses = load_theme_verses(theme_key, THEMATIC_VERSES, offset)
+            nouvel_offset = (offset + THEMATIC_VERSES) % max(len(load_json(THEMES[theme_key]["file"])), 1)
+        else:
+            offset = offsets.get(theme_key, 0)
+            verses, nouvel_offset = versets_inedits(theme_key, THEMATIC_VERSES, offset)
+        if len(verses) >= THEMATIC_VERSES:
+            break
+        print(f"::warning::Th\u00e8me \u00ab {THEMES[theme_key]['title']} \u00bb \u00e9puis\u00e9 "
+              f"({len(verses)} verset(s) jamais publi\u00e9s) : un autre th\u00e8me prend la place.")
+        verses = []
 
-    total, verses = load_theme_verses(theme_key, THEMATIC_VERSES, offset)
+    print(f"\U0001f3ac M\u00e9ditation th\u00e9matique \u2014 {THEMES[theme_key]['title']} (offset {offset})")
     if not verses:
         signaler_echec("M\u00e9ditation th\u00e9matique",
-                       f"aucun verset exploitable pour « {theme_key} » \u00e0 l'offset {offset}")
+                       "aucun th\u00e8me n'a encore 5 versets jamais publi\u00e9s : "
+                       "ajouter des versets aux listes *_curated.json ou aux pages du site")
         finaliser("m\u00e9ditation th\u00e9matique")
         return
     for ref, _ in verses:
@@ -678,8 +787,11 @@ def main():
     )
 
     # Atualiza progresso
-    offsets[theme_key] = (offset + THEMATIC_VERSES) % max(total, 1)
+    offsets[theme_key] = nouvel_offset
     progress["offsets"] = offsets
+    import deja_publie
+    for ref, _ in verses:
+        deja_publie.noter(serie_thematique(theme_key), ref)
     progress["theme_index"] = theme_index
     save_json(PROGRESS_FILE, progress)
 

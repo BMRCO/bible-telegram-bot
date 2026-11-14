@@ -1,0 +1,39 @@
+name: Registre des versets publies (meditations thematiques)
+
+# Remplit versets_publies.json (series thematique_*) depuis les descriptions YouTube
+# et les offsets de progress_thematic.json. A lancer a la main.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  registre:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests google-api-python-client google-auth-httplib2 google-auth-oauthlib
+      - name: Registre
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: python scripts/registre_thematiques.py
+      - name: Enregistrer
+        if: ${{ !cancelled() }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add versets_publies.json
+          if git diff --cached --quiet; then echo "Rien a enregistrer"; exit 0; fi
+          git commit -m "versets_publies.json : registre des thematiques [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0
+            sleep 5
+          done
+          exit 1
