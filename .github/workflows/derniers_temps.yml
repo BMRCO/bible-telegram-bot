@@ -17,6 +17,11 @@ on:
         required: false
         type: boolean
         default: false
+      plateformes:
+        description: 'Plateformes (all, ou liste : telegram,instagram,threads,pinterest)'
+        required: false
+        type: string
+        default: 'all'
       essai:
         description: 'Essai : genere la video sans rien publier'
         required: false
@@ -83,6 +88,7 @@ jobs:
           IN_REF: ${{ inputs.reference }}
           ESSAI: ${{ inputs.essai && '1' || '' }}
           SANS_YOUTUBE: ${{ inputs.sans_youtube && '1' || '' }}
+          ONLY_PLATFORM: ${{ inputs.plateformes || 'all' }}
         run: |
           if [ -n "$IN_REF" ]; then python derniers_temps.py "$IN_REF"; else python derniers_temps.py; fi
 
