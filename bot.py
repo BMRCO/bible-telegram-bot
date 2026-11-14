@@ -2717,6 +2717,28 @@ THEMES_DE_SECOURS = {
 }
 
 
+def _trouver_verset(cat_name, progress):
+    """Premier verset jamais publie dans la serie : vivier, puis secours.
+    Renvoie (livre, chap, debut, fin, texte brut) ou None."""
+    import deja_publie
+    cat = CATEGORIES[cat_name]
+    for attempt in range(len(load_list(cat["file"])) + 5):
+        book, ch, vstart, vend = pick_from_category(cat, progress)
+        r = f"{'Psaumes' if book == 'Psaume' else book} {ch}:{vstart}" + (f"-{vend}" if vend != vstart else "")
+        if deja_publie.deja(cat_name, r):
+            continue
+        raw_text = " ".join(load_verse(book, ch, vv) for vv in range(vstart, vend + 1))
+        if not is_rubric(raw_text):
+            return book, ch, vstart, vend, raw_text
+        print(f"⏭️  Rubrique ignorée : {book} {ch}:{vstart}")
+    try:
+        book, ch, vstart, vend = verset_de_secours(cat_name)
+    except RuntimeError as e:
+        print(f"⚠️  {e}")
+        return None
+    return book, ch, vstart, vend, " ".join(load_verse(book, ch, vv) for vv in range(vstart, vend + 1))
+
+
 def verset_de_secours(cat_name):
     import deja_publie
     import yt_themes
@@ -2892,27 +2914,26 @@ def pick_verse(progress):
             print(f"⚠️  {hour_utc}h UTC hors créneau — fallback : {cat_name}")
         else:
             print(f"🕐 {hour_utc}h UTC → {cat_name}")
-    cat = CATEGORIES[cat_name]
     # Regle de BC (14 nov. 2026) : jamais deux fois le meme verset dans la meme
     # serie (voir deja_publie.py). On avance dans le vivier jusqu'a un verset
-    # jamais publie dans cette serie ; si le vivier est epuise, on prend dans
-    # les listes des pages de theme du site (THEMES_DE_SECOURS).
-    import deja_publie
-    trouve = False
-    for attempt in range(len(load_list(cat["file"])) + 5):
-        book, ch, vstart, vend = pick_from_category(cat, progress)
-        r = f"{'Psaumes' if book == 'Psaume' else book} {ch}:{vstart}" + (f"-{vend}" if vend != vstart else "")
-        if deja_publie.deja(cat_name, r):
-            continue
-        # Joindre les versets de l'intervalle (vstart..vend) — un seul si vstart == vend
-        raw_text = " ".join(load_verse(book, ch, vv) for vv in range(vstart, vend + 1))
-        if not is_rubric(raw_text):
-            trouve = True
-            break
-        print(f"⏭️  Rubrique ignorée : {book} {ch}:{vstart}")
-    if not trouve:
-        book, ch, vstart, vend = verset_de_secours(cat_name)
-        raw_text = " ".join(load_verse(book, ch, vv) for vv in range(vstart, vend + 1))
+    # jamais publie dans cette serie ; vivier epuise : listes des pages de theme
+    # du site (THEMES_DE_SECOURS) ; plus rien : une autre serie qui a encore des
+    # versets prend la place (decision de BC, meme jour).
+    trouve = _trouver_verset(cat_name, progress)
+    if trouve is None:
+        for autre in CATEGORIES:
+            if autre == cat_name:
+                continue
+            trouve = _trouver_verset(autre, progress)
+            if trouve is not None:
+                print(f"🔁 Série « {cat_name} » terminée : la série « {autre} » prend la place")
+                print(f"::warning::Série {cat_name} : plus aucun verset jamais publié, remplacée par {autre}")
+                cat_name = autre
+                break
+    if trouve is None:
+        raise RuntimeError("Plus aucun verset jamais publié dans aucune série")
+    cat = CATEGORIES[cat_name]
+    book, ch, vstart, vend, raw_text = trouve
     raw_text = strip_rubric(raw_text)
     text = clean_text(raw_text)
     display_book = "Psaumes" if book == "Psaume" else book
