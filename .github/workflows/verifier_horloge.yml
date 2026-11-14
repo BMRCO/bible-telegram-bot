@@ -31,6 +31,10 @@ jobs:
           # workflow:nombre attendu par jour (voir PLAN dans horloge/worker.js)
           for ATTENDU in publish.yml:2 meditation.yml:1 quiz_du_jour.yml:1 thematic_meditation.yml:1 bible_audio.yml:5 derniers_temps.yml:1; do
             W=${ATTENDU%%:*}; N=${ATTENDU##*:}
+            # Un workflow desactive expres (serie terminee) n'est plus attendu.
+            if [ "$(gh api "repos/$DEPOT/actions/workflows/$W" --jq .state)" != "active" ]; then
+              echo "--  $W : desactive, ignore"; continue
+            fi
             VU=$(gh api "repos/$DEPOT/actions/workflows/$W/runs?event=workflow_dispatch&created=>=$DEPUIS&per_page=50" --jq '.total_count')
             if [ "$VU" -lt "$N" ]; then
               echo "::error::$W : $VU lancement(s) en 24 h, $N attendu(s). Verifier le Worker labible-horloge (Cloudflare > Workers > labible-horloge > Observability) et son secret GH_TOKEN."

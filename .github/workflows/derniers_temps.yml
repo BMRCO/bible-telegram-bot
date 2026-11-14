@@ -30,6 +30,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # se desactive quand la serie est terminee
 
 concurrency:
   group: derniers-temps
@@ -86,6 +87,7 @@ jobs:
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
           IN_REF: ${{ inputs.reference }}
+          GH_TOKEN: ${{ github.token }}
           ESSAI: ${{ inputs.essai && '1' || '' }}
           SANS_YOUTUBE: ${{ inputs.sans_youtube && '1' || '' }}
           ONLY_PLATFORM: ${{ inputs.plateformes || 'all' }}

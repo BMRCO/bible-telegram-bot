@@ -397,6 +397,22 @@ def upload(video, ref, texte, livre, ch):
     return vid
 
 
+def arreter_workflow():
+    """Desactive derniers_temps.yml (API GitHub, jeton du workflow)."""
+    import requests
+    depot, jeton = os.environ.get("GITHUB_REPOSITORY"), os.environ.get("GH_TOKEN")
+    if not depot or not jeton:
+        print("⚠️  Hors GitHub Actions : workflow non désactivé.")
+        return
+    r = requests.put(f"https://api.github.com/repos/{depot}/actions/workflows/derniers_temps.yml/disable",
+                     headers={"Authorization": f"Bearer {jeton}", "Accept": "application/vnd.github+json"},
+                     timeout=30)
+    if r.status_code == 204:
+        print("::notice::Série « Les derniers temps » terminée : workflow désactivé.")
+    else:
+        print(f"::warning::Workflow non désactivé (HTTP {r.status_code})")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 def main():
     refs = refs_du_theme()
@@ -411,10 +427,12 @@ def main():
         while i < len(refs) and deja_publie.deja("derniers_temps", refs[i]):
             i += 1
         if i >= len(refs):
-            print("🏁 Tous les versets de la série ont été publiés : ajouter des versets au thème du site.")
-            signaler_echec("Derniers temps", "plus aucun verset jamais publié dans la série")
-            finaliser("derniers temps")
-            sys.exit(1)
+            # Serie terminee (decision de BC, 14 nov. 2026) : le workflow se
+            # desactive lui-meme. Pour la relancer : ajouter des versets au
+            # theme du site, puis reactiver derniers_temps.yml dans Actions.
+            print("🏁 Tous les versets de la série ont été publiés : la série s'arrête.")
+            arreter_workflow()
+            return
         progress["index"] = i
         ref = refs[i]
         print(f"⏳ {i + 1}/{len(refs)}")
