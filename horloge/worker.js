@@ -20,12 +20,16 @@ const DEPOT = "BMRCO/bible-telegram-bot";
 const PLAN = {
   "05:30": [["meditation.yml", {}]],                   // Psaume narre
   "06:30": [["publish.yml", { mode: "auto", creneau: "matin" }]],    // verset du matin
-  "08:15": [["bible_audio.yml", {}]],                  // Bible audio 1/3
+  // Bible audio (14 nov. 2026, decision de BC) : 3 chapitres de l'Ancien
+  // Testament et 2 du Nouveau par jour, deux lectures paralleles.
+  "08:15": [["bible_audio.yml", { testament: "at" }]], // Ancien Testament 1/3
+  "10:15": [["bible_audio.yml", { testament: "nt" }]], // Nouveau Testament 1/2
   "11:00": [["quiz_du_jour.yml", {}]],                 // quiz
-  "14:15": [["bible_audio.yml", {}]],                  // Bible audio 2/3
+  "14:15": [["bible_audio.yml", { testament: "at" }]], // Ancien Testament 2/3
+  "16:15": [["bible_audio.yml", { testament: "nt" }]], // Nouveau Testament 2/2
   "17:00": [["thematic_meditation.yml", {}]],          // meditation thematique
   "19:00": [["publish.yml", { mode: "auto", creneau: "soir" }]],     // verset du soir
-  "20:15": [["bible_audio.yml", {}]],                  // Bible audio 3/3
+  "20:15": [["bible_audio.yml", { testament: "at" }]], // Ancien Testament 3/3
 };
 
 function creneau(ms) {

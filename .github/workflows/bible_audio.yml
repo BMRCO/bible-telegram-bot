@@ -102,9 +102,9 @@ jobs:
             python bible_audio.py "$IN_LIVRE" "$IN_CHAPITRE"
           else
             # 14 nov. 2026 (decision de BC) : chaque jour 3 chapitres de l'Ancien
-            # Testament et 2 du Nouveau. Le Worker lance ce workflow 3 fois
-            # (08h15, 14h15, 20h15 UTC) sans precision : les deux premiers
-            # passages publient un chapitre de chaque, le dernier un de l'AT.
+            # Testament et 2 du Nouveau. Le Worker labible-horloge lance 5 passages
+            # avec testament=at ou nt. Sans precision (lancement a la main) :
+            # avant 18h UTC un chapitre de chaque, apres un de l'AT.
             if [ -n "$IN_TESTAMENT" ]; then LECTURES="$IN_TESTAMENT"
             elif [ "$(date -u +%H)" -lt 18 ]; then LECTURES="at nt"
             else LECTURES="at"; fi

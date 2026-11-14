@@ -29,7 +29,7 @@ jobs:
           echo "Lancements depuis $DEPUIS (UTC)"
           MANQUE=0
           # workflow:nombre attendu par jour (voir PLAN dans horloge/worker.js)
-          for ATTENDU in publish.yml:2 meditation.yml:1 quiz_du_jour.yml:1 thematic_meditation.yml:1 bible_audio.yml:3; do
+          for ATTENDU in publish.yml:2 meditation.yml:1 quiz_du_jour.yml:1 thematic_meditation.yml:1 bible_audio.yml:5; do
             W=${ATTENDU%%:*}; N=${ATTENDU##*:}
             VU=$(gh api "repos/$DEPOT/actions/workflows/$W/runs?event=workflow_dispatch&created=>=$DEPUIS&per_page=50" --jq '.total_count')
             if [ "$VU" -lt "$N" ]; then
