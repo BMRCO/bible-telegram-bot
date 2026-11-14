@@ -1,0 +1,34 @@
+name: Dernieres publications (verification)
+
+# Lecture seule : liste les dernieres publications sur Facebook, Instagram,
+# Threads et Pinterest, pour verifier ce qui est parti (ou parti deux fois).
+on:
+  workflow_dispatch:
+    inputs:
+      n:
+        description: "Nombre de publications par reseau"
+        default: "6"
+
+permissions:
+  contents: read
+
+jobs:
+  lire:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install requests
+      - name: Lire
+        env:
+          N: ${{ inputs.n || '6' }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+          IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
+        run: python scripts/dernieres_publications.py
