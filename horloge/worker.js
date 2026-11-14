@@ -25,6 +25,7 @@ const PLAN = {
   "08:15": [["bible_audio.yml", { testament: "at" }]], // Ancien Testament 1/3
   "10:15": [["bible_audio.yml", { testament: "nt" }]], // Nouveau Testament 1/2
   "11:00": [["quiz_du_jour.yml", {}]],                 // quiz
+  "12:00": [["derniers_temps.yml", {}]],               // Short « Les derniers temps » (YouTube)
   "14:15": [["bible_audio.yml", { testament: "at" }]], // Ancien Testament 2/3
   "16:15": [["bible_audio.yml", { testament: "nt" }]], // Nouveau Testament 2/2
   "17:00": [["thematic_meditation.yml", {}]],          // meditation thematique

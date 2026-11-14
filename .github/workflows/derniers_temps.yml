@@ -2,7 +2,8 @@ name: Derniers temps (Shorts YouTube)
 
 # Serie speciale « Les derniers temps » (14 novembre 2026, decision de BC) :
 # un Short YouTube par passage, versets du theme labible.app/versets/derniers-temps.
-# YouTube seulement. Voir derniers_temps.py.
+# YouTube seulement. Voir derniers_temps.py. Un par jour, 12h00 UTC (13h en hiver),
+# lance par le Worker labible-horloge (decision de BC, 14 nov. 2026).
 on:
   workflow_dispatch:
     inputs:
