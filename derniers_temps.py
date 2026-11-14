@@ -405,7 +405,17 @@ def main():
         ref = " ".join(sys.argv[1:])
     else:
         progress = load_json(PROGRESS_FILE) if os.path.exists(PROGRESS_FILE) else {}
-        i = int(progress.get("index", 0) or 0) % len(refs)
+        # Jamais deux fois le meme verset dans la serie (regle de BC, 14 nov. 2026).
+        import deja_publie
+        i = int(progress.get("index", 0) or 0)
+        while i < len(refs) and deja_publie.deja("derniers_temps", refs[i]):
+            i += 1
+        if i >= len(refs):
+            print("🏁 Tous les versets de la série ont été publiés : ajouter des versets au thème du site.")
+            signaler_echec("Derniers temps", "plus aucun verset jamais publié dans la série")
+            finaliser("derniers temps")
+            sys.exit(1)
+        progress["index"] = i
         ref = refs[i]
         print(f"⏳ {i + 1}/{len(refs)}")
     try:
@@ -433,6 +443,8 @@ def main():
         return
     vid = publier("YouTube Derniers temps", upload, video, ref, texte, livre, ch)
     publier_autres_reseaux(video, ref, texte, livre, ch)
+    import deja_publie
+    deja_publie.noter("derniers_temps", ref)
     if vid:
         videos = load_json(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else {}
         videos[ref] = vid
@@ -440,7 +452,7 @@ def main():
         if progress is not None:
             progress["index"] = int(progress.get("index", 0) or 0) + 1
             save_json(PROGRESS_FILE, progress)
-            print(f"💾 Prochain verset : {progress['index'] % len(refs) + 1}/{len(refs)}")
+            print(f"💾 Prochain verset : {progress['index'] + 1}/{len(refs)}")
     finaliser("derniers temps")
 
 

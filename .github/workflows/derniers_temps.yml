@@ -104,7 +104,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          for f in progress_derniers_temps.json videos_derniers_temps.json playlists_themes.json; do
+          for f in progress_derniers_temps.json videos_derniers_temps.json playlists_themes.json versets_publies.json; do
             if [ -f "$f" ]; then git add "$f"; fi
           done
           if git diff --staged --quiet; then echo "Rien a enregistrer"; exit 0; fi

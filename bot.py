@@ -2704,6 +2704,50 @@ def reshuffle_if_needed(path, index):
     return arr, index
 
 
+# Quand le vivier d'une serie est epuise (tous ses versets deja publies dans
+# cette serie), on prend dans les listes des pages de theme du site, deja
+# choisies verset par verset (data/versets_themes.json du depot labible.app).
+THEMES_DE_SECOURS = {
+    "protection": ["protection", "peur", "confiance", "force", "combat"],
+    "promise": ["promesses", "esperance", "encouragement", "benediction", "foi", "grace", "paix"],
+    "psaume": ["psaumes", "soir", "matin"],
+    "jesus": ["paroles-de-jesus", "salut", "vie-eternelle"],
+    "proverbe": ["sagesse", "patience", "humilite", "travail"],
+    "prophetie": ["propheties", "naissance-de-jesus", "resurrection"],
+}
+
+
+def verset_de_secours(cat_name):
+    import deja_publie
+    import yt_themes
+    themes = yt_themes.themes()
+    for th in THEMES_DE_SECOURS.get(cat_name, []):
+        for b, c, v in themes.get(th, {}).get("refs", []):
+            r = f"{b} {c}:{v}"
+            if deja_publie.deja(cat_name, r):
+                continue
+            livre = "Psaume" if b == "Psaumes" else b
+            try:
+                if is_rubric(load_verse(livre, c, v)):
+                    continue
+            except Exception:
+                continue
+            print(f"📚 Vivier « {cat_name} » épuisé : verset pris dans le thème « {th} » du site")
+            return livre, int(c), int(v), int(v)
+    raise RuntimeError(f"Aucun verset jamais publié dans la série « {cat_name} » : "
+                       f"ajouter des versets à {CATEGORIES[cat_name]['file']}")
+
+
+def noter_publication(cat_name, ref):
+    """Inscrit le verset dans le registre de sa serie (deja_publie.py) des
+    qu'il est sorti quelque part. Une ecriture ratee ne bloque rien."""
+    try:
+        import deja_publie
+        deja_publie.noter(cat_name, ref)
+    except Exception as e:
+        print(f"⚠️  Registre des versets non mis à jour : {e}")
+
+
 def pick_from_category(cat, progress):
     index = progress.get(cat["key"], 0)
     arr, index = reshuffle_if_needed(cat["file"], index)
@@ -2849,13 +2893,26 @@ def pick_verse(progress):
         else:
             print(f"🕐 {hour_utc}h UTC → {cat_name}")
     cat = CATEGORIES[cat_name]
-    for attempt in range(5):
+    # Regle de BC (14 nov. 2026) : jamais deux fois le meme verset dans la meme
+    # serie (voir deja_publie.py). On avance dans le vivier jusqu'a un verset
+    # jamais publie dans cette serie ; si le vivier est epuise, on prend dans
+    # les listes des pages de theme du site (THEMES_DE_SECOURS).
+    import deja_publie
+    trouve = False
+    for attempt in range(len(load_list(cat["file"])) + 5):
         book, ch, vstart, vend = pick_from_category(cat, progress)
+        r = f"{'Psaumes' if book == 'Psaume' else book} {ch}:{vstart}" + (f"-{vend}" if vend != vstart else "")
+        if deja_publie.deja(cat_name, r):
+            continue
         # Joindre les versets de l'intervalle (vstart..vend) — un seul si vstart == vend
         raw_text = " ".join(load_verse(book, ch, vv) for vv in range(vstart, vend + 1))
         if not is_rubric(raw_text):
+            trouve = True
             break
         print(f"⏭️  Rubrique ignorée : {book} {ch}:{vstart}")
+    if not trouve:
+        book, ch, vstart, vend = verset_de_secours(cat_name)
+        raw_text = " ".join(load_verse(book, ch, vv) for vv in range(vstart, vend + 1))
     raw_text = strip_rubric(raw_text)
     text = clean_text(raw_text)
     display_book = "Psaumes" if book == "Psaume" else book
@@ -3239,6 +3296,7 @@ def main():
     # Elle etait la derniere ligne : une plateforme qui tombait laissait le
     # verset "non utilise", et il ressortait sur celles qui l'avaient deja eu.
     save_json(PROGRESS_FILE, progress)
+    noter_publication(cat_name, ref)
     print("✅ Terminé (image).")
     finaliser("image")
 
@@ -3264,6 +3322,7 @@ def main_reel():
     publier("YouTube", post_to_youtube, video, ref, text, cat, cat_name, hour_utc)
     publier("Threads reel", post_reel_to_threads, video, ref, text, cat, cat_name)
     save_json(PROGRESS_FILE, progress)
+    noter_publication(cat_name, ref)
     print("✅ Terminé (reel).")
     finaliser("reel")
 

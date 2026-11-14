@@ -207,6 +207,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add progress.json
+          if [ -f versets_publies.json ]; then git add versets_publies.json; fi
           if git diff --staged --quiet; then
             echo "Aucun changement de progression."
             exit 0
