@@ -10,7 +10,7 @@
     "guerison": 0,
     "deuil": 25,
     "solitude": 13,
-    "gratitude": 2,
+    "gratitude": 7,
     "force": 24,
     "combat": 24,
     "famille": 24,
@@ -21,20 +21,20 @@
     "peur": 8,
     "confiance": 35
   },
-  "theme_index": 11,
+  "theme_index": 12,
   "rot": 17,
   "music_bag": [
-    "music_meditation/Fundo Musical Relaxante Para Meditação - Royalty-free Music.mp3",
     "music_meditation/jessequinn-jesse-quinn-christian-instrumental-piano-worship-calm-emotional-soaking-praise-music-jesus-249458.mp3",
     "music_meditation/jessequinn-christian-worship-instrumental-calm-emotional-piano-by-jesse-quinn-164626.mp3",
     "music_meditation/Flute Meditation Music 15 - Royalty-free Music.mp3",
     "music_meditation/Meditation - Royalty-free Music.mp3"
   ],
-  "last_music": "music_meditation/Fundo musical relaxante para oração e meditação - Royalty-free Music.mp3",
+  "last_music": "music_meditation/Fundo Musical Relaxante Para Meditação - Royalty-free Music.mp3",
   "music_played": [
     "music_meditation/jessequinnmedia-beautiful-christian-worship-background-instrumental-piano-peaceful-joy-395073.mp3",
     "music_meditation/nickpanekaiassets-peaceful-piano-background-music-218762.mp3",
     "music_meditation/onetent-relaxing-meditation-music-2-225173.mp3",
-    "music_meditation/Fundo musical relaxante para oração e meditação - Royalty-free Music.mp3"
+    "music_meditation/Fundo musical relaxante para oração e meditação - Royalty-free Music.mp3",
+    "music_meditation/Fundo Musical Relaxante Para Meditação - Royalty-free Music.mp3"
   ]
 }
