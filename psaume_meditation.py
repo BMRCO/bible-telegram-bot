@@ -118,6 +118,53 @@ TITLE_SUFFIX = "Lecture Audio | Bible LSG1910"   # serie narree (2 nov. 2026)
 # CTA partilhado da série (vouvoiement, sem clickbait)
 PSAUME_CTA = "Que ce Psaume vous accompagne aujourd'hui. Partagez-le 🙏"
 
+# Livre de la serie narree. Decision de BC (14 novembre 2026) : quand les 150
+# Psaumes sont publies, la serie continue avec les 31 chapitres des Proverbes.
+# Tout le texte qui nomme le livre passe par LIVRE ; les Psaumes restent tels
+# qu'ils etaient (titres, descriptions, playlist, fichier des videos).
+LIVRES = {
+    "psaumes": dict(
+        livre="Psaume", nom="Psaume", slug="psaumes", abr="Ps", total=150,
+        cle="next_psaume", playlist=PLAYLIST_NARREE, desc=PLAYLIST_DESC,
+        cta=PSAUME_CTA, tag="#Psaumes", tag_num="#Psaume{n}", tg="Psaumes {n}",
+        lu="Psaume {n} lu à voix haute, en entier",
+        lire="Lire le Psaume {n} gratuitement",
+        lisez="Lisez le psaume complet gratuitement",
+        tous="Tous les Psaumes lus à voix haute",
+        chaque="un Psaume chaque jour",
+        tags=["Psaumes", "Psaumes audio"],
+        videos="videos_psaumes_audio.json", fichier="psaume",
+    ),
+    "proverbes": dict(
+        livre="Proverbes", nom="Proverbes", slug="proverbes", abr="Pr", total=31,
+        cle="next_proverbe", playlist="🎙️ Les Proverbes lus à voix haute",
+        desc=("Les 31 chapitres du livre des Proverbes lus à voix haute, en entier, "
+              "dans le texte de la Bible Louis Segond 1910 (domaine public), sans "
+              "commentaire ajouté. Un chapitre chaque jour. Le texte complet est "
+              "accessible gratuitement, hors ligne et sans publicité sur LaBible.app."),
+        cta="Que cette sagesse vous accompagne aujourd'hui. Partagez-la 🙏",
+        tag="#Proverbes", tag_num="#Proverbes{n}", tg="Proverbes {n}",
+        lu="Proverbes {n} lu à voix haute, en entier",
+        lire="Lire Proverbes {n} gratuitement",
+        lisez="Lisez le chapitre complet gratuitement",
+        tous="Tous les Proverbes lus à voix haute",
+        chaque="un chapitre des Proverbes chaque jour",
+        tags=["Proverbes", "Proverbes audio", "livre des Proverbes"],
+        videos="videos_proverbes_audio.json", fichier="proverbes",
+    ),
+}
+LIVRE = LIVRES["psaumes"]
+
+
+def choisir_livre(cle):
+    global LIVRE
+    LIVRE = LIVRES[cle]
+
+
+def _tete(num):
+    """« Psaume 23 » ou « Proverbes 3 »."""
+    return f"{LIVRE['nom']} {num}"
+
 
 # ─── Mapas de títulos (tema + frase da Parola) ───
 def _load_map(path):
@@ -161,11 +208,15 @@ def _too_similar(a, b):
 
 
 def get_psaume_theme(num):
+    if LIVRE["slug"] != "psaumes":
+        return None
     """Tema editorial do Salmo (título/caption), ou None."""
     return PSAUME_THEMES.get(str(num)) or None
 
 
 def get_psaume_titre(num):
+    if LIVRE["slug"] != "psaumes":
+        return None
     """Frase da Parola (cartão de abertura), ou None."""
     return PSAUME_TITRES.get(str(num)) or None
 
@@ -323,7 +374,7 @@ def fetch_psaume_verses(num, vfrom=None, vto=None):
     data = load_json(BIBLE_FILE)
     verses = []
     for v in data["verses"]:
-        if v["book_name"] == "Psaume" and int(v["chapter"]) == num:
+        if v["book_name"] == LIVRE["livre"] and int(v["chapter"]) == num:
             if vfrom is not None and int(v["verse"]) < vfrom:
                 continue
             if vto is not None and int(v["verse"]) > vto:
@@ -461,7 +512,7 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
 
     # ─── Narração : uma síntese por versículo, para saber quanto dura cada um ───
     os.makedirs("narration", exist_ok=True)
-    voix_titre = synthese(f"Psaume {num}.", "narration/titre")
+    voix_titre = synthese(f"{_tete(num)}.", "narration/titre")
     voix_versets = []
     for i, (vnum, vtext) in enumerate(verses_with_idx):
         lu = texte_a_lire(clean_text(strip_rubric(vtext)))
@@ -514,7 +565,7 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     os.makedirs("frames", exist_ok=True)
 
     # ─── Conteúdo do cartão de abertura: número + tema + frase ───
-    card_number = f"Psaume {num}"
+    card_number = _tete(num)
     theme = get_psaume_theme(num)
     card_theme = theme or ""
     if part_label:
@@ -627,7 +678,7 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
 
             # Rodapé: referência + watermark
             color_ref = lerp_color(BG_TOP, GOLD, a * 0.7)
-            ref_text = f"Psaume {num}:{vnum}"
+            ref_text = f"{_tete(num)}:{vnum}"
             draw.text((BORDER + CARD_PAD, H - BORDER - 70), ref_text, font=f_sub, fill=color_ref)
             wm_bb = draw.textbbox((0, 0), WATERMARK, font=f_wm)
             draw.text(
@@ -667,7 +718,7 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
     # Voz + música. A música (rotação por nº do Salmo, em loop) fica por baixo
     # da voz e desaparece nos 3 últimos segundos. A duração é a da narração,
     # que cobre exatamente o vídeo.
-    output_path = f"meditation_psaume_{num}{'_' + part_label.replace('-', '_') if part_label else ''}.mp4"
+    output_path = f"meditation_{LIVRE['fichier']}_{num}{'_' + part_label.replace('-', '_') if part_label else ''}.mp4"
     print(f"⏱️  Duração do vídeo: {total_secs:.0f}s ({total_secs/60:.1f} min)")
 
     music_file = pick_safe_music(num)
@@ -769,11 +820,11 @@ def vignette_audio(num, part_label=None, out="thumb_psaume.png", titre=None, sou
         f_ab = ImageFont.truetype(FONT_SERIF_BOLD, 330)
         for size in range(330, 160, -10):
             f_ab = ImageFont.truetype(FONT_SERIF_BOLD, size)
-            bb0 = md.textbbox((0, 0), "Ps", font=f_ab)
+            bb0 = md.textbbox((0, 0), LIVRE["abr"], font=f_ab)
             if bb0[2] - bb0[0] <= VW * 0.25:
                 break
-        bb = md.textbbox((0, 0), "Ps", font=f_ab)
-        md.text((VW - 70 - bb[2], 120 - bb[1]), "Ps", font=f_ab, fill=255)
+        bb = md.textbbox((0, 0), LIVRE["abr"], font=f_ab)
+        md.text((VW - 70 - bb[2], 120 - bb[1]), LIVRE["abr"], font=f_ab, fill=255)
         img.paste(soleil, (0, 0), masque.filter(ImageFilter.GaussianBlur(16)).point(lambda v: int(v * 0.22)))
         img.paste(loin, (0, 0), masque.point(lambda v: int(v * 0.5)))
         d = ImageDraw.Draw(img)
@@ -786,7 +837,7 @@ def vignette_audio(num, part_label=None, out="thumb_psaume.png", titre=None, sou
 
     # Titre (plus etroit pour un Psaume : la silhouette « Ps » occupe la droite)
     largeur_titre = VW * (0.58 if titre is None else 0.66)
-    titre = titre or f"Psaume {num}"
+    titre = titre or _tete(num)
     f_titre = ImageFont.truetype(FONT_SERIF_BOLD, 80)
     for size in range(170, 80, -6):
         f = ImageFont.truetype(FONT_SERIF_BOLD, size)
@@ -836,7 +887,7 @@ def _meditation_head(num, part_label=None):
     """Cabeçalho legível p/ captions: 'Psaume N : Thème (part)' com fallback.
     Sem travessão (decisão de BC, 2 de novembro de 2026)."""
     theme = get_psaume_theme(num)
-    head = f"Psaume {num}" + (f" : {theme}" if theme else "")
+    head = _tete(num) + (f" : {theme}" if theme else "")
     if part_label:
         head += f" ({part_label})"
     return head
@@ -845,7 +896,7 @@ def _meditation_head(num, part_label=None):
 def _video_title(num, part_label=None):
     """Título YouTube: 'Psaume N : Thème (part) | Lecture Audio | Bible LSG1910'."""
     theme = get_psaume_theme(num)
-    title = f"Psaume {num}" + (f" : {theme}" if theme else "")
+    title = _tete(num) + (f" : {theme}" if theme else "")
     if part_label:
         title += f" ({part_label})"
     title += f" | {TITLE_SUFFIX}"
@@ -860,7 +911,7 @@ def post_to_telegram(video_path, num, part_label=None):
         signaler_echec("Telegram méditation", "TELEGRAM_BOT_TOKEN ou TELEGRAM_CHANNEL vide")
         return
     head = _meditation_head(num, part_label)
-    chapter_url = f"{APP_URL}/lsg/psaumes/{num}"
+    chapter_url = f"{APP_URL}/lsg/{LIVRE['slug']}/{num}"
     # UNE seule cloture. PSAUME_CTA se terminait par « Partagez-le 🙏 » — la
     # formule retiree partout ailleurs — et se retrouvait empilee avec la
     # cloture tournante. On garde la phrase de fond, la cloture varie.
@@ -869,13 +920,13 @@ def post_to_telegram(video_path, num, part_label=None):
     titre = _video_title(num, part_label).replace("&", "&amp;").replace("<", "&lt;")
     caption = (
         f"🎙️ <b>{titre}</b>\n\n"
-        f"{_strip_share_clause(PSAUME_CTA)} "
-        f"{_rotate(TG_CLOSERS, f'psaume-{num}')}\n"
+        f"{_strip_share_clause(LIVRE['cta'])} "
+        f"{_rotate(TG_CLOSERS, LIVRE['fichier'] + '-' + str(num))}\n"
         f"📖 {chapter_url}\n\n"
-        f"#LaBibleApp #Psaumes #Méditation #LSG1910"
+        f"#LaBibleApp {LIVRE['tag']} #Méditation #LSG1910"
     )
     # Le bouton ouvre la Mini App directement sur le Psaume publie.
-    reply_markup = telegram_markup(f"Psaumes {num}")
+    reply_markup = telegram_markup(LIVRE["tg"].format(n=num))
     try:
         with open(video_path, "rb") as f:
             r = requests.post(
@@ -906,13 +957,13 @@ def post_to_facebook(video_id, num, part_label=None):
         signaler_echec("Facebook méditation", "pas de vidéo YouTube : rien à partager")
         return
     head = _meditation_head(num, part_label)
-    chapter_url = f"{APP_URL}/lsg/psaumes/{num}"
+    chapter_url = f"{APP_URL}/lsg/{LIVRE['slug']}/{num}"
     message = (
         f"🎙️ {head}\n"
         f"Lecture à voix haute · Bible Louis Segond 1910\n\n"
-        f"{_strip_share_clause(PSAUME_CTA)}\n\n"
-        f"📖 Lisez le psaume complet gratuitement → {chapter_url}\n\n"
-        f"#LaBibleApp #Psaumes #Méditation #Bible #LSG1910 #ParoleDeDieu"
+        f"{_strip_share_clause(LIVRE['cta'])}\n\n"
+        f"📖 {LIVRE['lisez']} → {chapter_url}\n\n"
+        f"#LaBibleApp {LIVRE['tag']} #Méditation #Bible #LSG1910 #ParoleDeDieu"
     )
     r = requests.post(
         f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/feed",
@@ -1009,18 +1060,18 @@ def _extras_youtube(youtube, video_id, num):
         while req is not None and pl_id is None:
             res = req.execute()
             for it in res.get("items", []):
-                if it["snippet"]["title"] == PLAYLIST_NARREE:
+                if it["snippet"]["title"] == LIVRE["playlist"]:
                     pl_id = it["id"]
                     break
             req = youtube.playlists().list_next(req, res)
         if pl_id is None:
             pl_id = youtube.playlists().insert(
                 part="snippet,status",
-                body={"snippet": {"title": PLAYLIST_NARREE, "description": PLAYLIST_DESC,
+                body={"snippet": {"title": LIVRE["playlist"], "description": LIVRE["desc"],
                                   "defaultLanguage": "fr"},
                       "status": {"privacyStatus": "public"}},
             ).execute()["id"]
-            print(f"✅ Playlist criada : {PLAYLIST_NARREE}")
+            print(f"✅ Playlist criada : {LIVRE['playlist']}")
         youtube.playlistItems().insert(
             part="snippet",
             body={"snippet": {"playlistId": pl_id,
@@ -1056,33 +1107,33 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
 
     # Lista de versículos para descrição
     verses_text = "\n".join(
-        f"Psaume {num}:{vnum} · {clean_text(strip_rubric(vtext)).rstrip('.')}."
+        f"{_tete(num)}:{vnum} · {clean_text(strip_rubric(vtext)).rstrip('.')}."
         for vnum, vtext in verses_with_idx
     )
 
     head = _meditation_head(num, part_label)
-    chapter_url = f"{APP_URL}/lsg/psaumes/{num}"
+    chapter_url = f"{APP_URL}/lsg/{LIVRE['slug']}/{num}"
     theme = get_psaume_theme(num)
     chapitres = chapitres_youtube()
     # Les deux premières lignes sont celles que YouTube et Google affichent :
     # le nom du Psaume, ce que c'est, la traduction. Les 3 premiers hashtags
     # s'affichent au-dessus du titre.
     description = (
-        f"Psaume {num} lu à voix haute, en entier"
+        LIVRE["lu"].format(n=num)
         + (f" : {theme}" if theme else "") + ".\n"
         f"Bible Louis Segond 1910 (LSG 1910), texte intégral, sans commentaire. "
         f"Voix de synthèse, musique douce.\n\n"
-        f"📖 Lire le Psaume {num} gratuitement : {chapter_url}\n"
+        f"📖 {LIVRE['lire'].format(n=num)} : {chapter_url}\n"
         f"🎧 Toute la Bible audio : {APP_URL}/bible-audio\n"
-        f"🎙️ Tous les Psaumes lus à voix haute : la playlist « {PLAYLIST_NARREE} »\n\n"
+        f"🎙️ {LIVRE['tous']} : la playlist « {LIVRE['playlist']} »\n\n"
         + (f"━━━━━━━━━━━━━━━━━━━━━\n{chapitres}\n\n" if chapitres else "")
         + f"━━━━━━━━━━━━━━━━━━━━━\n\n"
         f"{verses_text}\n\n"
         f"━━━━━━━━━━━━━━━━━━━━━\n\n"
-        f"{PSAUME_CTA}\n"
-        f"🔔 Abonnez-vous : un Psaume chaque jour.\n"
+        f"{LIVRE['cta']}\n"
+        f"🔔 Abonnez-vous : {LIVRE['chaque']}.\n"
         f"🔗 {APP_URL}/liens\n\n"
-        f"#Psaume{num} #Psaumes #Bible #LSG1910 #ParoleDeDieu #BibleAudio #LaBibleApp"
+        f"{LIVRE['tag_num'].format(n=num)} {LIVRE['tag']} #Bible #LSG1910 #ParoleDeDieu #BibleAudio #LaBibleApp"
     )
     # YouTube limita descrição a 5000 chars : corta-se na lista de versículos,
     # nunca nos capítulos nem nas primeiras linhas.
@@ -1095,12 +1146,12 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
         description = description[:5000]
 
     tags = [
-        f"Psaume {num}", f"Psaume {num} lecture", f"Psaume {num} audio",
-        f"Psaume {num} Louis Segond", f"Psaume {num} lu",
+        _tete(num), f"{_tete(num)} lecture", f"{_tete(num)} audio",
+        f"{_tete(num)} Louis Segond", f"{_tete(num)} lu",
     ]
     if theme:
         tags.append(theme)
-    tags += ["Psaumes", "Psaumes audio", "Bible audio", "Bible audio français",
+    tags += LIVRE["tags"] + ["Bible audio", "Bible audio français",
              "Bible Louis Segond 1910", "LSG 1910", "lecture de la Bible",
              "Parole de Dieu", "méditation biblique", "Bible en français"]
     # Limite YouTube : 500 caractères pour l'ensemble des tags.
@@ -1148,38 +1199,42 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
 
     _extras_youtube(youtube, video_id, num)
     import yt_commentaire
-    yt_commentaire.commenter(youtube, video_id, f"{APP_URL}/lsg/psaumes/{num}",
-                             titre=f"Psaume {num}", audio=True)
+    yt_commentaire.commenter(youtube, video_id, f"{APP_URL}/lsg/{LIVRE['slug']}/{num}",
+                             titre=_tete(num), audio=True)
     return video_id
 
 
 def _next_psaume(progress):
     """
-    Ordre sequentiel : 1, 2, 3 ... 150, puis retour a 1.
-    Le Psaume 119 se publie d'un seul tenant (176 versets), il n'est plus
-    decoupe en parties.
+    Ordre sequentiel : Psaumes 1 a 150 (le 119 d'un seul tenant), puis
+    Proverbes 1 a 31 (decision de BC, 14 novembre 2026). Choisit le livre
+    (choisir_livre) et avance la progression ; ne republie jamais.
     """
     num = int(progress.get("next_psaume", 1) or 1)
-
-    # Cycle termine : on ne republie pas, on s'arrete et on echoue
-    # volontairement pour declencher l'e-mail automatique de GitHub Actions.
-    # Pour repartir : remettre "next_psaume" a 1 dans progress_meditation.json.
-    if num > 150:
-        print("🏁 Les 150 Psaumes ont ete publies — le cycle est termine.")
-        print("   Aucune publication aujourd'hui.")
-        print("   Pour recommencer : remettre \"next_psaume\": 1 "
-              "dans progress_meditation.json.")
-        sys.exit(1)
-
     if num < 1:
         num = 1
-
-    suivant = num + 1
-    if suivant > 150:
-        print("🏁 Psaume 150 : dernier du cycle. "
-              "Les prochaines executions s'arreteront jusqu'a remise a 1.")
-
-    progress["next_psaume"] = suivant
+    if num <= 150:
+        choisir_livre("psaumes")
+        if num == 150:
+            print("🏁 Psaume 150 : dernier Psaume. Demain : Proverbes 1.")
+        progress["next_psaume"] = num + 1
+    else:
+        choisir_livre("proverbes")
+        num = int(progress.get("next_proverbe", 1) or 1)
+        if num < 1:
+            num = 1
+        # Cycle termine : on ne republie pas, on s'arrete et on echoue
+        # volontairement pour declencher l'alerte.
+        if num > LIVRE["total"]:
+            print("🏁 Les 150 Psaumes et les 31 chapitres des Proverbes ont ete publies.")
+            print("   Aucune publication aujourd'hui.")
+            signaler_echec("Méditation", "série narrée terminée (Psaumes et Proverbes) : "
+                           "décider de la suite")
+            finaliser("méditation psaume")
+            sys.exit(1)
+        if num == LIVRE["total"]:
+            print("🏁 Proverbes 31 : dernier chapitre de la série.")
+        progress["next_proverbe"] = num + 1
     # Nettoyage des cles issues de la version melangee (abandonnee).
     for obsolete in ("order", "idx", "published", "queue", "psaume_119_part"):
         progress.pop(obsolete, None)
@@ -1196,6 +1251,12 @@ def main():
     progress = None
     if args:
         # Modo manual: psaume_meditation.py 23  |  psaume_meditation.py 119 1-22
+        #              psaume_meditation.py proverbes 3
+        if " " in args[0]:
+            args = args[0].split() + args[1:]   # « proverbes 3 » depuis le workflow
+        if args[0].lower() in LIVRES:
+            choisir_livre(args[0].lower())
+            args = args[1:]
         num = int(args[0])
         if len(args) >= 2 and "-" in args[1]:
             vfrom_str, vto_str = args[1].split("-")
@@ -1222,7 +1283,7 @@ def main():
     # ─── Carregar versículos ───
     verses = fetch_psaume_verses(num, vfrom, vto)
     if not verses:
-        signaler_echec("Méditation", f"aucun verset trouvé pour le Psaume {num}")
+        signaler_echec("Méditation", f"aucun verset trouvé pour {_tete(num)}")
         finaliser("méditation psaume")
         sys.exit(1)
 
@@ -1246,8 +1307,8 @@ def main():
     if ESSAI:
         os.makedirs("echantillons", exist_ok=True)
         shutil.copy(video_path, os.path.join("echantillons", os.path.basename(video_path)))
-        sous_titres_srt(os.path.join("echantillons", f"psaume_{num}.srt"))
-        with open(os.path.join("echantillons", f"psaume_{num}_chapitres.txt"), "w", encoding="utf-8") as f:
+        sous_titres_srt(os.path.join("echantillons", f"{LIVRE['fichier']}_{num}.srt"))
+        with open(os.path.join("echantillons", f"{LIVRE['fichier']}_{num}_chapitres.txt"), "w", encoding="utf-8") as f:
             f.write(_video_title(num, part_label) + "\n\n" + chapitres_youtube() + "\n")
         print("🧪 ESSAI : vidéo dans echantillons/, rien n'est publié.")
         return
@@ -1258,7 +1319,7 @@ def main():
     video_id = publier("YouTube méditation", upload_to_youtube, video_path, num, verses, part_label)
     # Pour la page https://labible.app/bible-audio : {"23": "<id>", "119:1-22": "<id>"}
     if video_id:
-        vf = "videos_psaumes_audio.json"
+        vf = LIVRE["videos"]
         videos = load_json(vf) if os.path.exists(vf) else {}
         videos[f"{num}:{part_label}" if part_label else str(num)] = video_id
         save_json(vf, videos)
@@ -1270,8 +1331,8 @@ def main():
     # ─── Progression (uniquement apres publication reussie) ───
     if progress is not None:
         save_json(PROGRESS_FILE, progress)
-        print(f"💾 Progression enregistree — prochain Psaume : "
-              f"{progress.get('next_psaume')}")
+        print(f"💾 Progression enregistree — prochain : {LIVRE['nom']} "
+              f"{progress.get(LIVRE['cle'])}")
 
     print("✅ Terminé (méditation).")
     # Sans echec : silence, run vert. Avec echecs : alerte privee + exit 1.
