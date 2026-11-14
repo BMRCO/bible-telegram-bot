@@ -48,6 +48,7 @@ EXISTANTES = {
 
 # Themes crees le 8 novembre 2026 : emoji devant le libelle de la page du site.
 EMOJIS = {
+    "derniers-temps": "⏳",
     "foi": "⛰️", "encouragement": "\U0001f4aa", "joie": "☀️", "benediction": "✨",
     "mariage": "\U0001f48d", "enfants": "\U0001f476", "amitie": "\U0001f91d", "travail": "\U0001f6e0️",
     "tristesse": "\U0001f4a7", "salut": "✝️", "saint-esprit": "\U0001f525", "nouvel-an": "\U0001f4c5",

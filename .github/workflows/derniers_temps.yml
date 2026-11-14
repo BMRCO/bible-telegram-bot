@@ -1,0 +1,94 @@
+name: Derniers temps (Shorts YouTube)
+
+# Serie speciale « Les derniers temps » (14 novembre 2026, decision de BC) :
+# un Short YouTube par passage, versets du theme labible.app/versets/derniers-temps.
+# YouTube seulement. Voir derniers_temps.py.
+on:
+  workflow_dispatch:
+    inputs:
+      reference:
+        description: 'Verset precis (vide = suivant), ex. Matthieu 24:35'
+        required: false
+        type: string
+        default: ''
+      essai:
+        description: 'Essai : genere la video sans rien publier'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: derniers-temps
+  cancel-in-progress: false
+
+jobs:
+  derniers_temps:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pillow requests numpy google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
+      - name: Install ffmpeg
+        # 11 novembre 2026 : apt-get est reste bloque 1 h 19 (miroirs Ubuntu muets) et
+        # le job a ete tue sans rien publier. apt-get est donc borne (un essai), et
+        # s'il echoue on prend le ffmpeg statique du paquet PyPI imageio-ffmpeg
+        # (libx264 + aac, tout ce que les scripts utilisent ; pas de ffprobe, inutilise).
+        timeout-minutes: 12
+        run: |
+          APT="sudo timeout 150 apt-get -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::Retries=1"
+          if command -v ffmpeg >/dev/null || { $APT update -qq && $APT install -y -qq ffmpeg; }; then
+            ffmpeg -version | head -1; exit 0
+          fi
+          echo "::warning::apt-get indisponible : ffmpeg statique (imageio-ffmpeg) utilise a la place"
+          python3 -m pip install -q imageio-ffmpeg
+          sudo ln -sf "$(python3 -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')" /usr/local/bin/ffmpeg
+          ffmpeg -version | head -1
+
+      - name: Short
+        env:
+          # bot.py exige ces variables a l'import ; rien n'est envoye sur Telegram.
+          TELEGRAM_BOT_TOKEN: "-"
+          TELEGRAM_CHANNEL: "-"
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          IN_REF: ${{ inputs.reference }}
+          ESSAI: ${{ inputs.essai && '1' || '' }}
+        run: |
+          if [ -n "$IN_REF" ]; then python derniers_temps.py "$IN_REF"; else python derniers_temps.py; fi
+
+      - name: Echantillon
+        if: ${{ inputs.essai }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: derniers-temps-essai
+          path: echantillons/
+
+      - name: Commit progress
+        if: ${{ !cancelled() && !inputs.essai }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for f in progress_derniers_temps.json videos_derniers_temps.json playlists_themes.json; do
+            if [ -f "$f" ]; then git add "$f"; fi
+          done
+          if git diff --staged --quiet; then echo "Rien a enregistrer"; exit 0; fi
+          git commit -m "Derniers temps : progression [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0
+            sleep 5
+          done
+          echo "::error::Progression NON enregistree."
+          exit 1
