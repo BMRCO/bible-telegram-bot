@@ -169,11 +169,11 @@ def threads_reel(video_url, caption):
         return
     # Threads traite la video avant de pouvoir la publier. Une attente fixe de
     # 30 s ne suffisait pas toujours (7 nov. 2026 : « Media Not Found ») : on
-    # interroge le statut du container jusqu'a FINISHED, 3 minutes au plus.
+    # interroge le statut du container jusqu'a FINISHED, 6 minutes au plus (14 nov. 2026 : 3 minutes ne suffisaient pas).
     import time
     container_id = r.json().get("id")
     statut = ""
-    for _ in range(18):
+    for _ in range(36):
         time.sleep(10)
         try:
             rs = requests.get(f"https://graph.threads.net/v1.0/{container_id}",
