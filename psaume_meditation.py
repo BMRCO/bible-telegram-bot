@@ -399,6 +399,10 @@ def texte_a_lire(texte):
     t = texte
     for esp in ("\u00a0", "\u202f", "\u2009", "\u2007", "\u200a"):
         t = t.replace(esp, " ")
+    # Apostrophe typographique -> apostrophe simple : la voix Google lit
+    # « L\u2019Éternel » comme la lettre L suivie de « Éternel » (signale par
+    # BC le 15 nov. 2026 ; les echantillons, en apostrophe simple, etaient justes).
+    t = t.replace("\u2019", "'").replace("\u02bc", "'")
     return " ".join(t.split())
 
 
