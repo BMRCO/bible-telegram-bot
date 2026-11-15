@@ -99,7 +99,7 @@ DEBIT_VOIX    = "-8%"
 # grátis por mês ; o uso previsto é ~560 000. Se a Google não responder no
 # arranque (chave ausente, quota, avaria), o vídeo inteiro é lido pelo Henri :
 # nunca duas vozes no mesmo vídeo.
-VOIX_GOOGLE   = "fr-FR-Chirp3-HD-Enceladus"
+VOIX_GOOGLE   = "fr-FR-Chirp3-HD-" + (os.environ.get("VOIX_GOOGLE_NOM", "").strip() or "Enceladus")
 DEBIT_GOOGLE  = 0.92
 MOTEUR        = None        # "google" ou "edge", fixado por choisir_moteur()
 GOOGLE_ACTIF  = True

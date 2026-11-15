@@ -23,6 +23,10 @@ on:
         required: false
         type: boolean
         default: false
+      voix:
+        description: 'Voix Google pour un essai (ex: Charon), vide = Enceladus'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -90,6 +94,7 @@ jobs:
           # Par l'environnement : une entree libre ne doit jamais etre interpolee dans un script.
           IN_VERSES: ${{ inputs.verses }}
           ESSAI: ${{ inputs.essai && '1' || '' }}
+          VOIX_GOOGLE_NOM: ${{ inputs.voix }}
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
