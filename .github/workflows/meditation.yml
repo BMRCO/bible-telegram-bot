@@ -78,6 +78,8 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
+          # Voix Google Chirp 3 HD (Enceladus). Absente ou en panne : Henri.
+          GOOGLE_TTS_KEY: ${{ secrets.GOOGLE_TTS_KEY }}
           # Conversation privee pour les alertes de panne. Vide = pas d'alerte
           # privee, mais la run sort quand meme en erreur (e-mail GitHub).
           TELEGRAM_ALERT_CHAT_ID: ${{ secrets.TELEGRAM_ALERT_CHAT_ID }}

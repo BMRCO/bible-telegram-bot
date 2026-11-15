@@ -2,7 +2,7 @@
 psaume_meditation.py
 ====================
 Gera vídeo horizontal 1920×1080 de meditação completa de um Salmo.
-Versículo a versículo com fade lento, NARRADO (voz neuronal Henri, edge-tts)
+Versículo a versículo com fade lento, NARRADO (voz Google Chirp 3 HD Enceladus ; recurso : Henri, edge-tts)
 e música suave por baixo. Cada versículo fica no ecrã o tempo da sua leitura.
 
 Uso:
@@ -93,6 +93,15 @@ FADE_DURATION  = 0.8        # fade in/out por versículo
 # em inglês ou espanhol. Gérard e as vozes Piper também foram afastados.
 VOIX          = "fr-FR-HenriNeural"
 DEBIT_VOIX    = "-8%"
+# Escolhida por BC a 15 de novembro de 2026 (amostras do Salmo 23, 6 vozes
+# Chirp 3 HD) : Enceladus, débito 0,92. Chave GOOGLE_TTS_KEY (projeto Google
+# Cloud do canal, chave restrita à Text-to-Speech). 1 milhão de caracteres
+# grátis por mês ; o uso previsto é ~560 000. Se a Google não responder no
+# arranque (chave ausente, quota, avaria), o vídeo inteiro é lido pelo Henri :
+# nunca duas vozes no mesmo vídeo.
+VOIX_GOOGLE   = "fr-FR-Chirp3-HD-Enceladus"
+DEBIT_GOOGLE  = 0.92
+MOTEUR        = None        # "google" ou "edge", fixado por choisir_moteur()
 SR            = 24000       # Hz, mono
 LEAD          = 0.8         # silêncio antes da voz (o texto aparece primeiro)
 TAIL          = 1.4         # silêncio depois da voz, antes do versículo seguinte
@@ -394,15 +403,64 @@ def texte_a_lire(texte):
 
 
 async def _tts(texte, chemin):
+    if MOTEUR == "google":
+        _tts_google(texte, chemin)
+        return
     import edge_tts
     import edge_tts.communicate as _comm
     _comm.mkssml = _mkssml_fr
     await edge_tts.Communicate(texte, VOIX, rate=DEBIT_VOIX).save(chemin)
 
 
+def _tts_google(texte, chemin):
+    """Google Cloud Text-to-Speech. A chave vai no cabeçalho, nunca no URL
+    (acabaria nos registos)."""
+    import base64
+    import requests
+    cle = os.environ.get("GOOGLE_TTS_KEY", "").strip()
+    r = requests.post(
+        "https://texttospeech.googleapis.com/v1/text:synthesize",
+        headers={"X-Goog-Api-Key": cle, "Content-Type": "application/json; charset=utf-8"},
+        data=json.dumps({
+            "input": {"text": texte},
+            "voice": {"languageCode": "fr-FR", "name": VOIX_GOOGLE},
+            "audioConfig": {"audioEncoding": "MP3", "speakingRate": DEBIT_GOOGLE},
+        }),
+        timeout=120)
+    if r.status_code != 200:
+        # O corpo de erro da Google não contém a chave.
+        raise RuntimeError(f"Google TTS HTTP {r.status_code} {r.text[:200]}")
+    with open(chemin, "wb") as f:
+        f.write(base64.b64decode(r.json()["audioContent"]))
+
+
+def choisir_moteur():
+    """Fixa a voz do vídeo inteiro antes da primeira síntese : Enceladus se a
+    Google responder, senão Henri (com aviso no registo)."""
+    global MOTEUR
+    if MOTEUR:
+        return MOTEUR
+    MOTEUR = "edge"
+    if os.environ.get("GOOGLE_TTS_KEY", "").strip():
+        try:
+            MOTEUR = "google"
+            os.makedirs("narration", exist_ok=True)
+            _tts_google("Amen.", "narration/_essai_voix.mp3")
+            print(f"🎙️  Voix : {VOIX_GOOGLE.split('-')[-1]} (Google Chirp 3 HD)")
+            return MOTEUR
+        except Exception as e:
+            MOTEUR = "edge"
+            print(f"::warning::Voix Google indisponible ({str(e)[:160]}) : lecture par Henri")
+    else:
+        print("::warning::GOOGLE_TTS_KEY absente : lecture par Henri")
+    print("🎙️  Voix : Henri (edge-tts)")
+    return MOTEUR
+
+
 def synthese(texte, base):
     """Lê `texte` com a voz escolhida. Devolve um array float32 mono a SR Hz.
-    3 tentativas : o serviço da Microsoft falha de vez em quando."""
+    3 tentativas : os serviços de voz falham de vez em quando."""
+    choisir_moteur()
     mp3, wav = base + ".mp3", base + ".wav"
     derniere = None
     for essai in range(3):

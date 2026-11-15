@@ -3,7 +3,7 @@ bible_audio.py
 ==============
 La Bible entiere lue a voix haute sur YouTube : un chapitre = une video.
 
-Voix Henri (la meme que la serie des Psaumes, voir psaume_meditation.py),
+Voix Google Enceladus, Henri en secours (la meme que la serie des Psaumes, voir psaume_meditation.py),
 musique douce sous la voix, texte du verset a l'ecran le temps de sa lecture.
 Deux lectures en parallele (decision de BC, 14 nov. 2026) : chaque jour 3
 chapitres de l'Ancien Testament (Genese, Exode...) et 2 du Nouveau (apres Marc,
