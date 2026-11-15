@@ -16,6 +16,11 @@ on:
         required: false
         type: string
         default: 'Charon Algenib Iapetus Schedar Orus Enceladus'
+      phrases:
+        description: 'Phrases separees par | (une par fichier, sans Psaume) ; vide = Psaume'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -49,6 +54,7 @@ jobs:
           GOOGLE_TTS_KEY: ${{ secrets.GOOGLE_TTS_KEY }}
           PSAUME: ${{ inputs.psaume }}
           VOIX: ${{ inputs.voix }}
+          PHRASES: ${{ inputs.phrases }}
         run: python scripts/test_voix_google.py "$PSAUME" echantillons $VOIX
 
       - name: Publish samples on the echantillons-voix branch

@@ -99,6 +99,19 @@ def main():
     os.makedirs(sortie, exist_ok=True)
 
     dispo = voix_disponibles(cle)
+    # PHRASES="phrase 1|phrase 2" : une phrase par fichier, telle quelle
+    # (comparer des graphies, ex. L'Eternel / L’Éternel). Pas de Psaume.
+    phrases = [p.strip() for p in os.environ.get("PHRASES", "").split("|") if p.strip()]
+    if phrases:
+        for spec in specs:
+            nom, _, debit = spec.partition("@")
+            debit = float(debit) if debit else DEBIT
+            voix = nom if nom.startswith("fr-FR-") else f"fr-FR-Chirp3-HD-{nom}"
+            for i, ph in enumerate(phrases, 1):
+                out = os.path.join(sortie, f"phrase{i}_{voix.split('-')[-1]}.mp3")
+                synthese(cle, ph, voix, debit, out)
+                print(f"OK {out} : {ph}")
+        return
     textes = [f"Psaume {num}."] + [entree_synthese(t) for t in versets(num)]
     tmp = tempfile.mkdtemp()
     p_titre, p_verset = os.path.join(tmp, "s1.wav"), os.path.join(tmp, "s2.wav")
