@@ -102,9 +102,7 @@ DEBIT_VOIX    = "-8%"
 VOIX_GOOGLE   = "fr-FR-Chirp3-HD-Enceladus"
 DEBIT_GOOGLE  = 0.92
 MOTEUR        = None        # "google" ou "edge", fixado por choisir_moteur()
-# Suspenso a 15 nov. 2026 : a Enceladus lê mal « L'Éternel » ; Henri até BC
-# escolher a grafia certa (amostras A a E).
-GOOGLE_ACTIF  = False
+GOOGLE_ACTIF  = True
 SR            = 24000       # Hz, mono
 LEAD          = 0.8         # silêncio antes da voz (o texto aparece primeiro)
 TAIL          = 1.4         # silêncio depois da voz, antes do versículo seguinte
@@ -406,6 +404,10 @@ def texte_a_lire(texte):
     # « L\u2019Éternel » comme la lettre L suivie de « Éternel » (signale par
     # BC le 15 nov. 2026 ; les echantillons, en apostrophe simple, etaient justes).
     t = t.replace("\u2019", "'").replace("\u02bc", "'")
+    # « Éternel » avec accent : la voix Google le lit mal. Sans accent (graphie
+    # de la LSG 1910 elle-meme), il est juste : choix de BC sur echantillons,
+    # 15 nov. 2026. Le texte affiche garde « Éternel ».
+    t = t.replace("Éternel", "Eternel")
     return " ".join(t.split())
 
 
