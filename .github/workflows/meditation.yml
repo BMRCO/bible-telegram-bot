@@ -24,7 +24,7 @@ on:
         type: boolean
         default: false
       voix:
-        description: 'Voix Google pour un essai (ex: Charon), vide = Enceladus'
+        description: 'Voix Google pour un essai (ex: Charon), vide = Algieba'
         required: false
         default: ''
 

@@ -2,7 +2,7 @@
 psaume_meditation.py
 ====================
 Gera vídeo horizontal 1920×1080 de meditação completa de um Salmo.
-Versículo a versículo com fade lento, NARRADO (voz Google Chirp 3 HD Enceladus ; recurso : Henri, edge-tts)
+Versículo a versículo com fade lento, NARRADO (voz Google Chirp 3 HD Algieba ; recurso : Henri, edge-tts)
 e música suave por baixo. Cada versículo fica no ecrã o tempo da sua leitura.
 
 Uso:
@@ -94,12 +94,13 @@ FADE_DURATION  = 0.8        # fade in/out por versículo
 VOIX          = "fr-FR-HenriNeural"
 DEBIT_VOIX    = "-8%"
 # Escolhida por BC a 15 de novembro de 2026 (amostras do Salmo 23, 6 vozes
-# Chirp 3 HD) : Enceladus, débito 0,92. Chave GOOGLE_TTS_KEY (projeto Google
+# Chirp 3 HD) : Enceladus, débito 0,92. Trocada no mesmo dia pela Algieba,
+# depois de ouvir as 16 vozes masculinas. Chave GOOGLE_TTS_KEY (projeto Google
 # Cloud do canal, chave restrita à Text-to-Speech). 1 milhão de caracteres
 # grátis por mês ; o uso previsto é ~560 000. Se a Google não responder no
 # arranque (chave ausente, quota, avaria), o vídeo inteiro é lido pelo Henri :
 # nunca duas vozes no mesmo vídeo.
-VOIX_GOOGLE   = "fr-FR-Chirp3-HD-" + (os.environ.get("VOIX_GOOGLE_NOM", "").strip() or "Enceladus")
+VOIX_GOOGLE   = "fr-FR-Chirp3-HD-" + (os.environ.get("VOIX_GOOGLE_NOM", "").strip() or "Algieba")
 DEBIT_GOOGLE  = 0.92
 MOTEUR        = None        # "google" ou "edge", fixado por choisir_moteur()
 GOOGLE_ACTIF  = True
