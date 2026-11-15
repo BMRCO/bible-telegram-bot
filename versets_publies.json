@@ -994,9 +994,11 @@
 "psaumes|133|1"
 ],
 "thematique_force": [
+"1 corinthiens|10|13",
 "1 corinthiens|16|13",
 "2 corinthiens|12|10",
 "2 corinthiens|12|9",
+"actes|1|8",
 "colossiens|2|2",
 "ephesiens|6|10",
 "esaie|35|4",
@@ -1008,11 +1010,14 @@
 "josue|1|9",
 "lamentations|3|25",
 "matthieu|6|34",
+"nehemie|8|10",
 "philippiens|4|13",
 "proverbes|18|10",
 "psaumes|121|1",
 "psaumes|121|2",
 "psaumes|138|3",
+"psaumes|18|1",
+"psaumes|18|2",
 "psaumes|18|32",
 "psaumes|27|14",
 "psaumes|29|11",
@@ -1021,6 +1026,7 @@
 "psaumes|37|17",
 "psaumes|62|7",
 "psaumes|73|26",
+"romains|1|16",
 "romains|8|37"
 ],
 "thematique_gratitude": [
