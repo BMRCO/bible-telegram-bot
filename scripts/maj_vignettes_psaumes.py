@@ -19,6 +19,35 @@ import psaume_meditation as pm  # noqa: E402
 from youtube_garde import verifier_chaine  # noqa: E402
 
 MAX = int(os.environ.get("MAX") or 80)
+# SEULEMENT="14" ou "14 15" : seulement ces Psaumes, et la video est aussi
+# ajoutee a la playlist des Psaumes narres (rattrapage d'un jour ou le quota
+# YouTube etait epuise a la publication).
+SEULEMENT = (os.environ.get("SEULEMENT") or "").split()
+
+
+def ajouter_playlist(yt, video_id):
+    pl_id = None
+    req = yt.playlists().list(part="snippet", mine=True, maxResults=50)
+    while req is not None and not pl_id:
+        res = req.execute()
+        for it in res.get("items", []):
+            if it["snippet"]["title"] == pm.LIVRE["playlist"]:
+                pl_id = it["id"]
+        req = yt.playlists().list_next(req, res)
+    if not pl_id:
+        print("::warning::Playlist des Psaumes narres introuvable")
+        return
+    req = yt.playlistItems().list(part="contentDetails", playlistId=pl_id, maxResults=50)
+    while req is not None:
+        res = req.execute()
+        if any(it["contentDetails"]["videoId"] == video_id for it in res.get("items", [])):
+            print("   deja dans la playlist")
+            return
+        req = yt.playlistItems().list_next(req, res)
+    yt.playlistItems().insert(part="snippet", body={"snippet": {
+        "playlistId": pl_id,
+        "resourceId": {"kind": "youtube#video", "videoId": video_id}}}).execute()
+    print("   ✅ ajoutee a la playlist")
 
 
 def main():
@@ -32,6 +61,8 @@ def main():
     verifier_chaine(yt)
 
     faits = 0
+    if SEULEMENT:
+        videos = {k: v for k, v in videos.items() if k in SEULEMENT}
     for cle in sorted(videos, key=lambda k: [int(x) if x.isdigit() else x for x in k.split("-")]):
         if faits >= MAX:
             print(f"::notice::Plafond de {MAX} atteint, relancer pour la suite")
@@ -46,6 +77,8 @@ def main():
                             media_body=MediaFileUpload(chemin, mimetype="image/png")).execute()
         faits += 1
         print(f"✅ Psaume {cle} : vignette remplacée ({videos[cle]})")
+        if SEULEMENT:
+            ajouter_playlist(yt, videos[cle])
     print(f"::notice::{faits} vignette(s) remplacée(s)")
 
 

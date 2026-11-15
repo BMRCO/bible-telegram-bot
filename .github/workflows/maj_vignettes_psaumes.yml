@@ -4,6 +4,11 @@ name: Mettre a jour les vignettes des Psaumes narres
 # (vignette_audio de psaume_meditation.py). Ne touche ni a la video, ni au titre.
 on:
   workflow_dispatch:
+    inputs:
+      seulement:
+        description: 'Numeros des Psaumes (ex: 14 ou 14 15), vide = tous ; avec un numero, ajoute aussi a la playlist'
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -26,4 +31,5 @@ jobs:
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          SEULEMENT: ${{ inputs.seulement }}
         run: python scripts/maj_vignettes_psaumes.py
