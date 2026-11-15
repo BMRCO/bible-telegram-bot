@@ -1526,9 +1526,33 @@ def social_caption(ref, text, cat, cat_name, chapter_url=None, reseau="fb"):
                 f"📖 Bible complète et gratuite — lien en bio\n\n"
                 f"{fin}\n\n{build_hashtags_ig(cat_name)}")
     tags = build_hashtags_fb(cat_name) if reseau == "fb" else build_hashtags_ig(cat_name)
-    return (f"{cat['emoji']} {ref}\n\n« {text} »\n\n"
-            f"📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n"
-            f"{fin}\n\n{tags}")
+    legende = (f"{cat['emoji']} {ref}\n\n« {text} »\n\n"
+               f"📖 Lisez le chapitre complet gratuitement → {chapter_url}\n\n"
+               f"{fin}\n\n{tags}")
+    if reseau == "threads":
+        legende = _limite_threads(legende, cat, ref, text, chapter_url, fin, tags)
+    return legende
+
+
+# Threads refuse un texte de plus de 500 caracteres (HTTP 500, « Param text
+# must be at most 500 characters long », meditation thematique du 15 nov.
+# 2026, premier verset long). On retire d'abord les hashtags, puis la phrase
+# de cloture ; le verset n'est coupe qu'en dernier recours, a un mot, avec « … ».
+THREADS_MAX = 490
+
+
+def _limite_threads(legende, cat, ref, text, chapter_url, fin, tags):
+    if len(legende) <= THREADS_MAX:
+        return legende
+    tete = f"{cat['emoji']} {ref}\n\n« "
+    pied = f" »\n\n📖 Lisez le chapitre complet gratuitement → {chapter_url}"
+    for suite in (f"\n\n{fin}", ""):
+        legende = f"{tete}{text}{pied}{suite}"
+        if len(legende) <= THREADS_MAX:
+            return legende
+    place = THREADS_MAX - len(tete) - len(pied) - 1
+    coupe = text[:place].rsplit(" ", 1)[0].rstrip(" ,;:")
+    return f"{tete}{coupe}…{pied}"
 
 
 def telegram_caption(ref, text, cat, cat_name, chapter_url):
