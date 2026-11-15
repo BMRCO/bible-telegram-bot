@@ -65,12 +65,27 @@ def voix_disponibles(cle):
     return noms
 
 
+# MODELE=gemini-2.5-flash-tts (ou pro) + PROMPT : voix Gemini-TTS, dirigee par
+# une consigne ecrite. GRAVE=2 : baisse le ton de 2 demi-tons apres coup
+# (meme duree), pour les voix Chirp.
+MODELE = os.environ.get("MODELE", "").strip()
+PROMPT = os.environ.get("PROMPT", "").strip()
+GRAVE = float(os.environ.get("GRAVE", "") or 0)
+
+
 def synthese(cle, texte, voix, debit, chemin):
-    corps = {
-        "input": {"text": texte},
-        "voice": {"languageCode": "fr-FR", "name": voix},
-        "audioConfig": {"audioEncoding": "MP3", "speakingRate": debit},
-    }
+    if MODELE:
+        corps = {
+            "input": {"text": texte, **({"prompt": PROMPT} if PROMPT else {})},
+            "voice": {"languageCode": "fr-FR", "name": voix.split("-")[-1], "model_name": MODELE},
+            "audioConfig": {"audioEncoding": "MP3"},
+        }
+    else:
+        corps = {
+            "input": {"text": texte},
+            "voice": {"languageCode": "fr-FR", "name": voix},
+            "audioConfig": {"audioEncoding": "MP3", "speakingRate": debit},
+        }
     for essai in range(3):
         r = requests.post(f"{API}/text:synthesize", headers=entetes(cle),
                           data=json.dumps(corps), timeout=120)
@@ -122,7 +137,7 @@ def main():
         nom, _, debit = spec.partition("@")
         debit = float(debit) if debit else DEBIT
         voix = nom if nom.startswith("fr-FR-") else f"fr-FR-Chirp3-HD-{nom}"
-        if voix not in dispo:
+        if voix not in dispo and not MODELE:
             print(f"::warning::{voix} n'existe pas, ignoree")
             continue
         morceaux = []
@@ -138,9 +153,21 @@ def main():
             f.writelines(f"file '{m}'\n" for m in morceaux)
         court = voix.split("-")[-1]
         suffixe = "" if debit == DEBIT else f"_{str(debit).replace('.', '')}"
+        if MODELE:
+            court = f"{MODELE.split('-')[2]}_{court}"
+        if GRAVE:
+            suffixe += f"_grave{GRAVE:g}"
         out = os.path.join(sortie, f"chirp_{court}{suffixe}_psaume{num}.mp3")
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0",
                         "-i", liste, "-ac", "1", "-b:a", "64k", out], check=True)
+        if GRAVE:
+            f = 2 ** (-GRAVE / 12)
+            brut = out[:-4] + "_brut.mp3"
+            os.replace(out, brut)
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", brut, "-af",
+                            f"asetrate=24000*{f:.6f},aresample=24000,atempo={1 / f:.6f}",
+                            "-ac", "1", "-b:a", "64k", out], check=True)
+            os.remove(brut)
         print(f"OK {out}")
 
     if not any(f.endswith(".mp3") for f in os.listdir(sortie)):

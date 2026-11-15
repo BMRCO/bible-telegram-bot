@@ -21,6 +21,21 @@ on:
         required: false
         type: string
         default: ''
+      grave:
+        description: 'Baisser le ton de N demi-tons (voix Chirp), vide = non'
+        required: false
+        type: string
+        default: ''
+      modele:
+        description: 'Modele Gemini-TTS (gemini-2.5-flash-tts, gemini-2.5-pro-tts), vide = Chirp 3 HD'
+        required: false
+        type: string
+        default: ''
+      prompt:
+        description: 'Consigne de lecture pour Gemini-TTS'
+        required: false
+        type: string
+        default: ''
 
 permissions:
   contents: write
@@ -55,6 +70,9 @@ jobs:
           PSAUME: ${{ inputs.psaume }}
           VOIX: ${{ inputs.voix }}
           PHRASES: ${{ inputs.phrases }}
+          GRAVE: ${{ inputs.grave }}
+          MODELE: ${{ inputs.modele }}
+          PROMPT: ${{ inputs.prompt }}
         run: python scripts/test_voix_google.py "$PSAUME" echantillons $VOIX
 
       - name: Publish samples on the echantillons-voix branch
