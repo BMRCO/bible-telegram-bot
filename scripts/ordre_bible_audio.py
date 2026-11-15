@@ -51,7 +51,35 @@ def main():
                                    media_body=MediaFileUpload(COUVERTURE, mimetype="image/jpeg")).execute()
         print("✅ Couverture posée")
 
-    cles = {v: k for k, v in load_json(ba.VIDEOS_FILE).items()}
+    videos = load_json(ba.VIDEOS_FILE)
+    cles = {v: k for k, v in videos.items()}
+
+    # Rattrapage : chaque chapitre publie doit etre dans la playlist de son
+    # livre et dans la Bible complete (15 nov. 2026 : Apocalypse 1 manquait
+    # dans la playlist du livre).
+    titres, req = {}, yt.playlists().list(part="snippet", mine=True, maxResults=50)
+    while req is not None:
+        rep = req.execute()
+        for it in rep.get("items", []):
+            titres.setdefault(it["snippet"]["title"], it["id"])
+        req = yt.playlists().list_next(req, rep)
+    contenu = {}
+    for cle, vid in sorted(videos.items(), key=lambda kv: ba.rang_canonique(kv[0])):
+        i, _ = ba.rang_canonique(cle)
+        if i >= len(ba.CANON):
+            continue
+        nom_pl = f"📖 {ba.nom_affiche(ba.CANON[i])} | Bible audio LSG 1910"
+        for p in (titres.get(nom_pl), pid):
+            if not p:
+                continue
+            if p not in contenu:
+                contenu[p] = {v for _, v in ba.elements_playlist(yt, p)}
+            if vid not in contenu[p]:
+                yt.playlistItems().insert(part="snippet", body={"snippet": {
+                    "playlistId": p, "resourceId": {"kind": "youtube#video", "videoId": vid}}}).execute()
+                contenu[p].add(vid)
+                print(f"✅ {cle} ajouté à « {nom_pl if p != pid else ba.PLAYLIST_COMPLETE} »")
+
     actuel = ba.elements_playlist(yt, pid)
     voulu = sorted(actuel, key=lambda e: ba.rang_canonique(cles.get(e[1], "?/0")))
     moves = 0
