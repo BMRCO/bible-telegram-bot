@@ -102,6 +102,9 @@ DEBIT_VOIX    = "-8%"
 VOIX_GOOGLE   = "fr-FR-Chirp3-HD-Enceladus"
 DEBIT_GOOGLE  = 0.92
 MOTEUR        = None        # "google" ou "edge", fixado por choisir_moteur()
+# Suspenso a 15 nov. 2026 : a Enceladus lê mal « L'Éternel » ; Henri até BC
+# escolher a grafia certa (amostras A a E).
+GOOGLE_ACTIF  = False
 SR            = 24000       # Hz, mono
 LEAD          = 0.8         # silêncio antes da voz (o texto aparece primeiro)
 TAIL          = 1.4         # silêncio depois da voz, antes do versículo seguinte
@@ -445,7 +448,7 @@ def choisir_moteur():
     if MOTEUR:
         return MOTEUR
     MOTEUR = "edge"
-    if os.environ.get("GOOGLE_TTS_KEY", "").strip():
+    if GOOGLE_ACTIF and os.environ.get("GOOGLE_TTS_KEY", "").strip():
         try:
             MOTEUR = "google"
             os.makedirs("narration", exist_ok=True)
