@@ -708,7 +708,15 @@ def upload(video, livre, ch, tl, rang):
                             yt, mes_pl[titre], f"{slugify_book(nom_affiche(livre))}/{ch}", videos)
                     except Exception as e:
                         print(f"⚠️  Position canonique inconnue, ajout a la fin : {str(e)[:120]}")
-                yt.playlistItems().insert(part="snippet", body={"snippet": snip}).execute()
+                try:
+                    yt.playlistItems().insert(part="snippet", body={"snippet": snip}).execute()
+                except Exception as e:
+                    if "position" not in snip:
+                        raise
+                    # Playlist pas en tri « manuel » (reglage du Studio) : a la fin.
+                    print(f"⚠️  Position refusée ({str(e)[:100]}), ajout à la fin")
+                    snip.pop("position")
+                    yt.playlistItems().insert(part="snippet", body={"snippet": snip}).execute()
                 print(f"✅ Ajoutée à la playlist « {titre} »"
                       + (f" (position {snip['position'] + 1})" if "position" in snip else ""))
     except Exception as e:
