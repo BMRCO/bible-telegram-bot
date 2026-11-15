@@ -31,6 +31,9 @@ MAX = int(os.environ.get("MAX") or 60)
 PAUSE = int(os.environ.get("PAUSE") or 15)
 AVANT = os.environ.get("AVANT", "2026-11-09")   # videos publiees avant cette date
 FAITS = os.path.join(RACINE, "commentaires_faits.json")
+# VIDEOS="id1 id2" : seulement ces videos, quelle que soit leur date
+# (rattrapage d'un commentaire refuse a la publication, quota epuise).
+VIDEOS = set((os.environ.get("VIDEOS") or "").split())
 
 REF = re.compile(r"((?:[1-3]\s)?[A-ZÉÈÀÂÎÔ][a-zà-ÿ]+(?:\s(?:des|de|du)\s[A-Z][a-zà-ÿ]+)?)\s(\d+):(\d+)(?:-(\d+))?")
 
@@ -101,7 +104,7 @@ def main():
     site, th = yth.themes(), themes_titres()
     a_faire = []
     for date, vid, titre in videos:
-        if vid in faits or date >= AVANT:
+        if vid in faits or (VIDEOS and vid not in VIDEOS) or (not VIDEOS and date >= AVANT):
             continue
         c = cible(titre, site, th)
         if c:

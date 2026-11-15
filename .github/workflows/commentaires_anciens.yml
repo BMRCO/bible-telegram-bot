@@ -11,6 +11,10 @@ on:
       max:
         description: "Commentaires au plus"
         default: "60"
+      videos:
+        description: "Identifiants de videos (separes par un espace), vide = les anciennes"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -38,6 +42,7 @@ jobs:
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
           MAX: ${{ inputs.max || '30' }}
+          VIDEOS: ${{ inputs.videos }}
         run: python scripts/commentaires_anciens.py
       - name: Enregistrer
         if: ${{ !cancelled() }}
