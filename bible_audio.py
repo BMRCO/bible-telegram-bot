@@ -86,6 +86,39 @@ AT = ["Genèse", "Exode", "Lévitique", "Nombres", "Deutéronome", "Josué",
 # tel quel pour que les livres deja publies gardent leur teinte.
 ORDRE = [livre for paire in zip(NT, AT) for livre in paire] + AT[len(NT):]
 
+# Ordre canonique de la Bible, pour la playlist « Bible audio complète » (demande
+# de BC, 15 nov. 2026 : la playlist suit l'ordre de la Bible, pas celui de la
+# publication). Les Psaumes, publies a part, gardent leur place.
+CANON = (AT[:AT.index("Proverbes")] + ["Psaume"] + AT[AT.index("Proverbes"):]
+         + ["Matthieu", "Marc"] + [l for l in NT if l not in ("Matthieu", "Marc")])
+
+
+def rang_canonique(cle):
+    """« genese/13 » -> (0, 13). Cle inconnue : tout a la fin."""
+    livre, _, ch = cle.partition("/")
+    for i, l in enumerate(CANON):
+        if slugify_book(nom_affiche(l)) == livre:
+            return (i, int(ch) if ch.isdigit() else 0)
+    return (len(CANON), 0)
+
+
+def elements_playlist(yt, pid):
+    """[(id_element, id_video), ...] dans l'ordre actuel de la playlist."""
+    out, req = [], yt.playlistItems().list(part="contentDetails", playlistId=pid, maxResults=50)
+    while req is not None:
+        rep = req.execute()
+        out += [(it["id"], it["contentDetails"]["videoId"]) for it in rep.get("items", [])]
+        req = yt.playlistItems().list_next(req, rep)
+    return out
+
+
+def position_canonique(yt, pid, cle, videos):
+    """Place ou inserer la video `cle` pour garder l'ordre de la Bible."""
+    cles = {v: k for k, v in videos.items()}
+    rang = rang_canonique(cle)
+    return sum(1 for _, v in elements_playlist(yt, pid)
+               if rang_canonique(cles.get(v, "?/0")) < rang)
+
 # Depuis le 14 nov. 2026 : deux lectures paralleles. Marc est fini (16
 # chapitres) ; le Nouveau Testament reprend par l'Apocalypse (choix de BC).
 PISTES = {
@@ -666,9 +699,18 @@ def upload(video, livre, ch, tl, rang):
                 "status": {"privacyStatus": "public"}}).execute()["id"]
         for titre in (nom_pl, PLAYLIST_COMPLETE):
             if titre in mes_pl:
-                yt.playlistItems().insert(part="snippet", body={"snippet": {
-                    "playlistId": mes_pl[titre], "resourceId": {"kind": "youtube#video", "videoId": vid}}}).execute()
-                print(f"✅ Ajoutée à la playlist « {titre} »")
+                snip = {"playlistId": mes_pl[titre], "resourceId": {"kind": "youtube#video", "videoId": vid}}
+                if titre == PLAYLIST_COMPLETE:
+                    # A sa place dans l'ordre de la Bible, pas a la fin.
+                    try:
+                        videos = load_json(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else {}
+                        snip["position"] = position_canonique(
+                            yt, mes_pl[titre], f"{slugify_book(nom_affiche(livre))}/{ch}", videos)
+                    except Exception as e:
+                        print(f"⚠️  Position canonique inconnue, ajout a la fin : {str(e)[:120]}")
+                yt.playlistItems().insert(part="snippet", body={"snippet": snip}).execute()
+                print(f"✅ Ajoutée à la playlist « {titre} »"
+                      + (f" (position {snip['position'] + 1})" if "position" in snip else ""))
     except Exception as e:
         print(f"⚠️  Playlists non mises à jour (scope OAuth ?) : {str(e)[:160]}")
     return vid

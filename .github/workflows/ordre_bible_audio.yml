@@ -1,0 +1,36 @@
+name: Playlist Bible audio dans l'ordre de la Bible
+
+# Range la playlist « Bible audio complete » de Genese a l'Apocalypse et pose
+# sa couverture. Les nouveaux chapitres s'inserent deja a leur place.
+on:
+  workflow_dispatch:
+    inputs:
+      sans_couverture:
+        description: 'Ne pas reposer la couverture'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  ordre:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install pillow requests numpy google-api-python-client google-auth-httplib2 google-auth-oauthlib
+      - name: Ordre et couverture
+        env:
+          # bot.py exige ces variables a l'import ; rien n'est envoye sur Telegram.
+          TELEGRAM_BOT_TOKEN: "-"
+          TELEGRAM_CHANNEL: "-"
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          SANS_COUVERTURE: ${{ inputs.sans_couverture && '1' || '' }}
+        run: python scripts/ordre_bible_audio.py
