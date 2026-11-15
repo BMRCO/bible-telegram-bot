@@ -49,7 +49,6 @@ PINTEREST_BOARD_ID     = os.environ.get("PINTEREST_BOARD_ID", "")
 # Conversation privee de BC, pour les alertes de panne.
 # VIT UNIQUEMENT DANS LES GITHUB SECRETS : ce depot est PUBLIC, et un
 # chat_id est un identifiant personnel. Ne jamais ecrire la valeur ici.
-TELEGRAM_ALERT_CHAT_ID = os.environ.get("TELEGRAM_ALERT_CHAT_ID", "")
 
 
 # ---------------------------------------------------------------------
@@ -121,51 +120,15 @@ def publier(plateforme, fonction, *args, **kwargs):
         return None
 
 
-def envoyer_alerte_privee(contexte):
-    """Message prive a BC. Jamais sur le canal : il est pour la Parole."""
-    if not ECHECS:
-        return
-    if not TELEGRAM_ALERT_CHAT_ID:
-        print("⚠️  TELEGRAM_ALERT_CHAT_ID absent : alerte privée non envoyée")
-        return
-    lignes = "\n".join(f"• {p} : {d}" for p, d in ECHECS)
-    url_run = ""
-    serveur = os.environ.get("GITHUB_SERVER_URL", "")
-    depot   = os.environ.get("GITHUB_REPOSITORY", "")
-    run_id  = os.environ.get("GITHUB_RUN_ID", "")
-    if serveur and depot and run_id:
-        url_run = f"\n\nJournal du run :\n{serveur}/{depot}/actions/runs/{run_id}"
-    corps = (
-        "🚨 LaBible.app — publication incomplète\n\n"
-        f"Run : {contexte}\n"
-        f"Workflow : {os.environ.get('GITHUB_WORKFLOW', '—')}\n"
-        f"{datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC\n\n"
-        f"Plateformes en échec ({len(ECHECS)}) :\n{lignes}"
-        f"{url_run}"
-    )
-    # Texte brut, sans parse_mode : les messages d'erreur des API
-    # contiennent <, > et {} — un envoi en HTML echouerait a cause de
-    # cela meme qu'il vient signaler.
-    try:
-        requests.post(
-            f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-            data={"chat_id": TELEGRAM_ALERT_CHAT_ID, "text": corps},
-            timeout=30)
-        print("📨 Alerte privée envoyée")
-    except Exception as e:
-        print(f"⚠️  Alerte privée non envoyée : {str(e)[:200]}")
-
-
 def finaliser(contexte):
     """Derniere instruction de chaque run.
 
     Sans echec : ne fait rien, le run reste vert, aucun bruit.
-    Avec echecs : envoie l'alerte privee ET sort en code 1, pour que la
-    notification GitHub parte aussi.
+    Avec echecs : sort en code 1, pour que la notification GitHub parte.
+    (L'alerte privee par Telegram a ete retiree le 15 nov. 2026, choix de BC.)
     """
     if not ECHECS:
         return
-    envoyer_alerte_privee(contexte)
     raise SystemExit(1)
 
 # ----- Filtro de plataforma -----
@@ -3386,10 +3349,9 @@ if __name__ == "__main__":
         # finaliser() : l'alerte est deja partie, on laisse le code 1 sortir.
         raise
     except Exception as _e:
-        # Panne franche a mi-parcours. On tente l'alerte avec ce qu'on sait
-        # et on laisse l'exception monter : le run devient rouge et le
+        # Panne franche a mi-parcours. On note l'echec et on laisse
+        # l'exception monter : le run devient rouge et le
         # traceback complet reste dans le journal GitHub.
         traceback.print_exc()
         signaler_echec(f"Run interrompu ({_mode})", f"{type(_e).__name__} : {_e}")
-        envoyer_alerte_privee(_mode)
         raise

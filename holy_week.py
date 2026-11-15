@@ -34,7 +34,6 @@ YT_CLIENT_SECRET      = os.environ.get("YOUTUBE_CLIENT_SECRET", "")
 YT_REFRESH_TOKEN      = os.environ.get("YOUTUBE_REFRESH_TOKEN", "")
 # Conversation privee pour les alertes. JAMAIS ecrit en dur : le depot est
 # public et le chat_id est un identifiant personnel.
-TELEGRAM_ALERT_CHAT_ID = os.environ.get("TELEGRAM_ALERT_CHAT_ID", "")
 
 
 # ---------------------------------------------------------------------
@@ -90,50 +89,15 @@ def publier(plateforme, fonction, *args, **kwargs):
         return None
 
 
-def envoyer_alerte_privee(contexte):
-    """Message prive. Jamais sur le canal : il est pour la Parole."""
-    if not ECHECS:
-        return
-    if not TELEGRAM_ALERT_CHAT_ID:
-        print("⚠️  TELEGRAM_ALERT_CHAT_ID absent : alerte privée non envoyée")
-        return
-    lignes = "\n".join(f"• {p} : {d}" for p, d in ECHECS)
-    url_run = ""
-    serveur = os.environ.get("GITHUB_SERVER_URL", "")
-    depot   = os.environ.get("GITHUB_REPOSITORY", "")
-    run_id  = os.environ.get("GITHUB_RUN_ID", "")
-    if serveur and depot and run_id:
-        url_run = f"\n\nJournal du run :\n{serveur}/{depot}/actions/runs/{run_id}"
-    corps = (
-        "🚨 LaBible.app — publication incomplète\n\n"
-        f"Run : {contexte}\n"
-        f"Workflow : {os.environ.get('GITHUB_WORKFLOW', '—')}\n"
-        f"{datetime.datetime.utcnow().strftime('%Y-%m-%d %H:%M')} UTC\n\n"
-        f"Plateformes en échec ({len(ECHECS)}) :\n{lignes}"
-        f"{url_run}"
-    )
-    # Texte brut, sans parse_mode : les messages d'erreur des API
-    # contiennent <, > et {} — un envoi en HTML echouerait a cause de cela
-    # meme qu'il vient signaler.
-    try:
-        requests.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage",
-                      data={"chat_id": TELEGRAM_ALERT_CHAT_ID, "text": corps},
-                      timeout=30)
-        print("📨 Alerte privée envoyée")
-    except Exception as e:
-        print(f"⚠️  Alerte privée non envoyée : {str(e)[:200]}")
-
-
 def finaliser(contexte):
     """Derniere instruction du run.
 
     Sans echec : ne fait rien, run vert, aucun bruit.
-    Avec echecs : alerte privee ET sortie en code 1, pour que la
-    notification GitHub parte aussi.
+    Avec echecs : sortie en code 1, pour que la notification GitHub parte.
+    (L'alerte privee par Telegram a ete retiree le 15 nov. 2026, choix de BC.)
     """
     if not ECHECS:
         return
-    envoyer_alerte_privee(contexte)
     raise SystemExit(1)
 
 FONT_SERIF      = "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"

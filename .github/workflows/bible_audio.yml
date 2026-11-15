@@ -88,7 +88,6 @@ jobs:
           # Voix Google Chirp 3 HD (Enceladus). Absente ou en panne : Henri.
           GOOGLE_TTS_KEY: ${{ secrets.GOOGLE_TTS_KEY }}
           # Alertes de panne en prive (rien n'est publie sur le canal).
-          TELEGRAM_ALERT_CHAT_ID: ${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}

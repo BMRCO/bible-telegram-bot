@@ -96,7 +96,6 @@ jobs:
           TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
           # Conversation privee pour les alertes de panne. Vide = pas d'alerte
           # privee, mais la run sort quand meme en erreur (e-mail GitHub).
-          TELEGRAM_ALERT_CHAT_ID: ${{ secrets.TELEGRAM_ALERT_CHAT_ID }}
           IN_SLOT: ${{ inputs.slot }}
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
