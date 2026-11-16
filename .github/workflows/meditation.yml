@@ -27,6 +27,14 @@ on:
         description: 'Voix Google pour un essai (ex: Charon), vide = Algieba'
         required: false
         default: ''
+      debit:
+        description: 'Vitesse de la voix Google pour un essai (ex: 0.85), vide = 0.92'
+        required: false
+        default: ''
+      pause:
+        description: 'Pause apres chaque verset en secondes pour un essai (ex: 2), vide = 1.4'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -94,6 +102,8 @@ jobs:
           IN_VERSES: ${{ inputs.verses }}
           ESSAI: ${{ inputs.essai && '1' || '' }}
           VOIX_GOOGLE_NOM: ${{ inputs.voix }}
+          VOIX_DEBIT: ${{ inputs.debit }}
+          PAUSE_VERSET: ${{ inputs.pause }}
           YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}

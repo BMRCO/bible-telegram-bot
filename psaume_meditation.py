@@ -101,13 +101,27 @@ DEBIT_VOIX    = "-8%"
 # arranque (chave ausente, quota, avaria), o vídeo inteiro é lido pelo Henri :
 # nunca duas vozes no mesmo vídeo.
 VOIX_GOOGLE   = "fr-FR-Chirp3-HD-" + (os.environ.get("VOIX_GOOGLE_NOM", "").strip() or "Algieba")
-DEBIT_GOOGLE  = 0.92
+DEBIT_GOOGLE  = float(os.environ.get("VOIX_DEBIT", "").strip() or 0.92)
 MOTEUR        = None        # "google" ou "edge", fixado por choisir_moteur()
 GOOGLE_ACTIF  = True
 SR            = 24000       # Hz, mono
 LEAD          = 0.8         # silêncio antes da voz (o texto aparece primeiro)
-TAIL          = 1.4         # silêncio depois da voz, antes do versículo seguinte
+TAIL          = float(os.environ.get("PAUSE_VERSET", "").strip() or 1.4)  # silêncio depois da voz, antes do versículo seguinte
 VOLUME_MUSIQUE = 0.12       # a música fica por baixo da voz (antes : 0.5 sem voz)
+# Ducking (pedido de BC, 16 nov. 2026) : a música baixa sozinha enquanto um
+# versículo é lido e volta ao nível normal nas pausas entre versículos.
+# Compressor comandado pela voz : limiar 0,015, rácio 6 (cerca de -9 dB sob a
+# voz), ataque 30 ms, regresso em 800 ms para não « bombear » entre frases.
+DUCKING = "threshold=0.015:ratio=6:attack=30:release=800:makeup=1"
+
+
+def filtre_musique(fondu):
+    """Filtro ffmpeg : entrada 1 = voz, entrada 2 = música. Sai [a]."""
+    return (f"[1:a]aformat=sample_rates=48000:channel_layouts=stereo,asplit=2[voz][sc];"
+            f"[2:a]aformat=sample_rates=48000:channel_layouts=stereo,volume={VOLUME_MUSIQUE},"
+            f"afade=t=out:st={fondu:.2f}:d=3[m0];"
+            f"[m0][sc]sidechaincompress={DUCKING}[m];"
+            f"[voz][m]amix=inputs=2:duration=first:normalize=0[a]")
 
 # edge-tts escreve xml:lang='en-US' no SSML. Forçamos o francês (mesmo SSML
 # que as amostras aprovadas ; a balise <lang> é recusada pelo serviço).
@@ -797,8 +811,7 @@ def make_meditation_video(num, verses_with_idx, part_label=None):
         fondu = max(0.0, total_secs - 3)
         cmd += ['-stream_loop', '-1', '-i', music_file,
                 '-filter_complex',
-                f"[2:a]volume={VOLUME_MUSIQUE},afade=t=out:st={fondu:.2f}:d=3[m];"
-                f"[1:a][m]amix=inputs=2:duration=first:normalize=0[a]",
+                filtre_musique(fondu),
                 '-map', '0:v', '-map', '[a]']
     else:
         print("⚠️  Sem música disponível : só a voz")

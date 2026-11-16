@@ -45,7 +45,7 @@ from bot import (
 from psaume_meditation import (
     synthese, texte_a_lire, gradient_bg, wrap, autosize_font, ease, lerp_color,
     pick_safe_music, enveloppe_voix, dessiner_spectre,
-    FPS, SR, LEAD, TAIL, SECS_VERSE_MIN, VOLUME_MUSIQUE,
+    FPS, SR, LEAD, TAIL, SECS_VERSE_MIN, VOLUME_MUSIQUE, filtre_musique,
 )
 
 YT_CLIENT_ID     = os.environ.get("YOUTUBE_CLIENT_ID", "")
@@ -429,8 +429,7 @@ def faire_video(livre, ch, versets, rang):
            "-i", wav_path]
     if music:
         cmd += ["-stream_loop", "-1", "-i", music, "-filter_complex",
-                f"[2:a]volume={VOLUME_MUSIQUE},afade=t=out:st={max(0.0, total - 3):.2f}:d=3[m];"
-                f"[1:a][m]amix=inputs=2:duration=first:normalize=0[a]",
+                filtre_musique(max(0.0, total - 3)),
                 "-map", "0:v", "-map", "[a]"]
     else:
         cmd += ["-map", "0:v", "-map", "1:a"]
