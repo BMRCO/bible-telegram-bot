@@ -103,7 +103,9 @@ DEBIT_VOIX    = "-8%"
 VOIX_GOOGLE   = "fr-FR-Chirp3-HD-" + (os.environ.get("VOIX_GOOGLE_NOM", "").strip() or "Algieba")
 DEBIT_GOOGLE  = float(os.environ.get("VOIX_DEBIT", "").strip() or 0.92)
 MOTEUR        = None        # "google" ou "edge", fixado por choisir_moteur()
-GOOGLE_ACTIF  = True
+# Desligado a 16 nov. 2026 : BC prefere o Henri (lê mais calmo). A chave e o
+# código ficam : basta pôr True para voltar à voz Google.
+GOOGLE_ACTIF  = False
 SR            = 24000       # Hz, mono
 LEAD          = 0.8         # silêncio antes da voz (o texto aparece primeiro)
 TAIL          = float(os.environ.get("PAUSE_VERSET", "").strip() or 1.4)  # silêncio depois da voz, antes do versículo seguinte
