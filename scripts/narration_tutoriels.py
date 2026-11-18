@@ -41,12 +41,15 @@ async def main(eps, sortie):
             out = os.path.join(sortie, f"ep{int(ep):02d}_{i}.mp3")
             for essai in range(3):
                 try:
-                    await edge_tts.Communicate(phrase.replace("’", "'"), VOIX, rate=DEBIT).save(out)
+                    if GOOGLE:
+                        google(phrase.replace("’", "'"), out)
+                    else:
+                        await edge_tts.Communicate(phrase.replace("’", "'"), VOIX, rate=DEBIT).save(out)
                     break
                 except Exception as e:
                     print(f"⚠️  {out} : {e}")
                     await asyncio.sleep(3)
-            print("ok", out)
+            print("ok", out, GOOGLE or "Henri")
 
 if __name__ == "__main__":
     asyncio.run(main(sys.argv[1:-1], sys.argv[-1]))
