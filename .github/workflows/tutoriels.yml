@@ -1,0 +1,111 @@
+name: Tutoriels LaBible.app (Shorts)
+
+# Serie « Decouvrir LaBible.app » (decision de BC, 18 novembre 2026) : 10 Shorts
+# tutoriels deja montes (tutoriels/NN.mp4), un par jour sur tous les reseaux,
+# playlist YouTube propre. Lance chaque jour par derniers_temps.yml (etape finale),
+# donc vers 12h UTC. Se desactive apres le dixieme episode. Voir tutoriels.py.
+on:
+  workflow_dispatch:
+    inputs:
+      episode:
+        description: 'Episode precis (1 a 10), vide = suivant'
+        required: false
+        type: string
+        default: ''
+      sans_youtube:
+        description: 'Rattrapage : publier partout sauf sur YouTube'
+        required: false
+        type: boolean
+        default: false
+      plateformes:
+        description: 'Plateformes (all, ou liste : telegram,instagram,threads,pinterest)'
+        required: false
+        type: string
+        default: 'all'
+      essai:
+        description: 'Essai : affiche les textes sans rien publier'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  actions: write   # se desactive quand la serie est terminee
+
+concurrency:
+  group: tutoriels
+  cancel-in-progress: false
+
+jobs:
+  tutoriels:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pillow requests numpy google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
+      - name: Install ffmpeg
+        # 11 novembre 2026 : apt-get est reste bloque 1 h 19 (miroirs Ubuntu muets) et
+        # le job a ete tue sans rien publier. apt-get est donc borne (un essai), et
+        # s'il echoue on prend le ffmpeg statique du paquet PyPI imageio-ffmpeg
+        # (libx264 + aac, tout ce que les scripts utilisent ; pas de ffprobe, inutilise).
+        timeout-minutes: 12
+        run: |
+          APT="sudo timeout 150 apt-get -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::Retries=1"
+          if command -v ffmpeg >/dev/null || { $APT update -qq && $APT install -y -qq ffmpeg; }; then
+            ffmpeg -version | head -1; exit 0
+          fi
+          echo "::warning::apt-get indisponible : ffmpeg statique (imageio-ffmpeg) utilise a la place"
+          python3 -m pip install -q imageio-ffmpeg
+          sudo ln -sf "$(python3 -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')" /usr/local/bin/ffmpeg
+          ffmpeg -version | head -1
+
+      - name: Episode
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
+          FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+          FB_PAGE_TOKEN: ${{ secrets.FB_PAGE_TOKEN }}
+          IG_ACCOUNT_ID: ${{ secrets.IG_ACCOUNT_ID }}
+          IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+          PINTEREST_ACCESS_TOKEN: ${{ secrets.PINTEREST_ACCESS_TOKEN }}
+          PINTEREST_BOARD_ID: ${{ secrets.PINTEREST_BOARD_ID }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          IN_EP: ${{ inputs.episode }}
+          GH_TOKEN: ${{ github.token }}
+          ESSAI: ${{ inputs.essai && '1' || '' }}
+          SANS_YOUTUBE: ${{ inputs.sans_youtube && '1' || '' }}
+          ONLY_PLATFORM: ${{ inputs.plateformes || 'all' }}
+        run: |
+          if [ -n "$IN_EP" ]; then python tutoriels.py "$IN_EP"; else python tutoriels.py; fi
+
+      - name: Commit progress
+        if: ${{ !cancelled() && !inputs.essai }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for f in progress_tutoriels.json videos_tutoriels.json; do
+            if [ -f "$f" ]; then git add "$f"; fi
+          done
+          if git diff --staged --quiet; then echo "Rien a enregistrer"; exit 0; fi
+          git commit -m "Tutoriels : progression [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase -q origin main && git push -q origin HEAD:main && exit 0
+            sleep 5
+          done
+          echo "::error::Progression NON enregistree."
+          exit 1

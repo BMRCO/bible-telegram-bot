@@ -116,3 +116,15 @@ jobs:
           done
           echo "::error::Progression NON enregistree."
           exit 1
+
+      # Serie « Decouvrir LaBible.app » (18 nov. 2026) : l'episode du jour part
+      # juste apres le verset des derniers temps. Sans effet une fois tutoriels.yml
+      # desactive (fin de la serie).
+      - name: Lancer le tutoriel du jour
+        if: ${{ !cancelled() && !inputs.essai && !inputs.reference && !inputs.sans_youtube }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          etat=$(gh api "repos/${{ github.repository }}/actions/workflows/tutoriels.yml" --jq .state 2>/dev/null || echo absent)
+          if [ "$etat" = "active" ]; then gh workflow run tutoriels.yml -R "${{ github.repository }}" && echo "Tutoriel lance"; else echo "tutoriels.yml : $etat"; fi
