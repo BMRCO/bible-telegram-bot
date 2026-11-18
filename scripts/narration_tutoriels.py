@@ -4,7 +4,8 @@ import asyncio, json, os, sys
 import edge_tts
 import edge_tts.communicate as _comm
 
-VOIX, DEBIT = "fr-FR-HenriNeural", "-8%"
+VOIX = "fr-FR-HenriNeural"
+DEBIT = os.environ.get("DEBIT_TUTO", "").strip() or "-16%"
 # VOIX_TUTO=Algieba (ou un autre nom Chirp 3 HD) : voix Google, chave GOOGLE_TTS_KEY
 GOOGLE = os.environ.get("VOIX_TUTO", "").strip()
 

@@ -10,6 +10,11 @@ on:
         required: true
         type: string
         default: '1'
+      debit:
+        description: 'Debit du Henri (ex: -16%)'
+        required: false
+        type: string
+        default: '-16%'
       voix:
         description: 'Voix Google Chirp 3 HD (ex: Algieba), vide = Henri'
         required: false
@@ -46,6 +51,7 @@ jobs:
         env:
           EPS: ${{ inputs.episodes }}
           VOIX_TUTO: ${{ inputs.voix }}
+          DEBIT_TUTO: ${{ inputs.debit }}
           GOOGLE_TTS_KEY: ${{ secrets.GOOGLE_TTS_KEY }}
         run: python scripts/narration_tutoriels.py $EPS echantillons
 
