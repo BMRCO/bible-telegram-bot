@@ -5,6 +5,20 @@ import edge_tts
 import edge_tts.communicate as _comm
 
 VOIX, DEBIT = "fr-FR-HenriNeural", "-8%"
+# VOIX_TUTO=Algieba (ou un autre nom Chirp 3 HD) : voix Google, chave GOOGLE_TTS_KEY
+GOOGLE = os.environ.get("VOIX_TUTO", "").strip()
+
+
+def google(phrase, out):
+    import base64, requests
+    r = requests.post("https://texttospeech.googleapis.com/v1/text:synthesize",
+                      headers={"X-Goog-Api-Key": os.environ["GOOGLE_TTS_KEY"].strip(),
+                               "Content-Type": "application/json; charset=utf-8"},
+                      data=json.dumps({"input": {"text": phrase.replace("Éternel", "Eternel")},
+                                       "voice": {"languageCode": "fr-FR", "name": f"fr-FR-Chirp3-HD-{GOOGLE}"},
+                                       "audioConfig": {"audioEncoding": "MP3", "speakingRate": 0.92}}), timeout=120)
+    r.raise_for_status()
+    open(out, "wb").write(base64.b64decode(r.json()["audioContent"]))
 
 
 def _mkssml_fr(tc, txt):
