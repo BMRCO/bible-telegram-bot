@@ -31,6 +31,7 @@ PLAYLIST_DESC = ("Découvrir LaBible.app en dix courtes vidéos : lire la Bible,
                  "rechercher, le verset du jour, le plan de lecture, la Bibliothèque, les versets par "
                  "thème, la Bible audio, le quiz biblique et l'installation. La Bible Louis Segond 1910, "
                  "gratuite, sans publicité, même hors ligne : https://labible.app")
+COMMENTAIRE = f"📱 LaBible.app, gratuite et sans publicité, même hors ligne : {APP_URL}"
 HASHTAGS = "#LaBibleApp #Bible #LSG1910 #ApplicationBible #BibleGratuite #ParoleDeDieu"
 
 
@@ -175,7 +176,7 @@ def upload(video, e, progress):
         print(f"✅ Ajoutée à la playlist « {PLAYLIST} »")
     except Exception as ex:
         print(f"⚠️  Playlist non mise à jour : {str(ex)[:200]}")
-    yt_commentaire.commenter(yt, vid, APP_URL, titre=e["titre"])
+    yt_commentaire.commenter(yt, vid, APP_URL, corps=COMMENTAIRE)
     return vid
 
 
@@ -193,7 +194,24 @@ def arreter_workflow():
           else f"::warning::Workflow non désactivé (HTTP {r.status_code})")
 
 
+def corriger_commentaire(video_id):
+    """Remplace le premier commentaire de la chaine sous video_id par COMMENTAIRE
+    (18 nov. 2026 : l'episode 1 est parti avec le modele des chapitres)."""
+    yt = youtube()
+    ch = yt.channels().list(part="id", mine=True).execute()["items"][0]["id"]
+    for it in yt.commentThreads().list(part="snippet", videoId=video_id, maxResults=50).execute().get("items", []):
+        top = it["snippet"]["topLevelComment"]
+        if top["snippet"].get("authorChannelId", {}).get("value") == ch:
+            yt.comments().update(part="snippet", body={"id": top["id"], "snippet": {"textOriginal": COMMENTAIRE}}).execute()
+            print(f"✅ Commentaire corrigé sous {video_id}")
+            return
+    print("⚠️  Aucun commentaire de la chaîne trouvé")
+
+
 def main():
+    if os.environ.get("CORRIGER_COMMENTAIRE"):
+        corriger_commentaire(os.environ["CORRIGER_COMMENTAIRE"])
+        return
     progress = load_json(PROGRESS_FILE) if os.path.exists(PROGRESS_FILE) else {}
     manuel = len(sys.argv) > 1 and sys.argv[1].isdigit()
     n = int(sys.argv[1]) if manuel else int(progress.get("prochain", 1) or 1)

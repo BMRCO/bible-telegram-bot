@@ -22,6 +22,11 @@ on:
         required: false
         type: string
         default: 'all'
+      corriger_commentaire:
+        description: 'Identifiant de video : remplacer le commentaire de la chaine (rien d autre)'
+        required: false
+        type: string
+        default: ''
       essai:
         description: 'Essai : affiche les textes sans rien publier'
         required: false
@@ -86,6 +91,7 @@ jobs:
           YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
           IN_EP: ${{ inputs.episode }}
+          CORRIGER_COMMENTAIRE: ${{ inputs.corriger_commentaire }}
           GH_TOKEN: ${{ github.token }}
           ESSAI: ${{ inputs.essai && '1' || '' }}
           SANS_YOUTUBE: ${{ inputs.sans_youtube && '1' || '' }}

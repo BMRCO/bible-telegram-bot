@@ -60,11 +60,12 @@ def texte(video_id, url, ref=None, titre=None, audio=False):
     return _rotate(COURTS, video_id).format(ref=ref or "ce verset", url=url)
 
 
-def commenter(youtube, video_id, url, ref=None, titre=None, audio=False):
+def commenter(youtube, video_id, url, ref=None, titre=None, audio=False, corps=None):
+    """corps : texte impose (series qui ne renvoient pas a un passage, ex. tutoriels)."""
     if not ACTIF or not video_id or not url:
         return
     try:
-        corps = texte(video_id, url, ref, titre, audio)
+        corps = corps or texte(video_id, url, ref, titre, audio)
         ch = youtube.channels().list(part="id", mine=True).execute()["items"][0]["id"]
         youtube.commentThreads().insert(part="snippet", body={"snippet": {
             "channelId": ch, "videoId": video_id,
