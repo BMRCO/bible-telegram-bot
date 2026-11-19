@@ -4,10 +4,10 @@
   "i_promise": 11,
   "i_jesus": 133,
   "cat_index": 1,
-  "i_psaume": 145,
+  "i_psaume": 146,
   "i_proverbe": 22,
   "i_prophetie": 5,
-  "last_music": "music/Free Instrumental Christian Music MP3 Download_9.mp3",
+  "last_music": "music/tramp963-winter-music-relaxing-piano-268028.mp3",
   "i_parabole": 1,
   "i_protection": 51,
   "i_esperance": 1,
@@ -41,9 +41,7 @@
     "music/Page 3 - Free Instrumental Christian Music MP3 Download_3.mp3",
     "music/audiodollar-worship-is-worship-451096.mp3"
   ],
-  "music_bag": [
-    "music/tramp963-winter-music-relaxing-piano-268028.mp3"
-  ],
+  "music_bag": [],
   "music_played": [
     "music/adrian_huminiak-morning-worship-180330.mp3",
     "music/faespencer-silent-prayer-instrumental-212811.mp3",
@@ -95,6 +93,7 @@
     "music/natureseye-foetal-meditation-for-sleep-amp-relaxation-22029.mp3",
     "music/viramiller-gentle-nature-ambience-248950.mp3",
     "music/harmony-of-heaven-worship-gospel-christian-church-music-491941.mp3",
-    "music/Free Instrumental Christian Music MP3 Download_9.mp3"
+    "music/Free Instrumental Christian Music MP3 Download_9.mp3",
+    "music/tramp963-winter-music-relaxing-piano-268028.mp3"
   ]
 }
