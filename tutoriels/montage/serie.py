@@ -11,7 +11,7 @@ GAR = "/home/claude/bible-telegram-bot/fonts/EBGaramond-Regular.ttf"
 ROB = os.path.expanduser("~/.fonts/roboto-latin-%d-normal.ttf")
 CREME = (240, 232, 212)
 XF = 0.5          # fondu enchaine entre deux plans (s)
-SERIE = "Découvrir LaBible.app"
+SERIE = "Astuces LaBible.app"
 _cache = {}
 
 def F(chemin, t):
@@ -58,12 +58,14 @@ class Ep:
     def _tete(s):
         im = s.fond.copy(); d = ImageDraw.Draw(im)
         f = F(ROB % 500, 34)
-        txt = f"{SERIE}  ·  {s.n}/10"
+        txt = SERIE
         w = d.textlength(txt, font=f)
         x0 = (W - w) / 2 - 28
         d.rounded_rectangle([x0, 86, x0 + w + 56, 146], 30, fill=tuple(int(v * 0.28) for v in s.acc), outline=s.acc, width=2)
         centre(d, txt, 100, f, eclaircir(s.acc, 0.35))
-        centre(d, s.titre, 182, F(GAR, 70), CREME)
+        t = 70
+        while t > 44 and d.textlength(s.titre, font=F(GAR, t)) > 900: t -= 2
+        centre(d, s.titre, 182 + (70 - t) // 3, F(GAR, t), CREME)
         return im
 
     # ---- plans
@@ -161,7 +163,7 @@ def P_image(fichier, txt, dur=3.2):
 def P_titre(dur=2.6):
     def f(ep, t):
         im = ep.fond.copy(); d = ImageDraw.Draw(im)
-        centre(d, f"{SERIE}  ·  {ep.n}/10", 690, F(ROB % 500, 42), eclaircir(ep.acc, 0.25))
+        centre(d, "Astuce", 690, F(ROB % 500, 42), eclaircir(ep.acc, 0.25))
         ls = lignes(d, ep.titre, F(GAR, 116), 940)
         y = 790
         for l in ls: centre(d, l, y, F(GAR, 116), CREME); y += 130
@@ -186,7 +188,7 @@ def episodes():
     E = []
     # 1 Lire
     l1 = POS["l1_haut"]
-    E.append(Ep(1, "Lire la Bible", (226, 197, 122), [
+    E.append(Ep(1, "Lire la Bible confortablement", (226, 197, 122), [
         P_titre(),
         P_ecran("l1_haut", 270, "Choisissez le livre, le chapitre et le verset.", tap=centre_de(l1["livre"])),
         P_ecran("l1_haut", 270, "« Suivant » ouvre le chapitre d'après.", tap=centre_de(l1["suiv"]), dur=2.6),
@@ -203,7 +205,7 @@ def episodes():
            ("Copier", "Copiez le texte et sa référence."), ("Partager", "Partagez-le sur vos réseaux."),
            ("Créer une image", "Faites-en une image à partager."), ("Ajouter le verset suivant", "Ajoutez le verset suivant."),
            ("Références croisées", "Ouvrez les versets liés.")]
-    E.append(Ep(2, "Toucher un verset", (240, 138, 60), [
+    E.append(Ep(2, "Tout faire depuis un verset", (240, 138, 60), [
         P_titre(),
         P_ecran("t1_lecture", v[1] + v[3] / 2, "Touchez un verset.", tap=(v[0] + v[2] * 0.55, v[1] + v[3] / 2)),
         P_ecran("t2_barre", bar[1], "Une barre s'ouvre sous le verset.", dur=2.8),
@@ -213,7 +215,7 @@ def episodes():
         P_image("t5_image.jpg", "Une image prête à partager."),
         P_fin()]))
     # 3 Rechercher
-    E.append(Ep(3, "Rechercher", (108, 155, 239), [
+    E.append(Ep(3, "Retrouver un verset en un instant", (108, 155, 239), [
         P_titre(),
         P_ecran("r1_ref", 270, "Cherchez une référence…", tap=centre_de(B("r1_ref", "bouton"))),
         P_ecran("r1b_resultat", 270, "Touchez le résultat : le verset s'affiche.", tap=centre_de(B("r1b_resultat", "res")), dur=2.9),
@@ -225,7 +227,7 @@ def episodes():
     # 4 Verset du jour
     bb = POS["b1_biblio"]
     vb = bb["vddbox"]
-    E.append(Ep(4, "Le verset du jour", (229, 138, 168), [
+    E.append(Ep(4, "Recevoir un verset chaque jour", (229, 138, 168), [
         P_titre(),
         P_ecran("j1_bouton", 270, "Chaque jour, un nouveau verset.", tap=centre_de(B("j1_bouton", "vdd"))),
         P_ecran("j2_ouvert", 420, "Il s'ouvre dans son chapitre."),
@@ -236,7 +238,7 @@ def episodes():
         P_fin()]))
     # 5 Plan
     p1 = POS["p1_plan"]
-    E.append(Ep(5, "Le plan de lecture", (111, 191, 115), [
+    E.append(Ep(5, "Lire toute la Bible en un an", (111, 191, 115), [
         P_titre(),
         P_ecran("p1_plan", 330, "Lisez toute la Bible en un an."),
         P_ecran("p1_plan", 330, "Chaque jour, quelques chapitres.", tap=centre_de(p1["ouvrir"])),
@@ -244,34 +246,34 @@ def episodes():
         P_ecran("p2_lu", 330, "Votre progression reste sur votre appareil.", dur=3.4),
         P_fin()]))
     # 6 Bibliotheque
-    E.append(Ep(6, "La Bibliothèque", (155, 123, 234), [
+    E.append(Ep(6, "Garder vos versets favoris", (155, 123, 234), [
         P_titre(),
         P_ecran("b1_biblio", 330, "Vos favoris et votre historique, au même endroit."),
         P_ecran("b2_biblio_bas", 520, "Rouvrez, copiez ou partagez en un geste.", dur=3.4),
         P_fin()]))
     # 7 Themes
-    E.append(Ep(7, "Les versets par thème", (63, 184, 160), [
+    E.append(Ep(7, "Trouver des versets par thème", (63, 184, 160), [
         P_titre(),
         P_ecran("v1_themes", 420, "48 thèmes, près de 1 500 versets.", tap=centre_de(B("v1_themes", "protection"))),
         P_ecran("v2_theme", 380, "Les versets choisis pour chaque thème."),
         P_ecran("v3_theme_bas", 420, "Touchez un verset pour lire tout le chapitre.", dur=3.4),
         P_fin()]))
     # 8 Audio
-    E.append(Ep(8, "La Bible audio", (91, 184, 232), [
+    E.append(Ep(8, "Écouter la Bible", (91, 184, 232), [
         P_titre(),
         P_ecran("a1_audio", 340, "La Bible lue à voix haute, chapitre après chapitre.", dur=3.6),
         P_ecran("a2_livres", 420, "Choisissez un livre…", tap=centre_de(B("a2_livres", "genese"))),
         P_ecran("a3_chapitres", 560, "… puis le chapitre à écouter.", dur=3.4),
         P_fin()]))
     # 9 Quiz
-    E.append(Ep(9, "Le quiz biblique", (232, 121, 90), [
+    E.append(Ep(9, "Tester vos connaissances bibliques", (232, 121, 90), [
         P_titre(),
         P_ecran("q1_themes", 420, "Six thèmes pour tester vos connaissances.", tap=centre_de(B("q1_themes", "psaumes"))),
         P_ecran("q2_question", 380, "Retrouvez le début ou la suite du verset.", tap=centre_de(B("q2_question", "choix"))),
         P_ecran("q3_reponse", 420, "La réponse renvoie au chapitre.", dur=3.4),
         P_fin()]))
     # 10 Installer
-    E.append(Ep(10, "Installer l'application", (226, 197, 122), [
+    E.append(Ep(10, "Installer LaBible.app sur votre téléphone", (226, 197, 122), [
         P_titre(),
         P_ecran("i1_bouton", 270, "Installez l'app en un geste.", tap=centre_de(B("i1_bouton", "inst"))),
         P_ecran("i2_page", 400, "Gratuite, sur téléphone, tablette ou ordinateur."),
@@ -299,7 +301,28 @@ def frame(ep, t):
 
 def duree(ep): return sum(d for d, _ in ep.plans) - XF * (len(ep.plans) - 1)
 
+VOIX = os.path.join(D, "voix")
+AVANT_VOIX, APRES_VOIX = 0.4, 1.0
+
+def _duree_mp3(f):
+    return float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f],
+                                capture_output=True, text=True).stdout)
+
+def narration(ep):
+    """Allonge chaque plan au temps de sa phrase ; renvoie [(debut, fichier)]."""
+    clips, debut, plans = [], 0.0, []
+    for i, (dur, f) in enumerate(ep.plans):
+        fic = os.path.join(VOIX, f"ep{ep.n:02d}_{i}.mp3")
+        if os.path.exists(fic):
+            dur = max(dur, AVANT_VOIX + _duree_mp3(fic) + APRES_VOIX + XF)
+            clips.append((debut + AVANT_VOIX, fic))
+        plans.append((dur, f))
+        debut += dur - XF
+    ep.plans = plans
+    return clips
+
 def rendre(ep, musique="musique.mp3"):
+    clips = narration(ep)
     tot = duree(ep); n = int(tot * FPS)
     nom = f"tuto_{ep.n:02d}"
     tmp = os.path.join(D, nom + ".video.tmp.mp4")
@@ -313,10 +336,23 @@ def rendre(ep, musique="musique.mp3"):
     p.stdin.close()
     assert p.wait() == 0
     sortie = os.path.join(D, nom + ".mp4"); tmp2 = sortie + ".tmp.mp4"
-    debut = 4 + 23 * ep.n % 150
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", tmp, "-ss", str(debut), "-i", musique,
-                    "-filter_complex", f"[1:a]volume=0.5,afade=t=in:d=1,afade=t=out:st={tot - 2:.2f}:d=2[a]",
-                    "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k", "-shortest", tmp2], check=True)
+    lg = _duree_mp3(musique)
+    debut = (4 + 23 * ep.n) % max(1, int(lg - tot - 5))
+    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", tmp, "-ss", str(debut), "-i", musique]
+    for _, f in clips: cmd += ["-i", f]
+    fc = f"[1:a]volume=0.32,afade=t=in:d=1,afade=t=out:st={tot - 2:.2f}:d=2,aformat=channel_layouts=stereo:sample_rates=44100[m];"
+    if clips:
+        for k, (t0, _) in enumerate(clips):
+            ms = int(t0 * 1000)
+            fc += f"[{k + 2}:a]aformat=channel_layouts=stereo:sample_rates=44100,adelay={ms}|{ms}[v{k}];"
+        fc += "".join(f"[v{k}]" for k in range(len(clips))) + f"amix=inputs={len(clips)}:normalize=0[voix];"
+        fc += "[voix]asplit[v1][v2];[m][v1]sidechaincompress=threshold=0.015:ratio=6:attack=30:release=800:makeup=1[md];"
+        fc += "[md][v2]amix=inputs=2:normalize=0,loudnorm=I=-15:TP=-1.5:LRA=11[a]"
+    else:
+        fc += "[m]loudnorm=I=-15:TP=-1.5:LRA=11[a]"
+    cmd += ["-filter_complex", fc, "-map", "0:v", "-map", "[a]", "-c:v", "copy", "-c:a", "aac", "-b:a", "160k",
+            "-ar", "44100", "-t", f"{tot:.2f}", tmp2]
+    subprocess.run(cmd, check=True)
     os.replace(tmp2, sortie); os.remove(tmp)
     print(f"ok {nom} {tot:.1f}s")
 

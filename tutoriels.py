@@ -1,4 +1,8 @@
-"""tutoriels.py : serie « Decouvrir LaBible.app », 10 Shorts tutoriels.
+"""tutoriels.py : serie « Astuces LaBible.app », 10 Shorts tutoriels.
+
+19 novembre 2026 : la serie s'appelait « Decouvrir LaBible.app » (episodes
+numerotes). BC l'a voulue en astuces : narration du Henri, pas de numero,
+titres qui disent ce que l'on peut faire. SUPPRIMER retire l'ancien episode 1.
 
 Decision de BC (18 novembre 2026) : la serie est publiee sur tous les reseaux,
 un episode par jour, avec une playlist YouTube a elle. Les videos sont deja
@@ -25,10 +29,10 @@ EPISODES = os.path.join(DOSSIER, "episodes.json")
 PROGRESS_FILE = "progress_tutoriels.json"
 VIDEOS_FILE = "videos_tutoriels.json"
 ESSAI = os.environ.get("ESSAI") == "1"
-SERIE = "Découvrir LaBible.app"
-PLAYLIST = "🎓 Découvrir LaBible.app | Tutoriels"
-PLAYLIST_DESC = ("Découvrir LaBible.app en dix courtes vidéos : lire la Bible, toucher un verset, "
-                 "rechercher, le verset du jour, le plan de lecture, la Bibliothèque, les versets par "
+SERIE = "Astuces LaBible.app"
+PLAYLIST = "💡 Astuces LaBible.app"
+PLAYLIST_DESC = ("Dix astuces en courtes vidéos pour bien utiliser LaBible.app : lire, rechercher, "
+                 "garder et partager un verset, le verset du jour, le plan de lecture, les versets par "
                  "thème, la Bible audio, le quiz biblique et l'installation. La Bible Louis Segond 1910, "
                  "gratuite, sans publicité, même hors ligne : https://labible.app")
 COMMENTAIRE = f"📱 LaBible.app, gratuite et sans publicité, même hors ligne : {APP_URL}"
@@ -48,7 +52,7 @@ def total():
 
 # ─── Legendes ───────────────────────────────────────────────────────────────
 def tete(e):
-    return f"📱 {SERIE} · {e['n']}/{total()}\n{e['titre']}\n\n{e['resume']}"
+    return f"💡 {SERIE}\n{e['titre']}\n\n{e['resume']}"
 
 
 def legende(e, reseau):
@@ -60,20 +64,19 @@ def legende(e, reseau):
 
 
 def legende_telegram(e):
-    return (f"📱 <b>{SERIE} · {e['n']}/{total()}</b>\n\n<b>{e['titre']}</b>\n\n"
+    return (f"💡 <b>{SERIE}</b>\n\n<b>{e['titre']}</b>\n\n"
             f"{e['resume']}\n\n👉 {APP_URL}")
 
 
 def titre_youtube(e):
-    return f"{e['titre']} | {SERIE} {e['n']}/{total()}"[:100]
+    return f"{e['titre']} | {SERIE}"[:100]
 
 
 def description_youtube(e):
-    return (f"{SERIE}, épisode {e['n']} sur {total()} : {e['titre'].lower()}.\n"
-            f"{e['resume']}\n\n"
+    return (f"{e['resume']}\n\n"
             f"📱 LaBible.app : la Bible Louis Segond 1910, gratuite, sans publicité, même hors ligne.\n"
             f"👉 {APP_URL}\n"
-            f"🎓 Toute la série : la playlist « {PLAYLIST} »\n\n"
+            f"💡 Toutes les astuces : la playlist « {PLAYLIST} »\n\n"
             f"#Shorts {HASHTAGS}")
 
 
@@ -138,6 +141,7 @@ def youtube():
 def playlist(yt, progress):
     """La playlist de la serie : retrouvee par son titre, ou creee une fois."""
     if progress.get("playlist"):
+        renommer_playlist(yt, progress["playlist"])
         return progress["playlist"]
     req, trouve = yt.playlists().list(part="snippet", mine=True, maxResults=50), None
     while req is not None and not trouve:
@@ -153,6 +157,52 @@ def playlist(yt, progress):
     print(f"➕ Playlist {'retrouvée' if trouve else 'créée'} : {PLAYLIST}")
     time.sleep(8)   # une playlist toute neuve n'est pas lisible tout de suite
     return pid
+
+
+def renommer_playlist(yt, pid):
+    """La playlist creee sous l'ancien nom prend le nom et la description de la serie."""
+    it = yt.playlists().list(part="snippet", id=pid).execute().get("items", [])
+    if not it:
+        return
+    sn = it[0]["snippet"]
+    if sn["title"] != PLAYLIST or sn.get("description") != PLAYLIST_DESC:
+        yt.playlists().update(part="snippet", body={"id": pid, "snippet": {
+            "title": PLAYLIST, "description": PLAYLIST_DESC, "defaultLanguage": "fr"}}).execute()
+        print(f"✏️  Playlist renommée : {PLAYLIST}")
+
+
+def supprimer(ids):
+    """ids = "yt=... fb=... ig=... th=... pin=..." : retire une publication de chaque reseau."""
+    import requests
+    d = dict(x.split("=", 1) for x in ids.split() if "=" in x)
+    def ok(nom, r):
+        if r.status_code in (200, 204) and "false" not in r.text[:20].lower():
+            print(f"🗑️  {nom} supprimé")
+        else:
+            signaler_echec(f"Suppression {nom}", f"HTTP {r.status_code} : {r.text[:200]}")
+    if d.get("yt"):
+        try:
+            yt = youtube()
+            yt.videos().delete(id=d["yt"]).execute()
+            print("🗑️  YouTube supprimé")
+            if os.path.exists(VIDEOS_FILE):
+                v = load_json(VIDEOS_FILE)
+                save_json(VIDEOS_FILE, {k: x for k, x in v.items() if x != d["yt"]})
+        except Exception as ex:
+            signaler_echec("Suppression YouTube", str(ex)[:200])
+    if d.get("fb"):
+        ok("Facebook", requests.delete(f"https://graph.facebook.com/v25.0/{d['fb']}",
+                                       params={"access_token": bot.FB_PAGE_TOKEN}, timeout=30))
+    if d.get("ig"):
+        ok("Instagram", requests.delete(f"https://graph.facebook.com/v25.0/{d['ig']}",
+                                        params={"access_token": bot.FB_PAGE_TOKEN}, timeout=30))
+    if d.get("th"):
+        ok("Threads", requests.delete(f"https://graph.threads.net/v1.0/{d['th']}",
+                                      params={"access_token": bot.THREADS_ACCESS_TOKEN}, timeout=30))
+    if d.get("pin"):
+        ok("Pinterest", requests.delete(f"https://api.pinterest.com/v5/pins/{d['pin']}",
+                                        headers={"Authorization": f"Bearer {bot.PINTEREST_ACCESS_TOKEN}"}, timeout=30))
+    finaliser("suppression")
 
 
 def upload(video, e, progress):
@@ -209,6 +259,9 @@ def corriger_commentaire(video_id):
 
 
 def main():
+    if os.environ.get("SUPPRIMER"):
+        supprimer(os.environ["SUPPRIMER"])
+        return
     if os.environ.get("CORRIGER_COMMENTAIRE"):
         corriger_commentaire(os.environ["CORRIGER_COMMENTAIRE"])
         return
@@ -221,7 +274,7 @@ def main():
         return
     e = episode(n)
     video = os.path.join(DOSSIER, f"{n:02d}.mp4")
-    print(f"🎓 {SERIE} {n}/{total()} : {e['titre']}")
+    print(f"💡 {SERIE} {n}/{total()} : {e['titre']}")
     if ESSAI:
         print(titre_youtube(e) + "\n\n" + description_youtube(e) + "\n\n" + legende(e, "fb"))
         print("🧪 ESSAI : rien n'est publié.")

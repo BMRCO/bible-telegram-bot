@@ -1,52 +1,52 @@
 [
  {
   "n": 1,
-  "titre": "Lire la Bible",
+  "titre": "Lire la Bible confortablement",
   "resume": "Choisissez le livre, le chapitre et le verset, passez au chapitre suivant d'un geste, agrandissez le texte, lisez en mode clair et gardez l'écran allumé pendant la lecture."
  },
  {
   "n": 2,
-  "titre": "Toucher un verset",
+  "titre": "Tout faire depuis un verset",
   "resume": "Touchez un verset : une barre s'ouvre pour le garder en favori, l'écouter, le copier, le partager, en faire une image, ajouter les versets suivants ou ouvrir les références."
  },
  {
   "n": 3,
-  "titre": "Rechercher",
+  "titre": "Retrouver un verset en un instant",
   "resume": "Cherchez une référence comme Jean 3:16 ou un simple mot : le verset s'affiche, puis s'ouvre dans son chapitre."
  },
  {
   "n": 4,
-  "titre": "Le verset du jour",
+  "titre": "Recevoir un verset chaque jour",
   "resume": "Chaque jour, un nouveau verset : ouvrez-le dans son chapitre, copiez-le ou faites-en une image à partager."
  },
  {
   "n": 5,
-  "titre": "Le plan de lecture",
+  "titre": "Lire toute la Bible en un an",
   "resume": "Lisez toute la Bible en un an : quelques chapitres chaque jour, la lecture du jour à marquer, et une progression qui reste sur votre appareil."
  },
  {
   "n": 6,
-  "titre": "La Bibliothèque",
+  "titre": "Garder vos versets favoris",
   "resume": "Vos favoris et votre historique au même endroit : rouvrez, copiez ou partagez en un geste."
  },
  {
   "n": 7,
-  "titre": "Les versets par thème",
+  "titre": "Trouver des versets par thème",
   "resume": "48 thèmes et près de 1 500 versets choisis : protection, paix, espérance, réconfort. Chaque verset ouvre son chapitre."
  },
  {
   "n": 8,
-  "titre": "La Bible audio",
+  "titre": "Écouter la Bible",
   "resume": "La Bible lue à voix haute, chapitre après chapitre : choisissez un livre, puis le chapitre à écouter."
  },
  {
   "n": 9,
-  "titre": "Le quiz biblique",
+  "titre": "Tester vos connaissances bibliques",
   "resume": "Six thèmes pour tester vos connaissances : retrouvez le début ou la suite d'un verset, et la réponse renvoie au chapitre."
  },
  {
   "n": 10,
-  "titre": "Installer l'application",
+  "titre": "Installer LaBible.app sur votre téléphone",
   "resume": "Installez LaBible.app sur votre téléphone, votre tablette ou votre ordinateur : gratuite, sans publicité, et toute la Bible même sans internet."
  }
 ]

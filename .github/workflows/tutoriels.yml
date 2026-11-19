@@ -1,6 +1,6 @@
 name: Tutoriels LaBible.app (Shorts)
 
-# Serie « Decouvrir LaBible.app » (decision de BC, 18 novembre 2026) : 10 Shorts
+# Serie « Astuces LaBible.app » (decision de BC, 18-19 novembre 2026) : 10 Shorts
 # tutoriels deja montes (tutoriels/NN.mp4), un par jour sur tous les reseaux,
 # playlist YouTube propre. Lance chaque jour par derniers_temps.yml (etape finale),
 # donc vers 12h UTC. Se desactive apres le dixieme episode. Voir tutoriels.py.
@@ -22,6 +22,11 @@ on:
         required: false
         type: string
         default: 'all'
+      supprimer:
+        description: 'Retirer une publication : yt=... fb=... ig=... th=... pin=... (rien d autre)'
+        required: false
+        type: string
+        default: ''
       corriger_commentaire:
         description: 'Identifiant de video : remplacer le commentaire de la chaine (rien d autre)'
         required: false
@@ -92,6 +97,7 @@ jobs:
           YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
           IN_EP: ${{ inputs.episode }}
           CORRIGER_COMMENTAIRE: ${{ inputs.corriger_commentaire }}
+          SUPPRIMER: ${{ inputs.supprimer }}
           GH_TOKEN: ${{ github.token }}
           ESSAI: ${{ inputs.essai && '1' || '' }}
           SANS_YOUTUBE: ${{ inputs.sans_youtube && '1' || '' }}

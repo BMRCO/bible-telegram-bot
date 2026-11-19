@@ -1,4 +1,4 @@
-# Montage de la serie « Decouvrir LaBible.app » (18 novembre 2026)
+# Montage de la serie « Astuces LaBible.app » (18-19 novembre 2026)
 
 Hors du bot : refaire les videos seulement si l'application change.
 
@@ -8,6 +8,10 @@ Hors du bot : refaire les videos seulement si l'application change.
 3. `python3 capture_serie.py` : 34 captures reelles (Chromium, 390x844 x3, mode sombre) et
    leurs positions dans cap/serie.json.
 4. `python3 serie.py [n ...]` : les Shorts 1080x1920 (fondus enchaines 0,5 s, une couleur par
-   episode). Musique : music_meditation/« Meditation - Royalty-free Music.mp3 » (sans
-   revendication), copiee en musique.mp3. `--images` : planches de controle seulement.
+   episode). Voix du Henri (-8 %) dans voix/epNN_<i>.mp3, produite par le workflow
+   narration_tutoriels.yml (texte : tutoriels/narration.json, la phrase 0 du titre reste vide).
+   Musique : music/igorlisul-sweet-dreams-relaxing-guitar-music-480281.mp3, copiee en
+   musique.mp3, baissee sous la voix. `--images` : planches de controle seulement.
 5. Copier tuto_NN.mp4 en tutoriels/NN.mp4.
+
+6. `python3 pres.py` : la video de presentation (texte : narration.json, cle 11).
