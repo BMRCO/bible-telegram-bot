@@ -51,7 +51,17 @@ def total():
 
 
 # ─── Legendes ───────────────────────────────────────────────────────────────
+# Video de presentation (BC, 19 nov. 2026) : PRESENTATION=1, hors de la serie et de sa playlist
+PRESENTATION = {"n": 0, "presentation": True,
+                "titre": "LaBible.app : la Bible Louis Segond 1910 sur votre téléphone",
+                "resume": ("LaBible.app : la Bible Louis Segond 1910 sur votre téléphone. Lire, rechercher, "
+                           "écouter, un verset chaque jour et un plan pour lire toute la Bible en un an. "
+                           "Gratuite, sans publicité, sans compte, même hors ligne.")}
+
+
 def tete(e):
+    if e.get("presentation"):
+        return f"📱 {e['resume']}"
     return f"💡 {SERIE}\n{e['titre']}\n\n{e['resume']}"
 
 
@@ -64,15 +74,22 @@ def legende(e, reseau):
 
 
 def legende_telegram(e):
+    if e.get("presentation"):
+        return f"📱 {e['resume']}\n\n👉 {APP_URL}"
     return (f"💡 <b>{SERIE}</b>\n\n<b>{e['titre']}</b>\n\n"
             f"{e['resume']}\n\n👉 {APP_URL}")
 
 
 def titre_youtube(e):
+    if e.get("presentation"):
+        return e["titre"][:100]
     return f"{e['titre']} | {SERIE}"[:100]
 
 
 def description_youtube(e):
+    if e.get("presentation"):
+        return (f"{e['resume']}\n\n👉 {APP_URL}\n"
+                f"💡 Les astuces pour bien l'utiliser : la playlist « {PLAYLIST} »\n\n#Shorts {HASHTAGS}")
     return (f"{e['resume']}\n\n"
             f"📱 LaBible.app : la Bible Louis Segond 1910, gratuite, sans publicité, même hors ligne.\n"
             f"👉 {APP_URL}\n"
@@ -111,8 +128,9 @@ def epingle(video, e):
                       headers={"Authorization": f"Bearer {bot.PINTEREST_ACCESS_TOKEN}",
                                "Content-Type": "application/json"},
                       json={"board_id": bot.PINTEREST_BOARD_ID,
-                            "title": f"{e['titre']} | {SERIE}"[:100],
-                            "description": (f"{e['resume']}\n\nLaBible.app : la Bible Louis Segond 1910, "
+                            "title": (e["titre"] if e.get("presentation") else f"{e['titre']} | {SERIE}")[:100],
+                            "description": (e["resume"] if e.get("presentation") else
+                                            f"{e['resume']}\n\nLaBible.app : la Bible Louis Segond 1910, "
                                             f"gratuite, sans publicité, même hors ligne.")[:800],
                             "link": APP_URL,
                             "media_source": {"source_type": "image_url", "url": url}}, timeout=60)
@@ -219,6 +237,8 @@ def upload(video, e, progress):
                              ).execute()["id"]
     print(f"✅ YouTube : https://youtube.com/watch?v={vid}")
     try:
+        if e.get("presentation"):
+            raise RuntimeError("présentation : hors playlist")
         pid = playlist(yt, progress)
         yt.playlistItems().insert(part="snippet", body={"snippet": {
             "playlistId": pid, "position": max(0, e["n"] - 1),
@@ -266,6 +286,24 @@ def main():
         corriger_commentaire(os.environ["CORRIGER_COMMENTAIRE"])
         return
     progress = load_json(PROGRESS_FILE) if os.path.exists(PROGRESS_FILE) else {}
+    if os.environ.get("PRESENTATION") == "1":
+        e, video = PRESENTATION, os.path.join(DOSSIER, "presentation.mp4")
+        print("📱 Vidéo de présentation")
+        if ESSAI:
+            print(titre_youtube(e) + "\n\n" + description_youtube(e) + "\n\n" + legende(e, "fb")
+                  + "\n\n" + legende(e, "ig") + "\n\n" + legende_telegram(e))
+            print("🧪 ESSAI : rien n'est publié.")
+            return
+        vid = None
+        if os.environ.get("SANS_YOUTUBE") != "1":
+            vid = publier("YouTube Présentation", upload, video, e, progress)
+        publier_autres_reseaux(video, e)
+        if vid:
+            videos = load_json(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else {}
+            videos["presentation"] = vid
+            save_json(VIDEOS_FILE, videos)
+        finaliser("présentation")
+        return
     manuel = len(sys.argv) > 1 and sys.argv[1].isdigit()
     n = int(sys.argv[1]) if manuel else int(progress.get("prochain", 1) or 1)
     if n > total():

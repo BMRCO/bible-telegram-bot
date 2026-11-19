@@ -22,6 +22,10 @@ on:
         required: false
         type: string
         default: 'all'
+      presentation:
+        description: 'Publier la video de presentation (tutoriels/presentation.mp4) au lieu d une astuce'
+        type: boolean
+        default: false
       supprimer:
         description: 'Retirer une publication : yt=... fb=... ig=... th=... pin=... (rien d autre)'
         required: false
@@ -98,6 +102,7 @@ jobs:
           IN_EP: ${{ inputs.episode }}
           CORRIGER_COMMENTAIRE: ${{ inputs.corriger_commentaire }}
           SUPPRIMER: ${{ inputs.supprimer }}
+          PRESENTATION: ${{ inputs.presentation && '1' || '' }}
           GH_TOKEN: ${{ github.token }}
           ESSAI: ${{ inputs.essai && '1' || '' }}
           SANS_YOUTUBE: ${{ inputs.sans_youtube && '1' || '' }}
