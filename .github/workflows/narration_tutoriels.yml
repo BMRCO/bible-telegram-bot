@@ -16,7 +16,7 @@ on:
         type: string
         default: '-16%'
       voix:
-        description: 'Voix Google Chirp 3 HD (ex: Algieba), vide = Henri'
+        description: 'Vide = Henri ; nom Google Chirp 3 HD (ex: Algieba) ; ou piper:fr/fr_FR/tom/medium/fr_FR-tom-medium'
         required: false
         type: string
         default: ''
@@ -47,6 +47,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install edge-tts==7.3.1 requests
 
+      - name: Piper voice
+        if: ${{ startsWith(inputs.voix, 'piper:') }}
+        env:
+          VOIX: ${{ inputs.voix }}
+        run: |
+          pip install piper-tts==1.8.0
+          chemin="${VOIX#piper:}"
+          base="https://huggingface.co/rhasspy/piper-voices/resolve/main/${chemin}"
+          nom="$(basename "$chemin")"
+          curl -fsSL -o "${nom}.onnx" "${base}.onnx"
+          curl -fsSL -o "${nom}.onnx.json" "${base}.onnx.json"
+          echo "PIPER_MODELE=$PWD/${nom}.onnx" >> "$GITHUB_ENV"
+
       - name: Generate samples
         env:
           EPS: ${{ inputs.episodes }}
@@ -57,13 +70,13 @@ jobs:
 
       - name: Publish samples on the echantillons-voix branch
         run: |
-          mkdir -p /tmp/ech && cp echantillons/*.mp3 /tmp/ech/
+          mkdir -p /tmp/ech && cp echantillons/ep* /tmp/ech/ && ls /tmp/ech | grep -q .
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout --orphan echantillons-voix
           git rm -rq --cached --sparse . || true
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          cp /tmp/ech/*.mp3 .
-          git add --sparse *.mp3
+          cp /tmp/ech/* .
+          git add --sparse ep*
           git commit -q -m "Narration des tutoriels"
           git push -f origin echantillons-voix
