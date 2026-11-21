@@ -60,6 +60,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # lance la lecture longue du soir (mercredi, dimanche)
 
 # Un groupe DISTINCT par horaire : les runs ne s'annulent plus entre elles.
 # (Avec un seul groupe partage, une run du matin retardee etait annulee par la suivante.)
@@ -227,3 +228,20 @@ jobs:
           # meme contenu demain. On sort en erreur -> e-mail GitHub Actions.
           echo "::error::Progression NON enregistree apres 3 tentatives."
           exit 1
+
+      # Lectures longues (decision de BC, 21 nov. 2026) : « Psaumes pour la nuit »
+      # doit sortir le soir. Lancees ici, apres le verset du soir (19h UTC, Worker),
+      # le mercredi et le dimanche : la video met 30 a 60 min a se faire et sort
+      # vers 20-21h UTC (21-22h en France l'hiver). Sans toucher au Worker.
+      - name: Lancer la lecture longue du soir
+        if: ${{ !cancelled() && inputs.creneau == 'soir' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          jour=$(date -u +%u)   # 3 = mercredi, 7 = dimanche
+          if [ "$jour" = "3" ] || [ "$jour" = "7" ]; then
+            gh workflow run compilation_audio.yml -R "${{ github.repository }}" && echo "Lecture longue lancee"
+          else
+            echo "Pas de lecture longue aujourd'hui ($jour)"
+          fi
