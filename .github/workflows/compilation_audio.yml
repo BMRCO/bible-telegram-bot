@@ -78,13 +78,21 @@ jobs:
           IN_COMP: ${{ inputs.compilation }}
         run: python compilation_audio.py "${IN_COMP}"
 
-      - name: Echantillons
+      # Les artefacts d'Actions ne sont pas lisibles depuis la session de Claude :
+      # l'essai passe par une branche jetable (garder LIMITE petit : 100 Mo max par fichier).
+      - name: Echantillons (branche echantillons-compilation)
         if: ${{ inputs.essai }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: compilation
-          path: echantillons/
-          retention-days: 3
+        run: |
+          mkdir -p /tmp/ech && cp echantillons/* /tmp/ech/
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan echantillons-compilation
+          git rm -rq --cached . || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp /tmp/ech/* .
+          git add .
+          git commit -q -m "Essai de compilation"
+          git push -f origin echantillons-compilation
 
       - name: Commit progress
         if: ${{ !cancelled() && !inputs.essai }}
