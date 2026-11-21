@@ -1,0 +1,472 @@
+"""compilation_audio.py : lectures longues pour ecouter (YouTube, 16:9).
+
+Decision de BC (21 novembre 2026) : des videos longues de 20 a 60 min a ecouter,
+« Psaumes pour la nuit », « L'Evangile de Jean »... Le texte biblique est lu tel
+quel (voix du Henri, celle des Psaumes narres), verset apres verset, sur une
+musique libre de Content ID qui baisse sous la voix. Rien n'est ajoute au texte :
+le titre de la compilation, la reference de chaque verset, rien d'autre.
+
+Compilations : compilations_audio.json (dans l'ordre de publication). Chaque
+passage est « Livre N » (chapitre entier), « theme:<slug> » (versets d'un theme
+du site) ou « liste:<fichier.json> » (liste de references). Jamais deux fois la
+meme compilation : progress_compilations.json ({"faites": [...]}).
+
+Video : une image fixe par verset (verset, reference), assemblee par ffmpeg,
+donc rapide meme pour une heure. Chapitres YouTube dans la description.
+
+    python compilation_audio.py                 -> compilation suivante
+    python compilation_audio.py psaumes-nuit    -> compilation precise
+    ESSAI=1 LIMITE=12 python compilation_audio.py psaumes-nuit
+                                                -> echantillons/, rien n'est publie
+
+N'affiche jamais de jeton ni de secret.
+"""
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import wave
+
+import numpy as np
+from PIL import Image, ImageDraw, ImageFont
+
+import bot
+from bot import (APP_URL, clean_text, strip_rubric, is_rubric, load_json, save_json, publier,
+                 signaler_echec, finaliser, slugify_book, get_bible_index, BOOK_NAME_MAP)
+import psaume_meditation as pm
+import yt_themes
+from musique_revendiquee import libres
+
+COMPILATIONS = "compilations_audio.json"
+PROGRESS_FILE = "progress_compilations.json"
+VIDEOS_FILE = "videos_compilations.json"
+ESSAI = os.environ.get("ESSAI") == "1"
+LIMITE = int(os.environ.get("LIMITE", "0") or 0)       # essai court : N versets seulement
+
+W, H = 1920, 1080
+SR = pm.SR
+GAR = "fonts/EBGaramond-Regular.ttf"
+GAR_IT = "fonts/EBGaramond-Italic.ttf"
+OR = (214, 178, 106)
+OR_CLAIR = (236, 210, 150)
+CREME = (244, 236, 218)
+GRIS = (150, 140, 124)
+FOND_HAUT, FOND_BAS = (12, 11, 16), (34, 28, 22)
+
+AVANT, APRES = 0.5, 1.6          # silence avant / apres chaque verset (s)
+TITRE_DUREE_MIN = 10.5     # un chapitre YouTube dure au moins 10 s
+FIN_DUREE = 8.0
+PLAYLIST = "🎧 Lectures pour méditer | Louis Segond 1910"
+PLAYLIST_DESC = ("Des lectures longues de la Bible Louis Segond 1910, à écouter : Psaumes, "
+                 "Évangiles, versets par thème. Le texte seul, lu calmement. "
+                 "LaBible.app, gratuite et sans publicité : https://labible.app")
+HASHTAGS = "#Bible #LouisSegond #LSG1910 #ParoleDeDieu #BibleAudio #LaBibleApp"
+
+
+# ─── Contenu ────────────────────────────────────────────────────────────────
+def nom_livre(livre):
+    return BOOK_NAME_MAP.get(livre, livre)
+
+
+def chapitre(livre, ch):
+    idx = get_bible_index()
+    reel = nom_livre(livre)
+    if reel not in idx:
+        reel = next((k for k in idx if k.lower() == reel.lower()), reel)
+    vs = idx[reel][str(ch)]
+    return [(int(v), vs[v]) for v in sorted(vs, key=int)]
+
+
+def tete(livre, ch):
+    return f"Psaume {ch}" if livre == "Psaumes" else f"{livre} {ch}"
+
+
+def segments(comp):
+    """[(titre du segment ou None, [(reference affichee, texte), ...])]"""
+    out = []
+    for p in comp["passages"]:
+        if p.startswith("theme:"):
+            refs = [(b, int(c), int(v)) for b, c, v in yt_themes.themes()[p[6:]]["refs"]]
+            out.append((None, [(f"{b} {c}:{v}", bot.load_verse(b, c, v)) for b, c, v in refs]))
+        elif p.startswith("liste:"):
+            items = []
+            for r in load_json(p[6:]):
+                m = re.match(r"^(.+?)\s+(\d+):(\d+)$", r)
+                items.append((r, bot.load_verse(m.group(1), int(m.group(2)), int(m.group(3)))))
+            out.append((None, items))
+        else:
+            m = re.match(r"^(.+?)\s+(\d+)$", p)
+            livre, ch = m.group(1), int(m.group(2))
+            vs = [(n, t) for n, t in chapitre(livre, ch) if not (n == 1 and is_rubric(t))]
+            out.append((tete(livre, ch), [(f"{tete(livre, ch)}:{n}" if livre != "Psaumes"
+                                           else f"Psaume {ch}:{n}", t) for n, t in vs]))
+    # pas deux fois le meme verset dans une compilation
+    vus, propre = set(), []
+    for titre, items in out:
+        garde = []
+        for ref, t in items:
+            if ref not in vus:
+                vus.add(ref); garde.append((ref, t))
+        if garde:
+            propre.append((titre, garde))
+    return propre
+
+
+# ─── Images ─────────────────────────────────────────────────────────────────
+def _f(path, size):
+    return ImageFont.truetype(path, size)
+
+
+def fond():
+    a = np.linspace(0, 1, H)[:, None, None]
+    g = (np.array(FOND_HAUT) * (1 - a) + np.array(FOND_BAS) * a) * np.ones((1, W, 1))
+    y, x = np.ogrid[:H, :W]
+    halo = np.exp(-(((x - W / 2) / (W * 0.45)) ** 2 + ((y - H * 0.48) / (H * 0.5)) ** 2))
+    g = g + halo[..., None] * np.array([26, 20, 10])
+    return Image.fromarray(np.clip(g, 0, 255).astype(np.uint8))
+
+
+FOND = None
+
+
+def _lignes(d, texte, font, largeur):
+    mots, lignes, cur = texte.split(), [], ""
+    for m in mots:
+        t = (cur + " " + m).strip()
+        if d.textlength(t, font=font) <= largeur:
+            cur = t
+        else:
+            if cur:
+                lignes.append(cur)
+            cur = m
+    if cur:
+        lignes.append(cur)
+    return lignes
+
+
+def _centre(d, y, txt, font, fill):
+    d.text(((W - d.textlength(txt, font=font)) / 2, y), txt, font=font, fill=fill)
+
+
+def cadre(titre_comp):
+    im = FOND.copy()
+    d = ImageDraw.Draw(im)
+    _centre(d, 54, "LaBible.app  ·  Bible Louis Segond 1910", _f(GAR, 34), GRIS)
+    d.line([(W / 2 - 60, 124), (W / 2 + 60, 124)], fill=OR, width=2)
+    _centre(d, H - 92, titre_comp, _f(GAR_IT, 36), GRIS)
+    return im, d
+
+
+def image_verset(titre_comp, ref, texte, chemin):
+    im, d = cadre(titre_comp)
+    txt = f"« {texte} »"
+    for taille in range(62, 33, -2):
+        f = _f(GAR, taille)
+        lg = _lignes(d, txt, f, W - 360)
+        hl = int(taille * 1.42)
+        if len(lg) * hl <= 640:
+            break
+    bloc = len(lg) * hl + 40 + 50
+    y = (H - bloc) // 2 + 10
+    for l in lg:
+        _centre(d, y, l, f, CREME)
+        y += hl
+    _centre(d, y + 34, ref, _f(GAR, 46), OR_CLAIR)
+    im.save(chemin, quality=92)
+
+
+def image_titre(comp, chemin, minutes=None):
+    im, d = cadre("")
+    _centre(d, 380, comp["titre"], _f(GAR, 96), CREME)
+    _centre(d, 520, comp["sous_titre"], _f(GAR_IT, 54), OR_CLAIR)
+    if minutes:
+        _centre(d, 640, f"{minutes} min de lecture", _f(GAR, 40), GRIS)
+    im.save(chemin, quality=92)
+
+
+def image_segment(titre_comp, titre_seg, chemin):
+    im, d = cadre(titre_comp)
+    _centre(d, 470, titre_seg, _f(GAR, 110), OR_CLAIR)
+    im.save(chemin, quality=92)
+
+
+def image_fin(chemin):
+    im, d = cadre("")
+    _centre(d, 420, "LaBible.app", _f(GAR, 110), CREME)
+    _centre(d, 570, "La Bible Louis Segond 1910, gratuite et sans publicité", _f(GAR_IT, 48), OR_CLAIR)
+    im.save(chemin, quality=92)
+
+
+def miniature(comp, minutes, chemin):
+    w, h = 1280, 720
+    im = FOND.resize((w, h))
+    d = ImageDraw.Draw(im)
+    for taille in range(112, 50, -4):
+        f = _f(GAR, taille)
+        lg = _lignes(d, comp["titre"], f, w - 140)
+        if len(lg) <= 2:
+            break
+    hl = int(taille * 1.12)
+    f2 = _f(GAR_IT, 50)
+    t2 = f"{minutes} min · Bible Louis Segond 1910"
+    bloc = len(lg) * hl + 50 + 60
+    y = (h - bloc) // 2
+    bas = y
+    for l in lg:
+        x = (w - d.textlength(l, font=f)) / 2
+        d.text((x, y), l, font=f, fill=CREME)
+        bas = d.textbbox((x, y), l, font=f)[3]
+        y += hl
+    y = bas + 30
+    d.line([(w / 2 - 70, y), (w / 2 + 70, y)], fill=OR, width=3)
+    d.text(((w - d.textlength(t2, font=f2)) / 2, y + 24), t2, font=f2, fill=OR_CLAIR)
+    im.save(chemin, quality=92)
+
+
+# ─── Montage ────────────────────────────────────────────────────────────────
+def hms(s):
+    s = int(s)
+    return f"{s // 3600}:{s % 3600 // 60:02d}:{s % 60:02d}" if s >= 3600 else f"{s // 60}:{s % 60:02d}"
+
+
+def musique_longue(duree, dossier):
+    pistes = sorted(os.path.join("music_meditation", f) for f in os.listdir("music_meditation")
+                    if f.lower().endswith((".mp3", ".m4a", ".ogg", ".wav")))
+    pistes = libres(pistes) or []
+    if not pistes:
+        return None
+    import random
+    random.Random(int(duree)).shuffle(pistes)
+    total, choix = 0.0, []
+    while total < duree + 10:
+        for p in pistes:
+            choix.append(p)
+            total += float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                                           "-of", "csv=p=0", p], capture_output=True, text=True).stdout or 0)
+            if total >= duree + 10:
+                break
+    liste = os.path.join(dossier, "musique.txt")
+    with open(liste, "w") as f:
+        for p in choix:
+            f.write(f"file '{os.path.abspath(p)}'\n")
+    sortie = os.path.join(dossier, "musique.wav")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", liste,
+                    "-ar", "48000", "-ac", "2", sortie], check=True)
+    return sortie
+
+
+def fabriquer(comp):
+    global FOND
+    FOND = fond()
+    dossier = "compilation_tmp"
+    shutil.rmtree(dossier, ignore_errors=True)
+    os.makedirs(dossier)
+    segs = segments(comp)
+    if LIMITE:
+        reste, court = LIMITE, []
+        for t, items in segs:
+            if reste <= 0:
+                break
+            court.append((t, items[:reste])); reste -= len(items[:reste])
+        segs = court
+    n_total = sum(len(i) for _, i in segs)
+    print(f"📖 {comp['titre']} : {len(segs)} passage(s), {n_total} versets")
+
+    plans, pistes, chapitres = [], [], []    # plans : (image, duree)
+    t = 0.0
+    k = 0
+
+    def ajouter(img, audio, avant, apres, minimum=0.0):
+        nonlocal t
+        d = max(minimum, avant + (len(audio) / SR if audio is not None else 0) + apres)
+        if audio is not None:
+            pistes.append((t + avant, audio))
+        plans.append((img, d))
+        t += d
+
+    # titre (sans voix : la musique s'installe)
+    img = os.path.join(dossier, "titre.jpg")
+    image_titre(comp, img)
+    chapitres.append((0, comp["titre"]))
+    ajouter(img, None, 0, 0, TITRE_DUREE_MIN)
+
+    for titre_seg, items in segs:
+        if titre_seg:
+            chapitres.append((t, titre_seg))
+            img = os.path.join(dossier, f"s{k:04d}.jpg"); k += 1
+            image_segment(comp["titre"], titre_seg, img)
+            ajouter(img, pm.synthese(f"{titre_seg}.", os.path.join(dossier, f"a{k:04d}")), 0.8, 1.6)
+        for ref, texte in items:
+            propre = clean_text(strip_rubric(texte)).rstrip(".")
+            img = os.path.join(dossier, f"v{k:04d}.jpg"); k += 1
+            image_verset(comp["titre"], ref, propre, img)
+            ajouter(img, pm.synthese(pm.texte_a_lire(propre), os.path.join(dossier, f"a{k:04d}")), AVANT, APRES)
+            print(f"  🎙️  {k}/{n_total + len(segs)}", end="\r")
+    print()
+    img = os.path.join(dossier, "fin.jpg")
+    image_fin(img)
+    ajouter(img, None, 0, 0, FIN_DUREE)
+    total = t
+    minutes = max(1, round(total / 60))
+    image_titre(comp, os.path.join(dossier, "titre.jpg"), minutes)   # avec la duree
+
+    # voix
+    voix = np.zeros(int(total * SR) + SR, dtype=np.float32)
+    for t0, a in pistes:
+        i0 = int(t0 * SR)
+        voix[i0:i0 + len(a)] += a
+    voix = voix[:int(total * SR)]
+    wav = os.path.join(dossier, "voix.wav")
+    with wave.open(wav, "wb") as w:
+        w.setnchannels(1); w.setsampwidth(2); w.setframerate(SR)
+        w.writeframes((np.clip(voix, -1, 1) * 32767).astype(np.int16).tobytes())
+
+    # images -> video (concat : chaque image tient sa duree)
+    liste = os.path.join(dossier, "images.txt")
+    with open(liste, "w") as f:
+        for img, d in plans:
+            f.write(f"file '{os.path.abspath(img)}'\nduration {d:.3f}\n")
+        f.write(f"file '{os.path.abspath(plans[-1][0])}'\n")
+    musique = musique_longue(total, dossier)
+    sortie = f"compilation_{comp['id']}.mp4"
+    tmp = sortie + ".tmp.mp4"
+    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", liste, "-i", wav]
+    if musique:
+        cmd += ["-i", musique]
+        fc = (f"[1:a]aformat=sample_rates=48000:channel_layouts=stereo,asplit=2[v][sc];"
+              f"[2:a]volume=0.14,afade=t=in:d=3,afade=t=out:st={max(0, total - 6):.2f}:d=6[m0];"
+              f"[m0][sc]sidechaincompress={pm.DUCKING}[m];"
+              f"[v][m]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=11[a]")
+    else:
+        fc = "[1:a]aformat=sample_rates=48000:channel_layouts=stereo,loudnorm=I=-16:TP=-1.5:LRA=11[a]"
+    cmd += ["-filter_complex", fc, "-map", "0:v", "-map", "[a]",
+            "-vf", "fps=24,format=yuv420p", "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage",
+            "-crf", "22", "-c:a", "aac", "-b:a", "160k", "-t", f"{total:.2f}", "-movflags", "+faststart", tmp]
+    subprocess.run(cmd, check=True)
+    os.replace(tmp, sortie)
+    vignette = f"compilation_{comp['id']}.jpg"
+    miniature(comp, minutes, vignette)
+    print(f"✅ Vidéo : {sortie} ({hms(total)})")
+    return sortie, vignette, minutes, chapitres
+
+
+# ─── YouTube ────────────────────────────────────────────────────────────────
+def titre_video(comp, minutes):
+    return f"{comp['titre']} | {minutes} min | Bible Louis Segond 1910"[:100]
+
+
+def description(comp, chapitres):
+    lignes = [f"{comp['titre']}. {comp['sous_titre']}.",
+              "Le texte de la Bible Louis Segond 1910, lu verset après verset.", ""]
+    if len(chapitres) >= 3:
+        lignes += [f"{hms(t)} {nom}" for t, nom in chapitres] + [""]
+    lignes += [f"📖 Lire la Bible : {APP_URL}",
+               f"🎧 Toutes les lectures : la playlist « {PLAYLIST} »", "", HASHTAGS]
+    return "\n".join(lignes)[:4900]
+
+
+def youtube():
+    from google.oauth2.credentials import Credentials
+    from google.auth.transport.requests import Request
+    from googleapiclient.discovery import build
+    from youtube_garde import verifier_chaine
+    creds = Credentials(token=None, refresh_token=os.environ["YOUTUBE_REFRESH_TOKEN"],
+                        client_id=os.environ["YOUTUBE_CLIENT_ID"],
+                        client_secret=os.environ["YOUTUBE_CLIENT_SECRET"],
+                        token_uri="https://oauth2.googleapis.com/token", scopes=None)
+    creds.refresh(Request())
+    yt = build("youtube", "v3", credentials=creds)
+    verifier_chaine(yt)
+    return yt
+
+
+def playlist(yt, progress):
+    if progress.get("playlist"):
+        return progress["playlist"]
+    req = yt.playlists().list(part="snippet", mine=True, maxResults=50)
+    while req is not None:
+        rep = req.execute()
+        for p in rep.get("items", []):
+            if p["snippet"]["title"] == PLAYLIST:
+                progress["playlist"] = p["id"]
+                return p["id"]
+        req = yt.playlists().list_next(req, rep)
+    pid = yt.playlists().insert(part="snippet,status", body={
+        "snippet": {"title": PLAYLIST, "description": PLAYLIST_DESC, "defaultLanguage": "fr"},
+        "status": {"privacyStatus": "public"}}).execute()["id"]
+    print(f"✅ Playlist créée : {PLAYLIST}")
+    progress["playlist"] = pid
+    return pid
+
+
+def upload(video, vignette, comp, minutes, chapitres, progress):
+    from googleapiclient.http import MediaFileUpload
+    import yt_commentaire
+    yt = youtube()
+    body = {"snippet": {"title": titre_video(comp, minutes), "description": description(comp, chapitres),
+                        "tags": ["Bible", "Bible audio", "lecture de la Bible", "Louis Segond", "LSG1910",
+                                 "Parole de Dieu", comp["titre"]],
+                        "categoryId": "22", "defaultLanguage": "fr", "defaultAudioLanguage": "fr"},
+            "status": {"privacyStatus": "public", "selfDeclaredMadeForKids": False}}
+    vid = yt.videos().insert(part="snippet,status", body=body,
+                             media_body=MediaFileUpload(video, mimetype="video/mp4", resumable=True,
+                                                        chunksize=50 * 1024 * 1024)).execute()["id"]
+    print(f"✅ YouTube : https://youtube.com/watch?v={vid}")
+    try:
+        yt.thumbnails().set(videoId=vid, media_body=MediaFileUpload(vignette, mimetype="image/jpeg")).execute()
+        print("✅ Miniature")
+    except Exception as e:
+        print(f"⚠️  Miniature non posée : {str(e)[:200]}")
+    try:
+        yt.playlistItems().insert(part="snippet", body={"snippet": {
+            "playlistId": playlist(yt, progress),
+            "resourceId": {"kind": "youtube#video", "videoId": vid}}}).execute()
+        print(f"✅ Ajoutée à « {PLAYLIST} »")
+    except Exception as e:
+        print(f"⚠️  Playlist non mise à jour : {str(e)[:200]}")
+    yt_commentaire.commenter(yt, vid, APP_URL, titre=comp["titre"], audio=True)
+    return vid
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+def main():
+    comps = load_json(COMPILATIONS)
+    progress = load_json(PROGRESS_FILE) if os.path.exists(PROGRESS_FILE) else {}
+    faites = progress.setdefault("faites", [])
+    if len(sys.argv) > 1 and sys.argv[1].strip():
+        comp = next((c for c in comps if c["id"] == sys.argv[1].strip()), None)
+        if not comp:
+            sys.exit(f"compilation inconnue : {sys.argv[1]}")
+    else:
+        comp = next((c for c in comps if c["id"] not in faites), None)
+        if not comp:
+            print("🏁 Toutes les compilations ont été publiées : ajouter des entrées à compilations_audio.json.")
+            return
+    try:
+        video, vignette, minutes, chapitres = fabriquer(comp)
+    except Exception as e:
+        signaler_echec("Compilation (vidéo)", f"{type(e).__name__} : {e}")
+        finaliser("compilation")
+        sys.exit(1)
+    if ESSAI:
+        os.makedirs("echantillons", exist_ok=True)
+        for f in (video, vignette):
+            shutil.copy(f, "echantillons/")
+        with open("echantillons/compilation.txt", "w", encoding="utf-8") as f:
+            f.write(titre_video(comp, minutes) + "\n\n" + description(comp, chapitres))
+        print("🧪 ESSAI : rien n'est publié.")
+        return
+    vid = publier("YouTube compilation", upload, video, vignette, comp, minutes, chapitres, progress)
+    if vid:
+        faites.append(comp["id"])
+        videos = load_json(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else {}
+        videos[comp["id"]] = vid
+        save_json(VIDEOS_FILE, videos)
+        save_json(PROGRESS_FILE, progress)
+    finaliser("compilation")
+
+
+if __name__ == "__main__":
+    main()

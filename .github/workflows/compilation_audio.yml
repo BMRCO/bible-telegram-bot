@@ -1,0 +1,105 @@
+name: Lectures longues (compilations audio)
+
+# Decision de BC (21 novembre 2026) : des videos longues a ecouter (Psaumes pour
+# la nuit, Evangile de Jean, versets par theme...), YouTube seulement. Voir
+# compilation_audio.py et compilations_audio.json. Deux par semaine, mercredi et
+# dimanche : l'heure exacte ne compte pas (une lecture longue n'est pas un verset
+# du jour), d'ou le « schedule » GitHub et non le Worker labible-horloge.
+on:
+  # Calendrier en attente de l'accord de BC sur les titres (21 nov. 2026) :
+  # remettre ces deux lignes une fois les titres valides.
+  # schedule:
+  #   - cron: '23 5 * * 0,3'
+  workflow_dispatch:
+    inputs:
+      compilation:
+        description: 'Identifiant (vide = suivante), ex. psaumes-nuit'
+        required: false
+        type: string
+        default: ''
+      essai:
+        description: 'Essai : video dans echantillons/, rien n est publie'
+        required: false
+        type: boolean
+        default: false
+      limite:
+        description: 'Essai court : nombre de versets (0 = tout)'
+        required: false
+        type: string
+        default: '0'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: compilation-audio
+  cancel-in-progress: false
+
+jobs:
+  compilation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pillow requests numpy edge-tts==7.3.1 google-api-python-client google-auth-httplib2 google-auth-oauthlib
+
+      - name: Install ffmpeg
+        timeout-minutes: 12
+        run: |
+          APT="sudo timeout 150 apt-get -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::Retries=1"
+          if command -v ffmpeg >/dev/null || { $APT update -qq && $APT install -y -qq ffmpeg; }; then
+            ffmpeg -version | head -1; exit 0
+          fi
+          echo "::warning::apt-get indisponible : ffmpeg statique (imageio-ffmpeg) utilise a la place"
+          python3 -m pip install -q imageio-ffmpeg
+          sudo ln -sf "$(python3 -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')" /usr/local/bin/ffmpeg
+          ffmpeg -version | head -1
+
+      - name: Compilation
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+          ESSAI: ${{ inputs.essai && '1' || '' }}
+          LIMITE: ${{ inputs.limite || '0' }}
+          # Par l'environnement : une entree libre ne doit jamais etre interpolee dans un script.
+          IN_COMP: ${{ inputs.compilation }}
+        run: python compilation_audio.py "${IN_COMP}"
+
+      - name: Echantillons
+        if: ${{ inputs.essai }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: compilation
+          path: echantillons/
+          retention-days: 3
+
+      - name: Commit progress
+        if: ${{ !cancelled() && !inputs.essai }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for f in progress_compilations.json videos_compilations.json; do
+            if [ -f "$f" ]; then git add "$f"; fi
+          done
+          if git diff --staged --quiet; then echo "Aucun changement."; exit 0; fi
+          git commit -m "Update compilations progress [skip ci]"
+          for i in 1 2 3; do
+            if git push; then echo "Progression enregistree."; exit 0; fi
+            git pull --rebase origin main || true
+            sleep 5
+          done
+          echo "::error::Progression NON enregistree apres 3 tentatives."
+          exit 1
