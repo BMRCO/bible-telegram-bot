@@ -2,8 +2,10 @@ name: Derniers temps (Shorts YouTube)
 
 # Serie speciale « Les derniers temps » (14 novembre 2026, decision de BC) :
 # un Short YouTube par passage, versets du theme labible.app/versets/derniers-temps.
-# Toutes les plateformes depuis le 14 nov. 2026. Voir derniers_temps.py. Un par jour, 12h00 UTC (13h en hiver),
-# lance par le Worker labible-horloge (decision de BC, 14 nov. 2026).
+# Toutes les plateformes depuis le 14 nov. 2026. Voir derniers_temps.py. 12h00 UTC (13h en hiver),
+# lance par le Worker labible-horloge (decision de BC, 14 nov. 2026). Depuis le 21 nov. 2026, un
+# second verset par jour (decision de BC) : lance a la fin de thematic_meditation.yml (17h UTC),
+# entree second=true, sans toucher au Worker.
 on:
   workflow_dispatch:
     inputs:
@@ -22,6 +24,11 @@ on:
         required: false
         type: string
         default: 'all'
+      second:
+        description: 'Second verset du jour (lance par thematic_meditation.yml) : ne relance pas le tutoriel'
+        required: false
+        type: boolean
+        default: false
       essai:
         description: 'Essai : genere la video sans rien publier'
         required: false
@@ -121,7 +128,7 @@ jobs:
       # juste apres le verset des derniers temps. Sans effet une fois tutoriels.yml
       # desactive (fin de la serie).
       - name: Lancer le tutoriel du jour
-        if: ${{ !cancelled() && !inputs.essai && !inputs.reference && !inputs.sans_youtube }}
+        if: ${{ !cancelled() && !inputs.essai && !inputs.reference && !inputs.sans_youtube && !inputs.second }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}

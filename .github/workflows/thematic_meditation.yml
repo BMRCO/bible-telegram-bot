@@ -12,6 +12,7 @@ on:
         default: ''
 permissions:
   contents: write
+  actions: write   # lance le second verset des derniers temps
 # Grupo proprio e unico por run - nunca cancela nem e cancelado por outra run.
 concurrency:
   group: thematic-post-${{ github.event.schedule || github.run_id }}
@@ -117,3 +118,20 @@ jobs:
           # theme serait republie. Sortie en erreur -> e-mail GitHub Actions.
           echo "::error::Progression NON enregistree apres 3 tentatives."
           exit 1
+
+      # Second verset du jour des derniers temps (decision de BC, 21 nov. 2026),
+      # lance ici pour ne pas toucher au Worker labible-horloge. Seulement en
+      # rotation automatique (pas pour un theme choisi a la main), et seulement
+      # si derniers_temps.yml est actif (il se desactive en fin de serie).
+      - name: Lancer le second verset des derniers temps
+        if: ${{ !cancelled() && inputs.theme == '' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          etat=$(gh api "repos/${{ github.repository }}/actions/workflows/derniers_temps.yml" --jq .state 2>/dev/null || echo absent)
+          if [ "$etat" = "active" ]; then
+            gh workflow run derniers_temps.yml -R "${{ github.repository }}" -f second=true && echo "Derniers temps (2e) lance"
+          else
+            echo "derniers_temps.yml : $etat"
+          fi

@@ -14,8 +14,10 @@ Rien n'est ajoute au texte biblique : seulement le verset, sa reference et le
 nom de la serie. Aucune actualite, aucune date, aucun commentaire.
 
 Versets : la liste du theme « derniers-temps » du site (data/versets_themes.json
-du depot labible.app, page labible.app/versets/derniers-temps), dans l'ordre de
-la page. Progression : progress_derniers_temps.json ({"index": N}).
+du depot labible.app, page labible.app/versets/derniers-temps), entrelacee avec
+les propheties de l'Ancien Testament de derniers_temps_at.json (21 nov. 2026).
+Progression : progress_derniers_temps.json ({"index": N}) ; deja_publie saute
+tout verset deja sorti. Deux par jour depuis le 21 nov. 2026 (12h00 et ~17h UTC).
 
 Publication (decision de BC, 14 nov. 2026 : « em todas as plataformas ») :
 YouTube (Short, playlist « ⏳ Les derniers temps » creee si elle manque,
@@ -67,9 +69,22 @@ CREME = (244, 236, 218)
 
 
 # ─── Versets ────────────────────────────────────────────────────────────────
+EXTRA_FILE = "derniers_temps_at.json"
+
+
 def refs_du_theme():
+    """Versets du theme du site, entrelaces avec les propheties de l'Ancien Testament
+    de derniers_temps_at.json (decision de BC, 21 nov. 2026 : plus de versets, sans
+    repetition). Un verset deja publie est saute (deja_publie), quel que soit son rang."""
     t = yt_themes.themes()[SLUG]
-    return [f"{b} {c}:{v}" for b, c, v in t["refs"]]
+    site = [f"{b} {c}:{v}" for b, c, v in t["refs"]]
+    extra = load_json(EXTRA_FILE) if os.path.exists(EXTRA_FILE) else []
+    vus, out = set(), []
+    for i in range(max(len(site), len(extra))):
+        for r in (site[i:i + 1] + extra[i:i + 1]):
+            if r not in vus:
+                vus.add(r); out.append(r)
+    return out
 
 
 def lire_verset(ref):
