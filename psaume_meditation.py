@@ -1287,15 +1287,37 @@ def upload_to_youtube(video_path, num, verses_with_idx, part_label=None):
     return video_id
 
 
+# Psaumes les plus recherches, publies avant la suite 1..150 (decision de BC,
+# 21 nov. 2026). Chacun une seule fois : la suite saute ceux deja publies.
+PRIORITE = [23, 91, 27, 121, 46, 51, 139, 34, 37, 103, 62, 40, 42, 90, 100, 145,
+            150, 32, 84, 118, 63, 86, 71, 116, 125, 133, 31, 30, 56, 61, 112, 128]
+
+
+def _psaumes_publies():
+    f = "videos_psaumes_audio.json"
+    v = load_json(f) if os.path.exists(f) else {}
+    return {int(k.split(":")[0]) for k in v if k.split(":")[0].isdigit()}
+
+
 def _next_psaume(progress):
     """
-    Ordre sequentiel : Psaumes 1 a 150 (le 119 d'un seul tenant), puis
-    Proverbes 1 a 31 (decision de BC, 14 novembre 2026). Choisit le livre
+    D'abord les Psaumes de PRIORITE, puis l'ordre sequentiel : Psaumes 1 a 150
+    (le 119 d'un seul tenant), puis Proverbes 1 a 31 (decision de BC, 14 novembre 2026). Choisit le livre
     (choisir_livre) et avance la progression ; ne republie jamais.
     """
+    publies = _psaumes_publies()
+    prio = next((n for n in PRIORITE if n not in publies), None)
+    if prio is not None:
+        # Les Psaumes les plus recherches d'abord (decision de BC, 21 nov. 2026) ;
+        # la suite 1..150 reprend ensuite la ou elle s'etait arretee.
+        choisir_livre("psaumes")
+        print(f"⭐ Psaume {prio} : avant la suite (Psaumes les plus recherchés)")
+        return prio
     num = int(progress.get("next_psaume", 1) or 1)
     if num < 1:
         num = 1
+    while num <= 150 and num in publies:
+        num += 1          # deja publie en priorite : jamais deux fois
     if num <= 150:
         choisir_livre("psaumes")
         if num == 150:
