@@ -2068,8 +2068,52 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=N
         data={"creation_id": container_id, "access_token": FB_PAGE_TOKEN}, timeout=60)
     if r2.status_code == 200:
         print(f"✅ Instagram reel publié — {r2.json().get('id')}")
+        post_story_to_instagram(video_path, video_url)
     else:
         signaler_echec("Instagram reel", f"publication — HTTP {r2.status_code} — {r2.text[:200]}")
+
+
+# ---------------------------------------------------
+STORY_MAX = 60   # une Story video dure au plus 60 s : les videos plus longues n'en ont pas
+
+
+def post_story_to_instagram(video_path, video_url):
+    """Chaque Reel de 60 s au plus part aussi en Story (decision de BC, 21 nov. 2026),
+    avec la meme video hebergee. Le classement « A la une » reste manuel : l'API ne le permet pas.
+    IG_STORY=0 dans l'environnement coupe les Stories."""
+    if os.environ.get("IG_STORY") == "0":
+        return
+    import subprocess, time
+    try:
+        duree = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                                      "-of", "csv=p=0", video_path], capture_output=True, text=True).stdout)
+    except ValueError:
+        duree = 0
+    if not 3 <= duree <= STORY_MAX:
+        print(f"⏭️  Story Instagram : vidéo de {duree:.0f} s, hors des 3 à {STORY_MAX} s")
+        return
+    r = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media",
+        data={"media_type": "STORIES", "video_url": video_url, "access_token": FB_PAGE_TOKEN}, timeout=60)
+    if r.status_code != 200:
+        signaler_echec("Instagram story", f"container — HTTP {r.status_code} — {r.text[:200]}")
+        return
+    cid = r.json().get("id")
+    status = ""
+    for attempt in range(10):
+        time.sleep(15)
+        status = requests.get(f"https://graph.facebook.com/v25.0/{cid}",
+            params={"fields": "status_code", "access_token": FB_PAGE_TOKEN}, timeout=30).json().get("status_code", "")
+        if status in ("FINISHED", "ERROR"):
+            break
+    if status != "FINISHED":
+        signaler_echec("Instagram story", f"container non prêt (statut : {status or 'inconnu'})")
+        return
+    r2 = requests.post(f"https://graph.facebook.com/v25.0/{IG_ACCOUNT_ID}/media_publish",
+        data={"creation_id": cid, "access_token": FB_PAGE_TOKEN}, timeout=60)
+    if r2.status_code == 200:
+        print(f"✅ Instagram story publiée — {r2.json().get('id')}")
+    else:
+        signaler_echec("Instagram story", f"publication — HTTP {r2.status_code} — {r2.text[:200]}")
 
 
 # ---------------------------------------------------
