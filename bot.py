@@ -2078,10 +2078,10 @@ STORY_MAX = 60   # une Story video dure au plus 60 s : les videos plus longues n
 
 
 def post_story_to_instagram(video_path, video_url):
-    """Chaque Reel de 60 s au plus part aussi en Story (decision de BC, 21 nov. 2026),
-    avec la meme video hebergee. Le classement « A la une » reste manuel : l'API ne le permet pas.
-    IG_STORY=0 dans l'environnement coupe les Stories."""
-    if os.environ.get("IG_STORY") == "0":
+    """Le Reel part aussi en Story, avec la meme video hebergee, quand IG_STORY=1.
+    Seule la serie Astuces l'active (decision de BC, 21 nov. 2026), pour le destaque
+    « A la une » Astuces, que BC classe a la main : l'API ne le permet pas."""
+    if os.environ.get("IG_STORY") != "1":
         return
     import subprocess, time
     try:

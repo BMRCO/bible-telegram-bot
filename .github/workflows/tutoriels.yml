@@ -103,6 +103,7 @@ jobs:
           CORRIGER_COMMENTAIRE: ${{ inputs.corriger_commentaire }}
           SUPPRIMER: ${{ inputs.supprimer }}
           PRESENTATION: ${{ inputs.presentation && '1' || '' }}
+          IG_STORY: ${{ inputs.presentation && '0' || '1' }}
           GH_TOKEN: ${{ github.token }}
           ESSAI: ${{ inputs.essai && '1' || '' }}
           SANS_YOUTUBE: ${{ inputs.sans_youtube && '1' || '' }}
