@@ -1,4 +1,10 @@
-"""reel_scene.py : le reel des versets du jour, au visuel de la serie « Les derniers temps ».
+"""reel_scene.py : le reel des versets du jour.
+
+EN PRODUCTION : faire_reel_doux() (en bas du fichier), au visuel des meditations
+thematiques, choisi par BC le 21 nov. 2026. faire_reel() ci-dessous (visuel
+« derniers temps ») a ete essaye puis refuse le meme jour ; il reste pour memoire.
+
+Visuel « derniers temps » :
 
 Demande de BC (21 novembre 2026) : « Melhora o visual dos reels como os ultimos
 temas ». Meme langage que derniers_temps.py : un ciel qui change lentement
@@ -251,3 +257,112 @@ def apercu(texte, ref, cat_name, chemin, t=6.0, wrap=None):
     _composer(cadre, _np(calque_tete(th)), 1)
     _composer(cadre, _np(calque_verset(texte.rstrip("."), ref, wrap)), 1)
     Image.fromarray(np.clip(cadre, 0, 255).astype(np.uint8)).save(chemin, quality=90)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# Version « douce », au visuel des meditations thematiques (choix de BC, 21 nov. 2026 :
+# « era como os tematicos com a referencia do versiculo ao meio ») : fond en degrade
+# doux de la couleur du theme, bordure fine, verset qui apparait en douceur au
+# centre, ornement, reference centree et « LSG 1910 », LaBible.app en bas de la
+# carte, particules qui scintillent (plus nombreuses le soir).
+PALETTE_DOUCE = {"protection": "protection", "jesus": "jesus", "psaume": "psaumes",
+                 "promise": "promesses", "proverbe": "sagesse", "prophetie": "propheties"}
+
+
+def faire_reel_doux(texte, ref, cat_name, sortie, musique=None, ligne_fin="Lisez le chapitre entier sur",
+                    soir=None):
+    import thematic_meditation as tm
+    from bot import FONT_SERIF, FONT_SERIF_BOLD, FONT_SANS
+    pal = tm.THEMES[PALETTE_DOUCE.get(cat_name, "paix")]["palette"]
+    TOP, BOT, ACC, ACC2, BLANC, SIL = pal
+    if soir is None:
+        soir = cat_name == "psaume"
+    seed = int(hashlib.md5(ref.encode("utf-8")).hexdigest(), 16) % (2 ** 31)
+    rng = np.random.default_rng(seed)
+    BORD = 80
+
+    fond = tm.gradient_bg(W, H, TOP, BOT)
+    d = ImageDraw.Draw(fond)
+    d.rounded_rectangle([BORD, BORD, W - BORD, H - BORD], radius=26,
+                        outline=tuple(int(c * 0.7) for c in ACC), width=2)
+    fond = np.asarray(fond, dtype=np.float32)
+
+    # verset et pied de carte (un calque, il apparait en douceur)
+    vers = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(vers)
+    fv, lignes, lh = tm.autosize_font(d, f"« {texte.rstrip('.')} »", W - 2 * (BORD + 120),
+                                      int((H - 2 * BORD) * 0.55))
+    y = BORD + (H - 2 * BORD) // 2 - lh * len(lignes) // 2 - 40
+    for l in lignes:
+        x = (W - d.textlength(l, font=fv)) // 2
+        d.text((x + 2, y + 2), l, font=fv, fill=tuple(int(c * 0.5) for c in TOP) + (255,))
+        d.text((x, y), l, font=fv, fill=BLANC + (255,))
+        y += lh
+    cx, oy = W // 2, H - BORD - 290
+    for i in range(150):
+        k = 0.95 * (1 - i / 150) ** 1.2
+        d.line([cx - 40 - i, oy - 1, cx - 40 - i, oy + 1], fill=ACC + (int(255 * k),))
+        d.line([cx + 40 + i, oy - 1, cx + 40 + i, oy + 1], fill=ACC + (int(255 * k),))
+    for dx, r in ((-22, 3), (0, 5), (22, 3)):
+        d.ellipse([cx + dx - r, oy - r, cx + dx + r, oy + r], fill=ACC + (255,))
+    for taille in range(44, 26, -2):
+        fr = ImageFont.truetype(FONT_SERIF_BOLD, taille)
+        if d.textlength(ref, font=fr) <= W - 2 * (BORD + 120):
+            break
+    d.text((cx, H - BORD - 232), ref, font=fr, fill=ACC + (255,), anchor="ms")
+    d.text((cx, H - BORD - 190), "LSG 1910", font=ImageFont.truetype(FONT_SERIF, 28), fill=SIL + (255,), anchor="ms")
+    d.text((cx, H - BORD - 56), "LaBible.app", font=ImageFont.truetype(FONT_SANS, 28), fill=ACC + (255,), anchor="ms")
+    vers = _np(vers)
+
+    fin = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(fin)
+    f1, f2, f3 = (ImageFont.truetype(FONT_SERIF, 42), ImageFont.truetype(FONT_SERIF_BOLD, 104),
+                  ImageFont.truetype(FONT_SERIF, 36))
+    d.text((cx, H // 2 - 100), ligne_fin, font=f1, fill=SIL + (255,), anchor="ms")
+    d.text((cx + 3, H // 2 + 33), "LaBible.app", font=f2, fill=(0, 0, 0, 200), anchor="ms")
+    d.text((cx, H // 2 + 30), "LaBible.app", font=f2, fill=ACC2 + (255,), anchor="ms")
+    d.line([cx - 90, H // 2 + 70, cx + 90, H // 2 + 70], fill=ACC + (200,), width=2)
+    d.text((cx, H // 2 + 130), "Gratuit · Sans publicité · LSG 1910", font=f3, fill=SIL + (255,), anchor="ms")
+    fin = _np(fin)
+
+    # particules : poussiere lumineuse qui monte lentement et scintille
+    n = 90 if soir else 28
+    px = rng.uniform(BORD + 10, W - BORD - 10, n)
+    py = rng.uniform(BORD + 10, H - BORD - 10, n)
+    vit = rng.uniform(4, 14, n)                     # px par seconde, vers le haut
+    ph = rng.uniform(0, 2 * math.pi, n)
+    fr_ = rng.uniform(0.5, 1.4, n)
+    tai = rng.choice([1, 1, 1, 2], n)
+    coul = np.array([255, 248, 230], np.float32) * 0.6 + np.array(ACC2, np.float32) * 0.4
+
+    def ease(x):
+        x = max(0.0, min(1.0, x))
+        return x * x * (3 - 2 * x)
+
+    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
+           "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-"]
+    if musique:
+        cmd += ["-ss", "2", "-i", musique, "-filter_complex",
+                f"[1:a]volume=0.6,afade=t=in:d=1,afade=t=out:st={DUREE - 2}:d=2[a]",
+                "-map", "0:v", "-map", "[a]", "-c:a", "aac", "-b:a", "160k"]
+    cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
+            "-t", str(DUREE), "-movflags", "+faststart", sortie]
+    p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    for i in range(int(DUREE * FPS)):
+        t = i / FPS
+        cadre = fond.copy()
+        yy = (py - vit * t - BORD) % (H - 2 * BORD - 20) + BORD + 10
+        ecl = 0.35 + 0.65 * (0.5 + 0.5 * np.sin(ph + t * fr_ * 2.4))
+        for k in range(n):
+            x0, y0, s = int(px[k]), int(yy[k]), int(tai[k])
+            zone = cadre[y0:y0 + s + 1, x0:x0 + s + 1]
+            zone += (coul - zone) * (ecl[k] * 0.85)
+        _composer(cadre, vers, ease((t - 0.3) / 1.2) if t < 9.7 else ease((10.2 - t) / 0.5))
+        _composer(cadre, fin, ease((t - 10.7) / 0.5))
+        if t > DUREE - 0.45:
+            cadre *= max(0.0, (DUREE - t) / 0.45)
+        p.stdin.write(np.clip(cadre, 0, 255).astype(np.uint8).tobytes())
+    p.stdin.close()
+    if p.wait() != 0:
+        raise RuntimeError("ffmpeg a échoué")
+    return sortie

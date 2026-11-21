@@ -2530,27 +2530,28 @@ def pick_music(progress):
     return choice
 
 
-REEL_SCENE = False
+REEL_DOUX = True
 
 
 def make_reel_video(text, ref, progress=None, cat_name=None):
-    # 21 nov. 2026 : visuel « derniers temps » essaye (reel_scene.py), puis refuse
-    # par BC le jour meme (« os outros estavam melhor » : texte qui apparait en
-    # douceur, bordure fine, particules le soir, couleurs plus douces).
-    # REEL_SCENE reste a False : l'ancien reel est le bon.
-    if not REEL_SCENE:
-        return _ancien_reel(text, ref, progress, cat_name)
-    try:
-        import reel_scene
-        musique = pick_music(progress)
-        if musique:
-            print(f"🎵 {musique}")
-        sortie = reel_scene.faire_reel(text, ref, cat_name, "reel.mp4", musique=musique,
-                                       ligne_fin=_rotate(LIGNES_FIN, ref), wrap=wrap_text_with_quotes)
-        print(f"✅ Reel : {sortie}")
-        return sortie
-    except Exception as e:
-        print(f"::warning::Reel nouveau visuel en panne ({type(e).__name__} : {e}) : ancien reel")
+    # 21 nov. 2026 (BC : « era como os tematicos com a referencia do versiculo ao
+    # meio », puis « Agora sim ») : le reel suit le visuel des meditations
+    # thematiques (reel_scene.faire_reel_doux) : degrade doux de la couleur du
+    # theme, bordure fine, verset qui apparait en douceur, reference centree,
+    # particules (plus nombreuses le soir). Le visuel « derniers temps »
+    # (reel_scene.faire_reel) a ete refuse. En cas de panne : l'ancien reel.
+    if REEL_DOUX:
+        try:
+            import reel_scene
+            musique = pick_music(progress)
+            if musique:
+                print(f"🎵 {musique}")
+            sortie = reel_scene.faire_reel_doux(text, ref, cat_name, "reel.mp4", musique=musique,
+                                                ligne_fin=_rotate(LIGNES_FIN, ref))
+            print(f"✅ Reel : {sortie}")
+            return sortie
+        except Exception as e:
+            print(f"::warning::Reel au visuel thematique en panne ({type(e).__name__} : {e}) : ancien reel")
     return _ancien_reel(text, ref, progress, cat_name)
 
 
