@@ -38,6 +38,7 @@ on:
 
 permissions:
   contents: write
+  actions: write   # lance la Semaine Sainte (holy_week.yml) les huit jours venus
 
 # Grupo proprio e unico por run - nunca cancela nem e cancelado por outra run.
 concurrency:
@@ -167,3 +168,28 @@ jobs:
           # Psaume serait republie demain. Sortie en erreur -> e-mail GitHub.
           echo "::error::Progression NON enregistree apres 3 tentatives."
           exit 1
+
+      # Semaine Sainte (21 nov. 2026) : ses 8 crons GitHub arrivaient 4 a 8 h en
+      # retard. Elle part d'ici, juste apres le Psaume narre (05h30 UTC, Worker
+      # labible-horloge), du dimanche des Rameaux au dimanche de Paques, Paques
+      # etant calculee pour l'annee en cours (meme calcul que holy_week.py).
+      - name: Lancer la Semaine Sainte
+        if: ${{ !cancelled() && inputs.psaume == '' && !inputs.essai }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if python3 -c "
+          import datetime
+          t = datetime.datetime.utcnow().date(); y = t.year
+          a, b, c = y % 19, y // 100, y % 100
+          h = (19*a + b - b//4 - (b - (b+8)//25 + 1)//3 + 15) % 30
+          l = (32 + 2*(b % 4) + 2*(c//4) - h - c % 4) % 7
+          m = (a + 11*h + 22*l) // 451
+          p = datetime.date(y, (h+l-7*m+114)//31, (h+l-7*m+114) % 31 + 1)
+          raise SystemExit(0 if 0 <= (p - t).days <= 7 else 1)
+          "; then
+            gh workflow run holy_week.yml -R "${{ github.repository }}" && echo "Semaine Sainte lancee"
+          else
+            echo "Hors Semaine Sainte"
+          fi

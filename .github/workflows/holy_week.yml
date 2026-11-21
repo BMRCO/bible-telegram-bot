@@ -1,19 +1,15 @@
 name: Semaine Sainte
 on:
+  # Plus de « schedule » depuis le 21 nov. 2026 : les 8 crons (dates de 2026
+  # ecrites a la main) arrivaient 4 a 8 h en retard et ne servaient plus en 2027.
+  # Lance chaque jour de la Semaine Sainte par meditation.yml (05h30 UTC, Worker
+  # labible-horloge). holy_week.py calcule Paques et ne publie rien hors de ces 8 jours.
   workflow_dispatch:
-  schedule:
-    - cron: "0 5 29 3 *"   # 29 Mar — Dimanche des Rameaux
-    - cron: "0 5 30 3 *"   # 30 Mar — Lundi Saint
-    - cron: "0 5 31 3 *"   # 31 Mar — Mardi Saint
-    - cron: "0 5  1 4 *"   # 01 Avr — Mercredi Saint
-    - cron: "0 5  2 4 *"   # 02 Avr — Jeudi Saint
-    - cron: "0 5  3 4 *"   # 03 Avr — Vendredi Saint
-    - cron: "0 5  4 4 *"   # 04 Avr — Samedi Saint
-    - cron: "0 5  5 4 *"   # 05 Avr — Dimanche de Pâques
 permissions:
   contents: read
 jobs:
   run:
+    if: github.event_name != 'schedule'
     # Epingle le 9 octobre 2026. ubuntu-latest passe a Ubuntu 26 entre le
     # 19 octobre et le 19 novembre 2026, progressivement : la bascule peut
     # arriver SANS AUCUN COMMIT et casser ffmpeg, Pillow ou les polices.

@@ -107,81 +107,62 @@ WATERMARK       = "LaBible.app"
 MINI_APP_URL    = "https://t.me/BIBLE_APP_BOT/labible"
 APP_URL         = "https://labible.app"
 
-# ── Programme Semaine Sainte 2026 ──
-HOLY_WEEK = {
-    "2026-03-29": {
-        "theme":   "Dimanche des Rameaux",
-        "emoji":   "🌿",
-        "tag":     "#DimancheDesRameaux",
-        "verse":   "Et ceux qui précédaient et ceux qui suivaient criaient : Hosanna ! Béni soit celui qui vient au nom du Seigneur !",
-        "ref":     "Marc 11:9",
-        "palette": "bordeaux",
-        "deco":    "branches",
-    },
-    "2026-03-30": {
-        "theme":   "Lundi Saint — Le Temple purifié",
-        "emoji":   "🕊️",
-        "tag":     "#SemaineSainte",
-        "verse":   "Il leur dit : Il est écrit : Ma maison sera appelée une maison de prière. Mais vous, vous en faites une caverne de voleurs.",
-        "ref":     "Matthieu 21:13",
-        "palette": "bordeaux",
-        "deco":    "temple",
-    },
-    "2026-03-31": {
-        "theme":   "Mardi Saint — Les derniers enseignements",
-        "emoji":   "✝️",
-        "tag":     "#SemaineSainte",
-        "verse":   "Jésus lui dit : Je suis le chemin, la vérité, et la vie. Nul ne vient au Père que par moi.",
-        "ref":     "Jean 14:6",
-        "palette": "bordeaux",
-        "deco":    "path",
-    },
-    "2026-04-01": {
-        "theme":   "Mercredi Saint — Le Lavement des Pieds",
-        "emoji":   "🙏",
-        "tag":     "#SemaineSainte",
-        "verse":   "Si donc je vous ai lavé les pieds, moi, le Seigneur et le Maître, vous devez aussi vous laver les pieds les uns aux autres.",
-        "ref":     "Jean 13:14",
-        "palette": "sombre",
-        "deco":    "washing",
-    },
-    "2026-04-02": {
-        "theme":   "Jeudi Saint — La Cène",
-        "emoji":   "🍞",
-        "tag":     "#JeudiSaint",
-        "verse":   "Il prit du pain ; et, après avoir rendu grâces, il le rompit, et le leur donna, en disant : Ceci est mon corps, qui est donné pour vous.",
-        "ref":     "Luc 22:19",
-        "palette": "or",
-        "deco":    "bread_cup",
-    },
-    "2026-04-03": {
-        "theme":   "Vendredi Saint — La Crucifixion",
-        "emoji":   "⛪",
-        "tag":     "#VendrediSaint",
-        "verse":   "Car Dieu a tant aimé le monde qu'il a donné son Fils unique, afin que quiconque croit en lui ne périsse point, mais qu'il ait la vie éternelle.",
-        "ref":     "Jean 3:16",
-        "palette": "sombre",
-        "deco":    "calvary",
-    },
-    "2026-04-04": {
-        "theme":   "Samedi Saint",
-        "emoji":   "🙏",
-        "tag":     "#SamediSaint",
-        "verse":   "Tu ne laisseras pas mon âme au séjour des morts, tu ne permettras pas que ton bien-aimé voie la corruption.",
-        "ref":     "Psaume 16:10",
-        "palette": "violet",
-        "deco":    "tomb_closed",
-    },
-    "2026-04-05": {
-        "theme":   "Pâques — Il est Ressuscité !",
-        "emoji":   "🌅",
-        "tag":     "#Paques #Resurrection",
-        "verse":   "Il n'est point ici, mais il est ressuscité. Souvenez-vous de quelle manière il vous a parlé, lorsqu'il était encore en Galilée.",
-        "ref":     "Luc 24:6",
-        "palette": "lumiere",
-        "deco":    "tomb_rays",
-    },
-}
+# ── Programme de la Semaine Sainte ──
+# 21 nov. 2026 : les dates ne sont plus ecrites a la main (celles de 2026 ne
+# servaient plus en 2027). Chaque jour est place par rapport a Paques, calculee
+# pour l'annee en cours ; le texte du verset est lu dans la Bible LSG 1910
+# (bible/lsg1910.json), jamais recopie a la main : quatre des huit versets
+# recopies en 2026 s'ecartaient du texte (Marc 11:9, Matthieu 21:13, Luc 22:19,
+# Psaume 16:10).
+JOURS = [
+    # (ecart avec Paques en jours, donnees du jour, (livre, chapitre, verset))
+    (-7, {"theme": "Dimanche des Rameaux", "emoji": "🌿", "tag": "#DimancheDesRameaux",
+          "ref": "Marc 11:9", "palette": "bordeaux", "deco": "branches"}, ("Marc", 11, 9)),
+    (-6, {"theme": "Lundi Saint — Le Temple purifié", "emoji": "🕊️", "tag": "#SemaineSainte",
+          "ref": "Matthieu 21:13", "palette": "bordeaux", "deco": "temple"}, ("Matthieu", 21, 13)),
+    (-5, {"theme": "Mardi Saint — Les derniers enseignements", "emoji": "✝️", "tag": "#SemaineSainte",
+          "ref": "Jean 14:6", "palette": "bordeaux", "deco": "path"}, ("Jean", 14, 6)),
+    (-4, {"theme": "Mercredi Saint — Le Lavement des Pieds", "emoji": "🙏", "tag": "#SemaineSainte",
+          "ref": "Jean 13:14", "palette": "sombre", "deco": "washing"}, ("Jean", 13, 14)),
+    (-3, {"theme": "Jeudi Saint — La Cène", "emoji": "🍞", "tag": "#JeudiSaint",
+          "ref": "Luc 22:19", "palette": "or", "deco": "bread_cup"}, ("Luc", 22, 19)),
+    (-2, {"theme": "Vendredi Saint — La Crucifixion", "emoji": "⛪", "tag": "#VendrediSaint",
+          "ref": "Jean 3:16", "palette": "sombre", "deco": "calvary"}, ("Jean", 3, 16)),
+    (-1, {"theme": "Samedi Saint", "emoji": "🙏", "tag": "#SamediSaint",
+          "ref": "Psaume 16:10", "palette": "violet", "deco": "tomb_closed"}, ("Psaumes", 16, 10)),
+    (0, {"theme": "Pâques — Il est Ressuscité !", "emoji": "🌅", "tag": "#Paques #Resurrection",
+         "ref": "Luc 24:6", "palette": "lumiere", "deco": "tomb_rays"}, ("Luc", 24, 6)),
+]
+
+
+def paques(annee):
+    """Dimanche de Paques (calendrier gregorien, algorithme de Meeus/Butcher)."""
+    a, b, c = annee % 19, annee // 100, annee % 100
+    d, e = b // 4, b % 4
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = c // 4, c % 4
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    mois = (h + l - 7 * m + 114) // 31
+    jour = (h + l - 7 * m + 114) % 31 + 1
+    return datetime.date(annee, mois, jour)
+
+
+def jour_saint(date):
+    """Les donnees du jour si `date` tombe dans la Semaine Sainte, sinon None."""
+    for ecart, donnees, cle in JOURS:
+        if paques(date.year) + datetime.timedelta(days=ecart) == date:
+            return donnees, cle
+    return None
+
+
+def texte_lsg(livre, ch, v):
+    """Le verset tel que le publient les autres series (bot.clean_text), point final retire."""
+    from bot import load_verse, clean_text, strip_rubric
+    return clean_text(strip_rubric(load_verse(livre, ch, v))).rstrip(".")
+
 
 PALETTES_HW = {
     "bordeaux": {"bg": (28,4,8),    "bg2": (16,2,5),   "border": (180,130,60), "text": (240,225,195), "accent": (200,150,70)},
@@ -902,12 +883,13 @@ def post_youtube(path, day_data):
 
 # ── MAIN ──
 def main():
-    today = datetime.datetime.utcnow().strftime("%Y-%m-%d")
-    day   = HOLY_WEEK.get(today)
-
-    if not day:
-        print(f"📅 {today} — pas de publication Semaine Sainte.")
+    today = datetime.datetime.utcnow().date()
+    trouve = jour_saint(today)
+    if not trouve:
+        print(f"📅 {today} — pas de publication Semaine Sainte (Pâques {paques(today.year)}).")
         return
+    day, cle = trouve
+    day = dict(day, verse=texte_lsg(*cle))
 
     print(f"\n✝️  Semaine Sainte — {day['theme']}\n")
 
