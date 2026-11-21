@@ -179,6 +179,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Worker v2 actif (temoin horloge_v2.yml dans les 26 h) : c'est l'horloge qui lance.
+          v2=$(gh api "repos/${{ github.repository }}/actions/workflows/horloge_v2.yml/runs?per_page=1" --jq '.workflow_runs[0].created_at // ""' 2>/dev/null || true)
+          if [ -n "$v2" ] && [ $(( $(date -u +%s) - $(date -u -d "$v2" +%s) )) -lt 93600 ]; then
+            echo "Horloge v2 active : lancement par le Worker labible-horloge"; exit 0
+          fi
           if python3 -c "
           import datetime
           t = datetime.datetime.utcnow().date(); y = t.year

@@ -3,9 +3,8 @@ name: Lectures longues (compilations audio)
 # Decision de BC (21 novembre 2026) : des videos longues a ecouter (Psaumes pour
 # la nuit, Evangile de Jean, versets par theme...), YouTube seulement. Voir
 # compilation_audio.py et compilations_audio.json. Le mercredi et le dimanche
-# soir (BC : « Psaumes de la nuit é melhor sair à noite ») : lance par publish.yml
-# apres le verset du soir (19h UTC), pas par un « schedule » GitHub, qui arrive
-# 4 a 8 h en retard.
+# soir (BC : « Psaumes de la nuit é melhor sair à noite ») : 19h30 UTC par le Worker
+# labible-horloge (horloge/plan.json). Avant le Worker v2 : lance par publish.yml.
 on:
   workflow_dispatch:
     inputs:

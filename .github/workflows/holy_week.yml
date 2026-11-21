@@ -2,8 +2,9 @@ name: Semaine Sainte
 on:
   # Plus de « schedule » depuis le 21 nov. 2026 : les 8 crons (dates de 2026
   # ecrites a la main) arrivaient 4 a 8 h en retard et ne servaient plus en 2027.
-  # Lance chaque jour de la Semaine Sainte par meditation.yml (05h30 UTC, Worker
-  # labible-horloge). holy_week.py calcule Paques et ne publie rien hors de ces 8 jours.
+  # Lance a 05h45 UTC par le Worker labible-horloge (horloge/plan.json), les 8 jours
+  # de la Semaine Sainte (le Worker calcule Paques ; avant le Worker v2, par meditation.yml).
+  # holy_week.py calcule aussi Paques et ne publie rien hors de ces 8 jours.
   workflow_dispatch:
 permissions:
   contents: read

@@ -902,7 +902,7 @@ def main():
     caption_social = (f"{day['emoji']} {day['theme']}\n\n"
                       f"« {day['verse']} »\n\n— {day['ref']} (LSG 1910)\n\n"
                       f"📖 Bible complète gratuite sur {APP_URL}\n\n"
-                      f"👇 Partage ce verset avec quelqu'un qui en a besoin 🙏\n\n"
+                      f"👇 Partagez ce verset avec quelqu'un qui en a besoin 🙏\n\n"
                       f"{hashtags}")
 
     # ── IMAGE ──

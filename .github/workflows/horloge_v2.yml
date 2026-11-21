@@ -1,0 +1,17 @@
+name: Horloge v2 (temoin)
+
+# Lance par le Worker labible-horloge v2 (horloge/plan.json) quatre fois par jour,
+# juste avant les publications qui etaient lancees en chaine par d'autres workflows.
+# Tant qu'il a tourne dans les 26 dernieres heures, ces lancements en chaine se
+# coupent : tout passe par l'horloge de Cloudflare (regle de BC, 21 nov. 2026).
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  temoin:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - run: echo "Worker labible-horloge v2 actif"
