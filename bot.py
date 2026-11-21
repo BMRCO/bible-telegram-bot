@@ -2531,6 +2531,24 @@ def pick_music(progress):
 
 
 def make_reel_video(text, ref, progress=None, cat_name=None):
+    # 21 nov. 2026 (BC : « Melhora o visual dos reels como os ultimos temas ») :
+    # le reel suit le visuel de la serie « Les derniers temps » (reel_scene.py).
+    # En cas de panne de ce rendu, l'ancien reel ci-dessous prend le relais.
+    try:
+        import reel_scene
+        musique = pick_music(progress)
+        if musique:
+            print(f"🎵 {musique}")
+        sortie = reel_scene.faire_reel(text, ref, cat_name, "reel.mp4", musique=musique,
+                                       ligne_fin=_rotate(LIGNES_FIN, ref), wrap=wrap_text_with_quotes)
+        print(f"✅ Reel : {sortie}")
+        return sortie
+    except Exception as e:
+        print(f"::warning::Reel nouveau visuel en panne ({type(e).__name__} : {e}) : ancien reel")
+    return _ancien_reel(text, ref, progress, cat_name)
+
+
+def _ancien_reel(text, ref, progress=None, cat_name=None):
     W, H = 1080, 1920
     FPS, TOTAL = 30, 30 * 15
     # md5 et non hash() : le hash des chaines est sale a chaque processus, donc
