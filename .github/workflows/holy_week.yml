@@ -24,7 +24,18 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install ffmpeg
-        uses: FedericoCarboni/setup-ffmpeg@v3
+        # 21 nov. 2026 : l'action FedericoCarboni/setup-ffmpeg@v3 echoue (« Failed to read
+        # version from readme ») : meme installation que les autres workflows.
+        timeout-minutes: 12
+        run: |
+          APT="sudo timeout 150 apt-get -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::Retries=1"
+          if command -v ffmpeg >/dev/null || { $APT update -qq && $APT install -y -qq ffmpeg; }; then
+            ffmpeg -version | head -1; exit 0
+          fi
+          echo "::warning::apt-get indisponible : ffmpeg statique (imageio-ffmpeg) utilise a la place"
+          python3 -m pip install -q imageio-ffmpeg
+          sudo ln -sf "$(python3 -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')" /usr/local/bin/ffmpeg
+          ffmpeg -version | head -1
       - name: Install dependencies
         run: |
           pip install requests pillow numpy google-api-python-client google-auth-httplib2 google-auth-oauthlib
