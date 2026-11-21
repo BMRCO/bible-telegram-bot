@@ -2530,10 +2530,16 @@ def pick_music(progress):
     return choice
 
 
+REEL_SCENE = False
+
+
 def make_reel_video(text, ref, progress=None, cat_name=None):
-    # 21 nov. 2026 (BC : « Melhora o visual dos reels como os ultimos temas ») :
-    # le reel suit le visuel de la serie « Les derniers temps » (reel_scene.py).
-    # En cas de panne de ce rendu, l'ancien reel ci-dessous prend le relais.
+    # 21 nov. 2026 : visuel « derniers temps » essaye (reel_scene.py), puis refuse
+    # par BC le jour meme (« os outros estavam melhor » : texte qui apparait en
+    # douceur, bordure fine, particules le soir, couleurs plus douces).
+    # REEL_SCENE reste a False : l'ancien reel est le bon.
+    if not REEL_SCENE:
+        return _ancien_reel(text, ref, progress, cat_name)
     try:
         import reel_scene
         musique = pick_music(progress)
