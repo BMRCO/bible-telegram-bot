@@ -295,7 +295,7 @@
     "p": "Quel est le début de ce verset ?",
     "q": "… Et il s'est incliné vers moi, il a écouté mes cris. »",
     "o": [
-     "Psaume. J'avais mis en l'Eternel mon espérance;",
+     "J'avais mis en l'Eternel mon espérance;",
      "Le jour, l'Eternel m'accordait sa grâce; La nuit,",
      "Je me couche, et je m'endors; Je me réveille,"
     ],
@@ -389,7 +389,7 @@
    {
     "t": "suite",
     "p": "Quelle est la suite de ce verset ?",
-    "q": "« Psaume. J'avais mis en l'Eternel mon espérance; …",
+    "q": "« J'avais mis en l'Eternel mon espérance; …",
     "o": [
      "Et que les montagnes chancellent au coeur des mers,",
      "Et il s'est incliné vers moi, il a écouté mes cris.",
@@ -401,11 +401,11 @@
    {
     "t": "debut",
     "p": "Quel est le début de ce verset ?",
-    "q": "… notre Seigneur! Que ton nom est magnifique sur toute la terre! Ta majesté s'élève au-dessus des cieux. »",
+    "q": "… Que ton nom est magnifique sur toute la terre! Ta majesté s'élève au-dessus des cieux. »",
     "o": [
      "A l'Eternel la terre et ce qu'elle renferme,",
      "J'ai cherché l'Eternel, et il m'a répondu;",
-     "Sur la guitthith. Psaume de David. Eternel,"
+     "Eternel, notre Seigneur!"
     ],
     "a": 2,
     "r": "Psaumes 8:1"
@@ -585,7 +585,7 @@
     "o": [
      "Chantez à l'Eternel un cantique nouveau! Chantez à l'Eternel,",
      "L'Eternel agira en ma faveur. Eternel, ta bonté dure toujours,",
-     "Sur alamoth. Cantique. Dieu est pour nous un refuge et un appui,"
+     "Dieu est pour nous un refuge et un appui,"
     ],
     "a": 1,
     "r": "Psaumes 138:8"
@@ -701,7 +701,7 @@
    {
     "t": "psaume",
     "p": "De quel Psaume ce verset est-il tiré ?",
-    "q": "« Lorsqu'il était dans le désert de Juda. O Dieu! tu es mon Dieu, je te cherche; Mon âme a soif de toi, mon corps soupire après toi, Dans une terre aride, desséchée, sans eau. »",
+    "q": "« O Dieu! tu es mon Dieu, je te cherche; Mon âme a soif de toi, mon corps soupire après toi, Dans une terre aride, desséchée, sans eau. »",
     "o": [
      "Psaume 30",
      "Psaume 37",
@@ -873,7 +873,7 @@
     "o": [
      "C'est lui qui rassasie de biens ta vieillesse,",
      "L'Eternel est près de tous ceux qui l'invoquent,",
-     "Psaume. J'avais mis en l'Eternel mon espérance;"
+     "J'avais mis en l'Eternel mon espérance;"
     ],
     "a": 1,
     "r": "Psaumes 145:18"
@@ -905,9 +905,9 @@
    {
     "t": "debut",
     "p": "Quel est le début de ce verset ?",
-    "q": "… c'est en Dieu que mon âme se confie; De lui vient mon salut. »",
+    "q": "… De lui vient mon salut. »",
     "o": [
-     "D'après Jeduthun. Psaume de David. Oui,",
+     "Oui, c'est en Dieu que mon âme se confie;",
      "J'ai constamment l'Eternel sous mes yeux;",
      "Chantez à l'Eternel, qui réside en Sion,"
     ],
@@ -965,9 +965,9 @@
    {
     "t": "suite",
     "p": "Quelle est la suite de ce verset ?",
-    "q": "« Sur la guitthith. Psaume de David. Eternel, …",
+    "q": "« Eternel, notre Seigneur! …",
     "o": [
-     "notre Seigneur! Que ton nom est magnifique sur toute la terre! Ta majesté s'élève au-dessus des cieux.",
+     "Que ton nom est magnifique sur toute la terre! Ta majesté s'élève au-dessus des cieux.",
      "Qui ne s'arrête pas sur la voie des pécheurs, Et qui ne s'assied pas en compagnie des moqueurs,",
      "Beaucoup l'ont vu, et ont eu de la crainte, Et ils se sont confiés en l'Eternel."
     ],
@@ -1088,7 +1088,7 @@
     "q": "… Et il sauve ceux qui ont l'esprit dans l'abattement. »",
     "o": [
      "Je me couche et je m'endors en paix, Car toi seul,",
-     "Psaume. J'avais mis en l'Eternel mon espérance;",
+     "J'avais mis en l'Eternel mon espérance;",
      "L'Eternel est près de ceux qui ont le coeur brisé,"
     ],
     "a": 2,
@@ -1241,7 +1241,7 @@
    {
     "t": "psaume",
     "p": "De quel Psaume ce verset est-il tiré ?",
-    "q": "« D'après Jeduthun. Psaume de David. Oui, c'est en Dieu que mon âme se confie; De lui vient mon salut. »",
+    "q": "« Oui, c'est en Dieu que mon âme se confie; De lui vient mon salut. »",
     "o": [
      "Psaume 62",
      "Psaume 96",
@@ -1269,7 +1269,7 @@
     "o": [
      "Je lève mes yeux vers les montagnes... D'où me viendra le secours? Le secours me vient de l'Eternel,",
      "Voici, l'oeil de l'Eternel est sur ceux qui le craignent, Sur ceux qui espèrent en sa bonté,",
-     "De Salomon. Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain;"
+     "Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain;"
     ],
     "a": 0,
     "r": "Psaumes 121:1-2"
@@ -1449,7 +1449,7 @@
     "o": [
      "Il a mis dans ma bouche un cantique nouveau, Une louange à notre Dieu;",
      "Pourquoi t'abats-tu, mon âme, et gémis-tu au dedans de moi? Espère en Dieu,",
-     "Sur alamoth. Cantique. Dieu est pour nous un refuge et un appui,"
+     "Dieu est pour nous un refuge et un appui,"
     ],
     "a": 1,
     "r": "Psaumes 42:5"
@@ -1483,7 +1483,7 @@
     "p": "Quel est le début de ce verset ?",
     "q": "… Ma haute retraite: je ne chancellerai guère. »",
     "o": [
-     "Psaume. J'avais mis en l'Eternel mon espérance;",
+     "J'avais mis en l'Eternel mon espérance;",
      "Oui, c'est lui qui est mon rocher et mon salut;",
      "Remets ton sort à l'Eternel, et il te soutiendra,"
     ],
@@ -1665,7 +1665,7 @@
     "o": [
      "Que la grâce de l'Eternel, notre Dieu,",
      "Je remets mon esprit entre tes mains;",
-     "D'après Jeduthun. Psaume de David. Oui,"
+     "Oui, c'est en Dieu que mon âme se confie;"
     ],
     "a": 0,
     "r": "Psaumes 90:17"
@@ -1829,7 +1829,7 @@
    {
     "t": "suite",
     "p": "Quelle est la suite de ce verset ?",
-    "q": "« Lorsqu'il était dans le désert de Juda. O Dieu! tu es mon Dieu, je te cherche; …",
+    "q": "« O Dieu! tu es mon Dieu, je te cherche; …",
     "o": [
      "Comme un enfant sevré qui est auprès de sa mère; J'ai l'âme comme un enfant sevré.",
      "Mon âme a soif de toi, mon corps soupire après toi, Dans une terre aride, desséchée, sans eau.",
@@ -1937,7 +1937,7 @@
    {
     "t": "suite",
     "p": "Quelle est la suite de ce verset ?",
-    "q": "« Sur alamoth. Cantique. Dieu est pour nous un refuge et un appui, …",
+    "q": "« Dieu est pour nous un refuge et un appui, …",
     "o": [
      "Un secours qui ne manque jamais dans la détresse.",
      "Et que les montagnes chancellent au coeur des mers,",
@@ -1953,7 +1953,7 @@
     "o": [
      "Il y a beaucoup de paix pour ceux qui aiment ta loi,",
      "Je me couche et je m'endors en paix, Car toi seul,",
-     "Psaume. J'avais mis en l'Eternel mon espérance;"
+     "J'avais mis en l'Eternel mon espérance;"
     ],
     "a": 1,
     "r": "Psaumes 4:8"
@@ -2023,7 +2023,7 @@
     "p": "Quel est le début de ce verset ?",
     "q": "… Afin d'arracher leur âme à la mort Et de les faire vivre au milieu de la famine. »",
     "o": [
-     "De Salomon. Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain;",
+     "Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain;",
      "Je te loue de ce que je suis une créature si merveilleuse. Tes oeuvres sont admirables,",
      "Voici, l'oeil de l'Eternel est sur ceux qui le craignent, Sur ceux qui espèrent en sa bonté,"
     ],
@@ -2239,7 +2239,7 @@
     "p": "Quel est le début de ce verset ?",
     "q": "… Et mon âme le reconnaît bien. »",
     "o": [
-     "Lorsqu'il était dans le désert de Juda. O Dieu! tu es mon Dieu, je te cherche;",
+     "O Dieu! tu es mon Dieu, je te cherche;",
      "C'est pourquoi nous sommes sans crainte quand la terre est bouleversée,",
      "Je te loue de ce que je suis une créature si merveilleuse. Tes oeuvres sont admirables,"
     ],
@@ -2307,13 +2307,13 @@
     "r": "Psaumes 34:17"
    },
    {
-    "t": "debut",
-    "p": "Quel est le début de ce verset ?",
-    "q": "… lorsque l'Eternel l'eut délivré de la main de tous ses ennemis et de la main de Saül. Il dit: Je t'aime, ô Eternel, ma force! »",
+    "t": "psaume",
+    "p": "De quel Psaume ce verset est-il tiré ?",
+    "q": "« Je t'aime, ô Eternel, ma force! »",
     "o": [
-     "Du serviteur de l'Eternel, de David, qui adressa à l'Eternel les paroles de ce cantique,",
-     "Quand je marche dans la vallée de l'ombre de la mort, Je ne crains aucun mal,",
-     "Lorsqu'il était dans le désert de Juda. O Dieu! tu es mon Dieu, je te cherche;"
+     "Psaume 18",
+     "Psaume 23",
+     "Psaume 63"
     ],
     "a": 0,
     "r": "Psaumes 18:1"
@@ -2421,7 +2421,7 @@
     "o": [
      "L'Eternel est ma force et le sujet de mes louanges;",
      "L'Eternel te gardera de tout mal, Il gardera ton âme;",
-     "Lorsqu'il contrefit l'insensé en présence d'Abimélec,"
+     "Je bénirai l'Eternel en tout temps;"
     ],
     "a": 1,
     "r": "Psaumes 121:7-8"
@@ -2527,7 +2527,7 @@
     "p": "Quel est le début de ce verset ?",
     "q": "… Contre l'homme qui vient à bout de ses mauvais desseins. »",
     "o": [
-     "De Salomon. Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain;",
+     "Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain;",
      "Quand je marche dans la vallée de l'ombre de la mort, Je ne crains aucun mal,",
      "Garde le silence devant l'Eternel, et espère en lui; Ne t'irrite pas contre celui qui réussit dans ses voies,"
     ],
@@ -2565,7 +2565,7 @@
     "o": [
      "C'est ici la journée que l'Eternel a faite:",
      "Ma chair et mon coeur peuvent se consumer:",
-     "Sur la guitthith. Psaume de David. Eternel,"
+     "Eternel, notre Seigneur!"
     ],
     "a": 1,
     "r": "Psaumes 73:26"
@@ -2861,7 +2861,7 @@
    {
     "t": "psaume",
     "p": "De quel Psaume ce verset est-il tiré ?",
-    "q": "« Lorsqu'il contrefit l'insensé en présence d'Abimélec, et qu'il s'en alla chassé par lui. Je bénirai l'Eternel en tout temps; Sa louange sera toujours dans ma bouche. »",
+    "q": "« Je bénirai l'Eternel en tout temps; Sa louange sera toujours dans ma bouche. »",
     "o": [
      "Psaume 34",
      "Psaume 147",
@@ -3175,7 +3175,7 @@
     "p": "Quel est le début de ce verset ?",
     "q": "… Un secours qui ne manque jamais dans la détresse. »",
     "o": [
-     "Sur alamoth. Cantique. Dieu est pour nous un refuge et un appui,",
+     "Dieu est pour nous un refuge et un appui,",
      "Heureux l'homme qui ne marche pas selon le conseil des méchants,",
      "L'Eternel agira en ma faveur. Eternel, ta bonté dure toujours,"
     ],
@@ -3247,7 +3247,7 @@
     "p": "Quel est le début de ce verset ?",
     "q": "… Mon âme a soif de toi, mon corps soupire après toi, Dans une terre aride, desséchée, sans eau. »",
     "o": [
-     "Lorsqu'il était dans le désert de Juda. O Dieu! tu es mon Dieu, je te cherche;",
+     "O Dieu! tu es mon Dieu, je te cherche;",
      "Pourquoi t'abats-tu, mon âme, et gémis-tu au dedans de moi? Espère en Dieu,",
      "Il est comme un arbre planté près d'un courant d'eau, Qui donne son fruit en sa saison,"
     ],
@@ -3281,9 +3281,9 @@
    {
     "t": "debut",
     "p": "Quel est le début de ce verset ?",
-    "q": "… et qu'il s'en alla chassé par lui. Je bénirai l'Eternel en tout temps; Sa louange sera toujours dans ma bouche. »",
+    "q": "… Sa louange sera toujours dans ma bouche. »",
     "o": [
-     "Lorsqu'il contrefit l'insensé en présence d'Abimélec,",
+     "Je bénirai l'Eternel en tout temps;",
      "Mais autant les cieux sont élevés au-dessus de la terre,",
      "L'Eternel est ma force et le sujet de mes louanges;"
     ],
@@ -3319,7 +3319,7 @@
     "p": "Quel est le début de ce verset ?",
     "q": "… Pour contempler la magnificence de l'Eternel Et pour admirer son temple. »",
     "o": [
-     "De Salomon. Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain;",
+     "Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain;",
      "Reçois favorablement les paroles de ma bouche Et les sentiments de mon coeur,",
      "Je demande à l'Eternel une chose, que je désire ardemment: Je voudrais habiter toute ma vie dans la maison de l'Eternel,"
     ],
@@ -3377,9 +3377,9 @@
    {
     "t": "suite",
     "p": "Quelle est la suite de ce verset ?",
-    "q": "« D'après Jeduthun. Psaume de David. Oui, …",
+    "q": "« Oui, c'est en Dieu que mon âme se confie; …",
     "o": [
-     "c'est en Dieu que mon âme se confie; De lui vient mon salut.",
+     "De lui vient mon salut.",
      "elle ne chancelle point, Elle est affermie pour toujours.",
      "car je le louerai encore; Il est mon salut et mon Dieu."
     ],
@@ -3393,7 +3393,7 @@
     "o": [
      "Il m'invoquera, et je lui répondrai; Je serai avec lui dans la détresse,",
      "Eternel, mon rocher, ma forteresse, mon libérateur! Mon Dieu, mon rocher,",
-     "Lorsqu'il était dans le désert de Juda. O Dieu! tu es mon Dieu, je te cherche;"
+     "O Dieu! tu es mon Dieu, je te cherche;"
     ],
     "a": 0,
     "r": "Psaumes 91:15"
@@ -3427,7 +3427,7 @@
     "p": "Quel est le début de ce verset ?",
     "q": "… Si l'Eternel ne garde la ville, Celui qui la garde veille en vain. »",
     "o": [
-     "De Salomon. Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain;",
+     "Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain;",
      "Il m'invoquera, et je lui répondrai; Je serai avec lui dans la détresse,",
      "Eternel, mon rocher, ma forteresse, mon libérateur! Mon Dieu, mon rocher,"
     ],
@@ -3593,11 +3593,11 @@
    {
     "t": "suite",
     "p": "Quelle est la suite de ce verset ?",
-    "q": "« Lorsqu'il contrefit l'insensé en présence d'Abimélec, …",
+    "q": "« Je bénirai l'Eternel en tout temps; …",
     "o": [
-     "et qu'il s'en alla chassé par lui. Je bénirai l'Eternel en tout temps; Sa louange sera toujours dans ma bouche.",
+     "Sa louange sera toujours dans ma bouche.",
      "Comme un enfant sevré qui est auprès de sa mère; J'ai l'âme comme un enfant sevré.",
-     "lorsque l'Eternel l'eut délivré de la main de tous ses ennemis et de la main de Saül. Il dit: Je t'aime, ô Eternel, ma force!"
+     "Je t'aime, ô Eternel, ma force!"
     ],
     "a": 0,
     "r": "Psaumes 34:1"
@@ -3689,7 +3689,7 @@
    {
     "t": "psaume",
     "p": "De quel Psaume ce verset est-il tiré ?",
-    "q": "« Sur la guitthith. Psaume de David. Eternel, notre Seigneur! Que ton nom est magnifique sur toute la terre! Ta majesté s'élève au-dessus des cieux. »",
+    "q": "« Eternel, notre Seigneur! Que ton nom est magnifique sur toute la terre! Ta majesté s'élève au-dessus des cieux. »",
     "o": [
      "Psaume 94",
      "Psaume 24",
@@ -3716,7 +3716,7 @@
     "q": "… Il enseigne aux humbles sa voie. »",
     "o": [
      "Il conduit les humbles dans la justice,",
-     "D'après Jeduthun. Psaume de David. Oui,",
+     "Oui, c'est en Dieu que mon âme se confie;",
      "Chantez à l'Eternel, qui réside en Sion,"
     ],
     "a": 0,
@@ -3809,7 +3809,7 @@
    {
     "t": "suite",
     "p": "Quelle est la suite de ce verset ?",
-    "q": "« De Salomon. Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain; …",
+    "q": "« Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain; …",
     "o": [
      "je chantais ses louanges, J'adressais une prière au Dieu de ma vie.",
      "Tu étends ta main sur la colère de mes ennemis, Et ta droite me sauve.",
@@ -3915,15 +3915,15 @@
     "r": "Psaumes 71:5"
    },
    {
-    "t": "suite",
-    "p": "Quelle est la suite de ce verset ?",
-    "q": "« Du serviteur de l'Eternel, de David, qui adressa à l'Eternel les paroles de ce cantique, …",
+    "t": "psaume",
+    "p": "De quel Psaume ce verset est-il tiré ?",
+    "q": "« Je t'aime, ô Eternel, ma force! »",
     "o": [
-     "Mon âme a soif de toi, mon corps soupire après toi, Dans une terre aride, desséchée, sans eau.",
-     "où je trouve un abri! Mon bouclier, la force qui me sauve, ma haute retraite!",
-     "lorsque l'Eternel l'eut délivré de la main de tous ses ennemis et de la main de Saül. Il dit: Je t'aime, ô Eternel, ma force!"
+     "Psaume 31",
+     "Psaume 18",
+     "Psaume 46"
     ],
-    "a": 2,
+    "a": 1,
     "r": "Psaumes 18:1"
    },
    {
@@ -4436,7 +4436,7 @@
     "q": "… Dès maintenant et à jamais. »",
     "o": [
      "L'Eternel gardera ton départ et ton arrivée,",
-     "Sur la guitthith. Psaume de David. Eternel,",
+     "Eternel, notre Seigneur!",
      "C'est lui qui pardonne toutes tes iniquités,"
     ],
     "a": 0,
@@ -4625,7 +4625,7 @@
    {
     "t": "psaume",
     "p": "De quel Psaume ce verset est-il tiré ?",
-    "q": "« De Salomon. Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain; Si l'Eternel ne garde la ville, Celui qui la garde veille en vain. »",
+    "q": "« Si l'Eternel ne bâtit la maison, Ceux qui la bâtissent travaillent en vain; Si l'Eternel ne garde la ville, Celui qui la garde veille en vain. »",
     "o": [
      "Psaume 100",
      "Psaume 61",
@@ -4709,7 +4709,7 @@
    {
     "t": "psaume",
     "p": "De quel Psaume ce verset est-il tiré ?",
-    "q": "« Sur alamoth. Cantique. Dieu est pour nous un refuge et un appui, Un secours qui ne manque jamais dans la détresse. »",
+    "q": "« Dieu est pour nous un refuge et un appui, Un secours qui ne manque jamais dans la détresse. »",
     "o": [
      "Psaume 61",
      "Psaume 46",
@@ -4745,7 +4745,7 @@
    {
     "t": "psaume",
     "p": "De quel Psaume ce verset est-il tiré ?",
-    "q": "« Psaume. J'avais mis en l'Eternel mon espérance; Et il s'est incliné vers moi, il a écouté mes cris. »",
+    "q": "« J'avais mis en l'Eternel mon espérance; Et il s'est incliné vers moi, il a écouté mes cris. »",
     "o": [
      "Psaume 91",
      "Psaume 40",
@@ -22377,7 +22377,7 @@
     "q": "… Et le butin du tyran lui échappera; Je combattrai tes ennemis, Et je sauverai tes fils. »",
     "o": [
      "Oui, dit l'Eternel, la capture du puissant lui sera enlevée,",
-     "Sur alamoth. Cantique. Dieu est pour nous un refuge et un appui,",
+     "Dieu est pour nous un refuge et un appui,",
      "Quand je marche au milieu de la détresse, tu me rends la vie,"
     ],
     "a": 0,
@@ -22594,7 +22594,7 @@
     "o": [
      "Les voies de Dieu sont parfaites, La parole de l'Eternel est éprouvée;",
      "Car il ordonnera à ses anges De te garder dans toutes tes voies;",
-     "Sur alamoth. Cantique. Dieu est pour nous un refuge et un appui,"
+     "Dieu est pour nous un refuge et un appui,"
     ],
     "a": 2,
     "r": "Psaumes 46:1"
@@ -23034,7 +23034,7 @@
    {
     "t": "livre",
     "p": "Dans quel livre trouve-t-on ce verset ?",
-    "q": "« Sur alamoth. Cantique. Dieu est pour nous un refuge et un appui, Un secours qui ne manque jamais dans la détresse. »",
+    "q": "« Dieu est pour nous un refuge et un appui, Un secours qui ne manque jamais dans la détresse. »",
     "o": [
      "Psaumes",
      "Job",
@@ -23406,7 +23406,7 @@
    {
     "t": "suite",
     "p": "Quelle est la suite de ce verset ?",
-    "q": "« Sur alamoth. Cantique. Dieu est pour nous un refuge et un appui, …",
+    "q": "« Dieu est pour nous un refuge et un appui, …",
     "o": [
      "Un secours qui ne manque jamais dans la détresse.",
      "gardera vos coeurs et vos pensées en Jésus-Christ.",
@@ -23708,7 +23708,7 @@
     "p": "Quel est le début de ce verset ?",
     "q": "… Mon bouclier, celui qui est mon refuge, Qui m'assujettit mon peuple! »",
     "o": [
-     "Sur alamoth. Cantique. Dieu est pour nous un refuge et un appui,",
+     "Dieu est pour nous un refuge et un appui,",
      "Mon bienfaiteur et ma forteresse, Ma haute retraite et mon libérateur,",
      "Il m'invoquera, et je lui répondrai; Je serai avec lui dans la détresse,"
     ],
