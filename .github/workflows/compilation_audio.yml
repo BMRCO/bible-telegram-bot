@@ -6,10 +6,9 @@ name: Lectures longues (compilations audio)
 # dimanche : l'heure exacte ne compte pas (une lecture longue n'est pas un verset
 # du jour), d'ou le « schedule » GitHub et non le Worker labible-horloge.
 on:
-  # Calendrier en attente de l'accord de BC sur les titres (21 nov. 2026) :
-  # remettre ces deux lignes une fois les titres valides.
-  # schedule:
-  #   - cron: '23 5 * * 0,3'
+  # Titres valides par BC le 21 nov. 2026.
+  schedule:
+    - cron: '23 5 * * 0,3'
   workflow_dispatch:
     inputs:
       compilation:
