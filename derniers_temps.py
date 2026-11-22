@@ -15,7 +15,9 @@ nom de la serie. Aucune actualite, aucune date, aucun commentaire.
 
 Versets : la liste du theme « derniers-temps » du site (data/versets_themes.json
 du depot labible.app, page labible.app/versets/derniers-temps), entrelacee avec
-les propheties de l'Ancien Testament de derniers_temps_at.json (21 nov. 2026).
+les propheties de l'Ancien Testament de derniers_temps_at.json (21 nov. 2026 ;
+revues le 22 nov. : seulement des versets qui se comprennent seuls, ou avec
+le verset voisin en plage « Livre C:V-W »).
 Progression : progress_derniers_temps.json ({"index": N}) ; deja_publie saute
 tout verset deja sorti. Deux par jour depuis le 21 nov. 2026 (12h00 et ~17h UTC).
 
@@ -88,17 +90,25 @@ def refs_du_theme():
 
 
 def lire_verset(ref):
-    m = re.match(r"^(.+?)\s+(\d+):(\d+)$", ref.strip())
+    """« Livre C:V » ou, depuis le 22 nov. 2026, « Livre C:V-W » : un verset qui ne se
+    comprend pas seul est publie avec le verset qui l'explique (BC : « junta o
+    contexto do versiculo antes ou depois »)."""
+    m = re.match(r"^(.+?)\s+(\d+):(\d+)(?:-(\d+))?$", ref.strip())
     if not m:
         raise ValueError(f"référence illisible : {ref}")
     livre, ch, v = m.group(1), int(m.group(2)), int(m.group(3))
-    try:
-        texte = load_verse(livre, ch, v)
-    except KeyError:
-        texte = None
-    if not texte:
-        raise ValueError(f"verset introuvable : {ref}")
-    return livre, ch, v, clean_text(strip_rubric(texte)).rstrip(".")
+    fin = int(m.group(4) or v)
+    morceaux = []
+    for n in range(v, fin + 1):
+        try:
+            t = load_verse(livre, ch, n)
+        except KeyError:
+            t = None
+        if not t:
+            raise ValueError(f"verset introuvable : {livre} {ch}:{n}")
+        morceaux.append(clean_text(strip_rubric(t)).rstrip("."))
+    return livre, ch, v, ". ".join(morceaux) if fin == v else " ".join(
+        (x + ("" if x.endswith((";", ",", ":", "!", "?")) else ".")) for x in morceaux[:-1]) + " " + morceaux[-1]
 
 
 def chapter_url(livre, ch):
