@@ -29,7 +29,7 @@ def serie(titre):
         return "Versets bibliques (thèmes)"
     if "Lecture Complète" in t and t.startswith("Psaume"):
         return "Psaumes lecture (série muette)"
-    m = re.search(r"—\s*(.+?)\s*\|\s*Bible Louis Segond 1910", t)
+    m = re.search(r"(?:—|\d\s\|)\s*(.+?)\s*\|\s*Bible Louis Segond 1910", t)
     if m:
         return "Short " + m.group(1)
     if "Semaine" in t or "Pâques" in t or "Saint" in t or "Rameaux" in t:

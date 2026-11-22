@@ -64,7 +64,7 @@ def theme_de_titre(titre):
         table = {v["title"].lower(): k for k, v in tm.THEMES.items()}
     except Exception:
         table = {k.lower(): v for k, v in THEMES_TITRES.items()}
-    tete = titre.split("—")[0].split(" - ")[0]
+    tete = re.split(r"\s[—|]\s", titre)[0].split(" - ")[0]
     tete = re.sub(r"^[^\wÀ-ÿ']+", "", tete).strip().lower()
     for t, k in table.items():
         if tete.startswith(t):
@@ -83,7 +83,7 @@ def classer(titre):
         return TH.get(k) if k else "?"
     if "Lecture Complète" in titre and titre.startswith("Psaume"):
         return PSAUMES_LECTURE
-    m = re.search(r"—\s*(.+?)\s*\|\s*Bible Louis Segond 1910", titre)
+    m = re.search(r"(?:—|\d\s\|)\s*(.+?)\s*\|\s*Bible Louis Segond 1910", titre)
     if m:
         lib = m.group(1)
         if lib == "Psaume du Matin":

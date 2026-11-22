@@ -63,7 +63,7 @@ def cible(titre, site, th):
                 return url, None, f"{m.group(1)} {m.group(2)}", True
         return None
     if "Versets bibliques" in titre:
-        tete = re.sub(r"^[^\wÀ-ÿ']+", "", titre.split("—")[0]).strip().lower()
+        tete = re.sub(r"^[^\wÀ-ÿ']+", "", re.split(r"\s[—|]\s", titre)[0]).strip().lower()
         for t, k in th.items():
             k = {"jesus": "paroles-de-jesus"}.get(k, k)   # slug du site
             if tete.startswith(t) and k in site:

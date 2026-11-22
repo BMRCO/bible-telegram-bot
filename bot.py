@@ -1601,7 +1601,7 @@ def category_label(cat_name, hour_utc=None):
 
 def build_yt_title(cat_name, cat, ref, hour_utc):
     label = category_label(cat_name, hour_utc)
-    title = f"{ref} — {label} | Bible Louis Segond 1910"
+    title = f"{ref} | {label} | Bible Louis Segond 1910"
     if len(title) > 100:
         title = title[:97] + "..."
     return title
@@ -2146,7 +2146,7 @@ def post_to_pinterest(image_path, ref, text, cat, cat_name):
         # Pinterest indexe le titre et la description comme du texte : les
         # mots-cles y valent plus que les hashtags, que la plateforme ignore
         # largement. Emoji retire du titre (100 caracteres utiles).
-        "title": f"{ref} — {pin_keywords.get(cat_name, 'Verset biblique')} | Bible Louis Segond 1910"[:100],
+        "title": f"{ref} | {pin_keywords.get(cat_name, 'Verset biblique')} | Bible Louis Segond 1910"[:100],
         # 800 caracteres maximum cote API ; on coupe par securite.
         "description": description[:800],
         # Page reelle et crawlable (meilleure pour l'apercu Pinterest qu'un lien
@@ -3306,7 +3306,7 @@ def main_parabole():
             from youtube_garde import verifier_chaine
             verifier_chaine(youtube)
             ref_range = parabole.get("ref_range", verses[0][0] if verses else "")
-            yt_title = f"✝️ {title} — {ref_range} | Bible LSG1910"[:100]
+            yt_title = f"✝️ {title} | {ref_range} | Bible LSG1910"[:100]
             _ref0 = verses[0][0] if verses else ""
             _txt0 = verses[0][1] if verses else ""
             description = (f"✝️ {title}\n\n"

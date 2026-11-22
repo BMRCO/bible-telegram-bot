@@ -652,7 +652,7 @@ def upload_to_youtube(video_path, theme_key, verses):
     verifier_chaine(youtube)
 
     th = THEMES[theme_key]
-    title = f"{th['emoji']} {th['title']} \u2014 Versets bibliques (LSG 1910)"
+    title = f"{th['emoji']} {th['title']} | Versets bibliques (LSG 1910)"
     if len(title) > 100:
         title = title[:97] + "..."
 
