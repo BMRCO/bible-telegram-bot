@@ -404,6 +404,44 @@ def playlist(yt, progress):
     return pid
 
 
+def ajouter_playlist(yt, vid, progress, essais=4):
+    """Une playlist tout juste creee repond parfois 409 « The operation was aborted »
+    (22 nov. 2026, premiere lecture longue) : on reessaie apres une pause."""
+    import time
+    for n in range(essais):
+        try:
+            yt.playlistItems().insert(part="snippet", body={"snippet": {
+                "playlistId": playlist(yt, progress),
+                "resourceId": {"kind": "youtube#video", "videoId": vid}}}).execute()
+            print(f"✅ Ajoutée à « {PLAYLIST} »")
+            return True
+        except Exception as e:
+            if n == essais - 1:
+                print(f"⚠️  Playlist non mise à jour : {str(e)[:200]}")
+                return False
+            time.sleep(10 * (n + 1))
+
+
+def rattraper_playlist():
+    """compilation = « --playlist » : remet dans la playlist les lectures longues
+    deja publiees qui n'y sont pas (videos_compilations.json). Ne publie rien."""
+    progress = load_json(PROGRESS_FILE) if os.path.exists(PROGRESS_FILE) else {}
+    videos = load_json(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else {}
+    yt = youtube()
+    pid = playlist(yt, progress)
+    deja, req = set(), yt.playlistItems().list(part="contentDetails", playlistId=pid, maxResults=50)
+    while req is not None:
+        rep_ = req.execute()
+        deja |= {i["contentDetails"]["videoId"] for i in rep_.get("items", [])}
+        req = yt.playlistItems().list_next(req, rep_)
+    for cle, vid in videos.items():
+        if vid in deja:
+            print(f"= {cle} déjà dans la playlist")
+        else:
+            ajouter_playlist(yt, vid, progress)
+    save_json(PROGRESS_FILE, progress)
+
+
 def upload(video, vignette, comp, minutes, chapitres, progress):
     from googleapiclient.http import MediaFileUpload
     import yt_commentaire
@@ -422,13 +460,7 @@ def upload(video, vignette, comp, minutes, chapitres, progress):
         print("✅ Miniature")
     except Exception as e:
         print(f"⚠️  Miniature non posée : {str(e)[:200]}")
-    try:
-        yt.playlistItems().insert(part="snippet", body={"snippet": {
-            "playlistId": playlist(yt, progress),
-            "resourceId": {"kind": "youtube#video", "videoId": vid}}}).execute()
-        print(f"✅ Ajoutée à « {PLAYLIST} »")
-    except Exception as e:
-        print(f"⚠️  Playlist non mise à jour : {str(e)[:200]}")
+    ajouter_playlist(yt, vid, progress)
     yt_commentaire.commenter(yt, vid, APP_URL, titre=comp["titre"], audio=True)
     return vid
 
@@ -438,6 +470,9 @@ def main():
     comps = load_json(COMPILATIONS)
     progress = load_json(PROGRESS_FILE) if os.path.exists(PROGRESS_FILE) else {}
     faites = progress.setdefault("faites", [])
+    if len(sys.argv) > 1 and sys.argv[1].strip() == "--playlist":
+        rattraper_playlist()
+        return
     if len(sys.argv) > 1 and sys.argv[1].strip():
         comp = next((c for c in comps if c["id"] == sys.argv[1].strip()), None)
         if not comp:
