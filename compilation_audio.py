@@ -357,7 +357,36 @@ def fabriquer(comp):
 
 # ─── YouTube ────────────────────────────────────────────────────────────────
 def titre_video(comp, minutes):
-    return f"{comp['titre']} | {minutes} min | Bible Louis Segond 1910"[:100]
+    """Sans la duree (BC, 22 nov. 2026 : le YouTube l'affiche deja sur la miniature).
+    Seule une lecture d'une heure ou plus la porte, car c'est elle qu'on cherche."""
+    if minutes >= 60:
+        h, m = divmod(minutes, 60)
+        duree = f"{h} h" + (f" {m:02d}" if m else "")
+        return f"{comp['titre']} | {duree} | Bible Louis Segond 1910"[:100]
+    return f"{comp['titre']} | Bible Louis Segond 1910"[:100]
+
+
+def retitrer():
+    """compilation = « --titres » : remet au format actuel le titre des lectures
+    longues deja publiees (videos_compilations.json). Ne publie rien."""
+    comps = {c["id"]: c for c in load_json(COMPILATIONS)}
+    videos = load_json(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else {}
+    yt = youtube()
+    for cle, vid in videos.items():
+        item = yt.videos().list(part="snippet,contentDetails", id=vid).execute()["items"][0]
+        sn = item["snippet"]
+        d = re.match(r"PT(?:(\d+)H)?(?:(\d+)M)?", item["contentDetails"]["duration"])
+        minutes = int(d.group(1) or 0) * 60 + int(d.group(2) or 0)
+        nouveau = titre_video(comps[cle], minutes)
+        if sn["title"] == nouveau:
+            print(f"= {cle} : {nouveau}")
+            continue
+        corps = {"id": vid, "snippet": {"title": nouveau, "description": sn.get("description", ""),
+                                        "categoryId": sn["categoryId"], "tags": sn.get("tags", []),
+                                        "defaultLanguage": sn.get("defaultLanguage", "fr"),
+                                        "defaultAudioLanguage": sn.get("defaultAudioLanguage", "fr")}}
+        yt.videos().update(part="snippet", body=corps).execute()
+        print(f"✅ {cle} : {sn['title']} -> {nouveau}")
 
 
 def description(comp, chapitres):
@@ -470,6 +499,9 @@ def main():
     comps = load_json(COMPILATIONS)
     progress = load_json(PROGRESS_FILE) if os.path.exists(PROGRESS_FILE) else {}
     faites = progress.setdefault("faites", [])
+    if len(sys.argv) > 1 and sys.argv[1].strip() == "--titres":
+        retitrer()
+        return
     if len(sys.argv) > 1 and sys.argv[1].strip() == "--playlist":
         rattraper_playlist()
         return
