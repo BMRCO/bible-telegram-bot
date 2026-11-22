@@ -93,8 +93,11 @@ def segments(comp):
         elif p.startswith("liste:"):
             items = []
             for r in load_json(p[6:]):
-                m = re.match(r"^(.+?)\s+(\d+):(\d+)$", r)
-                items.append((r, bot.load_verse(m.group(1), int(m.group(2)), int(m.group(3)))))
+                # « Livre C:V » ou une plage « Livre C:V-W » (derniers temps, 22 nov. 2026)
+                m = re.match(r"^(.+?)\s+(\d+):(\d+)(?:-(\d+))?$", r)
+                livre, ch, v = m.group(1), int(m.group(2)), int(m.group(3))
+                for n in range(v, int(m.group(4) or v) + 1):
+                    items.append((f"{livre} {ch}:{n}", bot.load_verse(livre, ch, n)))
             out.append((None, items))
         else:
             m = re.match(r"^(.+?)\s+(\d+)$", p)
