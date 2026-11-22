@@ -168,6 +168,23 @@ def _np(img):
     return a[..., :3], a[..., 3:4] / 255.0
 
 
+def _bande(img, y0, y1):
+    """Calque reduit a une bande horizontale : composer 12 lignes par image reste rapide."""
+    y0, y1 = max(0, y0), min(img.height, y1)
+    a = np.asarray(img, dtype=np.float32)[y0:y1]
+    return y0, y1, a[..., :3], a[..., 3:4] / 255.0
+
+
+def _composer_bande(cadre, bande, a):
+    if a <= 0:
+        return
+    y0, y1, rgb, al = bande
+    k = al * a
+    zone = cadre[y0:y1]
+    zone *= (1 - k)
+    zone += rgb * k
+
+
 def _composer(cadre, calque, a):
     if a <= 0:
         return
@@ -287,17 +304,25 @@ def faire_reel_doux(texte, ref, cat_name, sortie, musique=None, ligne_fin="Lisez
                         outline=tuple(int(c * 0.7) for c in ACC), width=2)
     fond = np.asarray(fond, dtype=np.float32)
 
-    # verset et pied de carte (un calque, il apparait en douceur)
-    vers = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(vers)
-    fv, lignes, lh = tm.autosize_font(d, f"« {texte.rstrip('.')} »", W - 2 * (BORD + 120),
+    # verset : une bande par ligne, qui apparait l'une apres l'autre au fil de la
+    # video (22 nov. 2026, BC : le texte apparaissait trop vite, d'un bloc).
+    mesure = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
+    fv, lignes, lh = tm.autosize_font(mesure, f"« {texte.rstrip('.')} »", W - 2 * (BORD + 120),
                                       int((H - 2 * BORD) * 0.55))
     y = BORD + (H - 2 * BORD) // 2 - lh * len(lignes) // 2 - 40
+    bandes = []
     for l in lignes:
+        img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        d = ImageDraw.Draw(img)
         x = (W - d.textlength(l, font=fv)) // 2
         d.text((x + 2, y + 2), l, font=fv, fill=tuple(int(c * 0.5) for c in TOP) + (255,))
         d.text((x, y), l, font=fv, fill=BLANC + (255,))
+        bandes.append(_bande(img, int(y - 10), int(y + lh + 20)))
         y += lh
+
+    # pied de carte : ornement, reference, LSG 1910, LaBible.app
+    vers = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(vers)
     cx, oy = W // 2, H - BORD - 290
     for i in range(150):
         k = 0.95 * (1 - i / 150) ** 1.2
@@ -312,7 +337,13 @@ def faire_reel_doux(texte, ref, cat_name, sortie, musique=None, ligne_fin="Lisez
     d.text((cx, H - BORD - 232), ref, font=fr, fill=ACC + (255,), anchor="ms")
     d.text((cx, H - BORD - 190), "LSG 1910", font=ImageFont.truetype(FONT_SERIF, 28), fill=SIL + (255,), anchor="ms")
     d.text((cx, H - BORD - 56), "LaBible.app", font=ImageFont.truetype(FONT_SANS, 28), fill=ACC + (255,), anchor="ms")
-    vers = _np(vers)
+    pied = _bande(vers, oy - 20, H - BORD - 20)
+
+    # rythme : les lignes se succedent jusqu'a ~6,5 s, puis le pied de carte
+    n_l = len(bandes)
+    pas = min(0.9, 5.4 / max(1, n_l - 1))
+    debuts = [0.3 + i * pas for i in range(n_l)]
+    debut_pied = debuts[-1] + 0.6
 
     fin = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(fin)
@@ -357,7 +388,10 @@ def faire_reel_doux(texte, ref, cat_name, sortie, musique=None, ligne_fin="Lisez
             x0, y0, s = int(px[k]), int(yy[k]), int(tai[k])
             zone = cadre[y0:y0 + s + 1, x0:x0 + s + 1]
             zone += (coul - zone) * (ecl[k] * 0.85)
-        _composer(cadre, vers, ease((t - 0.3) / 1.2) if t < 9.7 else ease((10.2 - t) / 0.5))
+        sortie_v = 1.0 if t < 9.7 else ease((10.2 - t) / 0.5)
+        for bd, t0 in zip(bandes, debuts):
+            _composer_bande(cadre, bd, ease((t - t0) / 0.9) * sortie_v)
+        _composer_bande(cadre, pied, ease((t - debut_pied) / 0.9) * sortie_v)
         _composer(cadre, fin, ease((t - 10.7) / 0.5))
         if t > DUREE - 0.45:
             cadre *= max(0.0, (DUREE - t) / 0.45)

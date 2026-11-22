@@ -156,8 +156,11 @@ def calque_tete():
 
 
 def calque_verset(texte, ref):
-    img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    d = ImageDraw.Draw(img)
+    """Une image par ligne du verset, puis une pour la reference et la signature :
+    les lignes apparaissent l'une apres l'autre (22 nov. 2026, BC : le texte
+    apparaissait trop vite, d'un bloc). Renvoie (lignes, pied), chaque element
+    etant (image, y0, y1), la bande ou il est dessine."""
+    d = ImageDraw.Draw(Image.new("RGBA", (8, 8)))
     marge = 120
     taille = 74
     while taille > 36:
@@ -173,18 +176,24 @@ def calque_verset(texte, ref):
     fr = _font(FONT_IT, 50)
     hauteur = lh * len(lignes) + 46 + 60
     y = 470 + (900 - hauteur) / 2
+    calques = []
     for l in lignes:
-        lw = d.textlength(l, font=f)
-        d.text(((W - lw) / 2, y), l, font=f, fill=CREME)
+        img = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+        di = ImageDraw.Draw(img)
+        lw = di.textlength(l, font=f)
+        di.text(((W - lw) / 2, y), l, font=f, fill=CREME)
+        calques.append((img, int(y - 10), int(y + lh + 20)))
         y += lh
     y += 46
-    rw = d.textlength(ref, font=fr)
-    d.text(((W - rw) / 2, y), ref, font=fr, fill=OR)
+    pied = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    dp = ImageDraw.Draw(pied)
+    rw = dp.textlength(ref, font=fr)
+    dp.text(((W - rw) / 2, y), ref, font=fr, fill=OR)
     # Signature discrete, au-dessus de la bande que l'interface des Shorts recouvre
     fs = _font(FONT, 34)
     sig = "LaBible.app · LSG 1910"
-    d.text(((W - d.textlength(sig, font=fs)) / 2, 1500), sig, font=fs, fill=OR_PALE)
-    return img
+    dp.text(((W - dp.textlength(sig, font=fs)) / 2, 1500), sig, font=fs, fill=OR_PALE)
+    return calques, (pied, int(y - 10), 1560)
 
 
 def calque_fin():
@@ -242,9 +251,29 @@ def faire_video(livre, ch, v, texte, ref, sortie):
         a = np.asarray(img, dtype=np.float32)
         return a[..., :3], a[..., 3:4] / 255.0
 
+    def np_bande(c):
+        img, y0, y1 = c
+        a = np.asarray(img, dtype=np.float32)[max(0, y0):min(H, y1)]
+        return max(0, y0), min(H, y1), a[..., :3], a[..., 3:4] / 255.0
+
     tete = np_calque(calque_tete())
-    vers = np_calque(calque_verset(texte, ref))
+    lignes_c, pied_c = calque_verset(texte, ref)
+    bandes = [np_bande(c) for c in lignes_c]
+    pied = np_bande(pied_c)
     fin = np_calque(calque_fin())
+    # rythme : les lignes se succedent de 1 s a ~9 s, puis la reference
+    pas = min(1.1, 8.0 / max(1, len(bandes) - 1))
+    debuts = [1.0 + i * pas for i in range(len(bandes))]
+    debut_pied = debuts[-1] + 0.8
+
+    def bande(cadre, b, a):
+        if a <= 0:
+            return
+        y0, y1, rgb, al = b
+        k = al * min(1.0, a)
+        zone = cadre[y0:y1]
+        zone *= (1 - k)
+        zone += rgb * k
 
     musique = libres(sorted(
         os.path.join("music_meditation", f) for f in os.listdir("music_meditation")
@@ -271,7 +300,9 @@ def faire_video(livre, ch, v, texte, ref, sortie):
         cadre[sy, sx] = np.maximum(cadre[sy, sx], (eclat[:, None] * 255))
         cadre = cadre.astype(np.float32)
         _composer(cadre, tete, _alpha(t, 0.2, DUREE - 0.4, 1.0))
-        _composer(cadre, vers, _alpha(t, 1.0, 14.6, 1.0))
+        for bd, t0 in zip(bandes, debuts):
+            bande(cadre, bd, _alpha(t, t0, 14.6, 1.0))
+        bande(cadre, pied, _alpha(t, debut_pied, 14.6, 1.0))
         _composer(cadre, fin, _alpha(t, 15.2, DUREE + 1, 0.6))
         if t > DUREE - 0.6:
             cadre *= max(0.0, (DUREE - t) / 0.6)
