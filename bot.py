@@ -2068,13 +2068,35 @@ def post_reel_to_instagram(video_path, ref, text, cat, cat_name, link_override=N
         data={"creation_id": container_id, "access_token": FB_PAGE_TOKEN}, timeout=60)
     if r2.status_code == 200:
         print(f"✅ Instagram reel publié — {r2.json().get('id')}")
-        post_story_to_instagram(video_path, video_url)
+        try:
+            post_story_to_instagram(video_path, video_url)
+        except Exception as e:
+            # la Story ne doit jamais faire passer le Reel, deja publie, pour un echec
+            signaler_echec("Instagram story", f"{type(e).__name__} : {e}")
     else:
         signaler_echec("Instagram reel", f"publication — HTTP {r2.status_code} — {r2.text[:200]}")
 
 
 # ---------------------------------------------------
 STORY_MAX = 60   # une Story video dure au plus 60 s : les videos plus longues n'en ont pas
+
+
+def duree_media(chemin):
+    """Duree en secondes d'un fichier audio ou video. ffprobe d'abord ; s'il manque
+    (secours imageio-ffmpeg, qui n'apporte que ffmpeg : 23 nov. 2026), on lit la
+    ligne « Duration: » de ffmpeg. 0 si rien n'est lisible."""
+    import subprocess, re as _re
+    try:
+        return float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                                     "-of", "csv=p=0", chemin], capture_output=True, text=True).stdout)
+    except (FileNotFoundError, ValueError):
+        pass
+    try:
+        err = subprocess.run(["ffmpeg", "-nostdin", "-i", chemin], capture_output=True, text=True).stderr
+        m = _re.search(r"Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)", err)
+        return int(m.group(1)) * 3600 + int(m.group(2)) * 60 + float(m.group(3)) if m else 0.0
+    except Exception:
+        return 0.0
 
 
 def post_story_to_instagram(video_path, video_url):
@@ -2084,11 +2106,7 @@ def post_story_to_instagram(video_path, video_url):
     if os.environ.get("IG_STORY") == "0":
         return
     import subprocess, time
-    try:
-        duree = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
-                                      "-of", "csv=p=0", video_path], capture_output=True, text=True).stdout)
-    except ValueError:
-        duree = 0
+    duree = duree_media(video_path)
     if not 3 <= duree <= STORY_MAX:
         print(f"⏭️  Story Instagram : vidéo de {duree:.0f} s, hors des 3 à {STORY_MAX} s")
         return

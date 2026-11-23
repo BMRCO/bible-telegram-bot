@@ -246,8 +246,9 @@ def musique_longue(duree, dossier):
     while total < duree + 10:
         for p in pistes:
             choix.append(p)
-            total += float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
-                                           "-of", "csv=p=0", p], capture_output=True, text=True).stdout or 0)
+            # bot.duree_media : marche aussi sans ffprobe (secours imageio-ffmpeg) ;
+            # une piste illisible compte pour 2 min, pour ne jamais boucler sans fin
+            total += bot.duree_media(p) or 120.0
             if total >= duree + 10:
                 break
     liste = os.path.join(dossier, "musique.txt")
