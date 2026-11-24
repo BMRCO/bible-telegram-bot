@@ -116,6 +116,18 @@ def main():
         if n >= MAX:
             break
         corps = ytc.texte(vid, url, ref=ref, titre=lecture, audio=audio)
+        # Garde contre le doublon : si le registre n'a pas pu etre pousse (24 nov.
+        # 2026, erreur 500 de GitHub), la video a deja notre commentaire de lien.
+        try:
+            deja = yt.commentThreads().list(part="snippet", videoId=vid, searchTerms="labible.app",
+                                            maxResults=20).execute().get("items", [])
+            if any(t["snippet"]["topLevelComment"]["snippet"].get("authorChannelId", {}).get("value") == ch["id"]
+                   for t in deja):
+                faits.add(vid)
+                print(f"= déjà commentée : {titre[:60]}")
+                continue
+        except HttpError:
+            pass
         try:
             yt.commentThreads().insert(part="snippet", body={"snippet": {
                 "channelId": ch["id"], "videoId": vid,
