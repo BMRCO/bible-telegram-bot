@@ -658,12 +658,7 @@ def upload(video, livre, ch, tl, rang):
     import yt_commentaire
     yt_commentaire.commenter(yt, vid, chapter_url(livre, ch), titre=f"{nom_affiche(livre)} {ch}", audio=True)
 
-    try:
-        thumb = vignette_bible(livre, ch, rang, "thumb_bible.png")
-        yt.thumbnails().set(videoId=vid, media_body=MediaFileUpload(thumb, mimetype="image/png")).execute()
-        print("✅ Vignette définie")
-    except Exception as e:
-        print(f"⚠️  Vignette non définie : {str(e)[:200]}")
+    poser_vignette(yt, vid, livre, ch, rang)
 
     # Sous-titres et playlist du livre : demandent le scope youtube.force-ssl.
     # Avec le jeton actuel (youtube.upload) : 403, simple avertissement.
@@ -731,6 +726,39 @@ def upload(video, livre, ch, tl, rang):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+def youtube_client():
+    from google.oauth2.credentials import Credentials
+    from googleapiclient.discovery import build
+    from google.auth.transport.requests import Request
+    creds = Credentials(token=None, refresh_token=YT_REFRESH_TOKEN, client_id=YT_CLIENT_ID,
+                        client_secret=YT_CLIENT_SECRET, token_uri="https://oauth2.googleapis.com/token",
+                        scopes=None)
+    creds.refresh(Request())
+    yt = build("youtube", "v3", credentials=creds)
+    from youtube_garde import verifier_chaine
+    verifier_chaine(yt)
+    return yt
+
+
+def poser_vignette(yt, vid, livre, ch, rang, essais=3):
+    """YouTube refuse parfois la vignette d'une video encore en traitement
+    (403 « can't be set », Genese 39 le 24 nov. 2026) : on reessaie apres une pause."""
+    import time
+    from googleapiclient.http import MediaFileUpload
+    thumb = vignette_bible(livre, ch, rang, "thumb_bible.png")
+    for n in range(essais):
+        try:
+            yt.thumbnails().set(videoId=vid, media_body=MediaFileUpload(thumb, mimetype="image/png")).execute()
+            print("✅ Vignette définie")
+            return True
+        except Exception as e:
+            if n == essais - 1:
+                signaler_echec("YouTube vignette", f"{nom_affiche(livre)} {ch} : {str(e)[:160]}")
+                return False
+            print(f"  ⏳ Vignette refusée, nouvel essai dans {60 * (n + 1)} s")
+            time.sleep(60 * (n + 1))
+
+
 def main():
     par_chap = charger_bible()
     chapitres_ordre = liste_chapitres(par_chap)
@@ -742,6 +770,16 @@ def main():
         if (livre, ch) not in par_chap or livre not in ORDRE:
             sys.exit(f"Chapitre introuvable : {livre} {ch}")
         rang = chapitres_ordre.index((livre, ch))
+        if os.environ.get("VIGNETTE_SEULE") == "1":
+            # Remet seulement la vignette d'un chapitre deja publie, rien d'autre.
+            videos = load_json(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else {}
+            vid = videos.get(f"{slugify_book(nom_affiche(livre))}/{ch}")
+            if not vid:
+                sys.exit(f"Pas de video publiee pour {nom_affiche(livre)} {ch}")
+            print(f"🖼️  {nom_affiche(livre)} {ch} ({vid})")
+            if not poser_vignette(youtube_client(), vid, livre, ch, rang):
+                sys.exit(1)
+            return
     else:
         progress = load_json(PROGRESS_FILE) if os.path.exists(PROGRESS_FILE) else {}
         piste = (os.environ.get("TESTAMENT") or "at").strip().lower()

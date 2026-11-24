@@ -213,7 +213,13 @@ def miniature(comp, minutes, chemin):
             break
     hl = int(taille * 1.12)
     f2 = _f(GAR_IT, 50)
-    t2 = f"{minutes} min · Bible Louis Segond 1910"
+    # Sans la duree (BC, 24 nov. 2026 : « tira os minutos da capa ») ; YouTube
+    # l'affiche deja. Seule une lecture d'une heure ou plus la porte.
+    if minutes >= 60:
+        h_, m_ = divmod(minutes, 60)
+        t2 = f"{h_} h" + (f" {m_:02d}" if m_ else "") + " · Bible Louis Segond 1910"
+    else:
+        t2 = "Bible Louis Segond 1910"
     bloc = len(lg) * hl + 50 + 60
     y = (h - bloc) // 2
     bas = y
@@ -367,6 +373,40 @@ def titre_video(comp, minutes):
     return f"{comp['titre']} | Bible Louis Segond 1910"[:100]
 
 
+def poser_miniature(yt, vid, vignette, essais=3):
+    """Reessayee : une video encore en traitement refuse parfois sa miniature (403)."""
+    import time
+    from googleapiclient.http import MediaFileUpload
+    for n in range(essais):
+        try:
+            yt.thumbnails().set(videoId=vid, media_body=MediaFileUpload(vignette, mimetype="image/jpeg")).execute()
+            print("✅ Miniature")
+            return True
+        except Exception as e:
+            if n == essais - 1:
+                print(f"⚠️  Miniature non posée : {str(e)[:200]}")
+                return False
+            time.sleep(60 * (n + 1))
+
+
+def remettre_miniatures():
+    """compilation = « --vignettes » : refait la miniature des lectures longues deja
+    publiees (format actuel, sans la duree). Ne publie rien."""
+    global FOND
+    FOND = fond()
+    comps = {c["id"]: c for c in load_json(COMPILATIONS)}
+    videos = load_json(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else {}
+    yt = youtube()
+    for cle, vid in videos.items():
+        item = yt.videos().list(part="contentDetails", id=vid).execute()["items"][0]
+        d = re.match(r"PT(?:(\d+)H)?(?:(\d+)M)?", item["contentDetails"]["duration"])
+        minutes = int(d.group(1) or 0) * 60 + int(d.group(2) or 0)
+        chemin = f"miniature_{cle}.jpg"
+        miniature(comps[cle], minutes, chemin)
+        if poser_miniature(yt, vid, chemin):
+            print(f"🖼️  {cle}")
+
+
 def retitrer():
     """compilation = « --titres » : remet au format actuel le titre des lectures
     longues deja publiees (videos_compilations.json). Ne publie rien."""
@@ -485,11 +525,7 @@ def upload(video, vignette, comp, minutes, chapitres, progress):
                              media_body=MediaFileUpload(video, mimetype="video/mp4", resumable=True,
                                                         chunksize=50 * 1024 * 1024)).execute()["id"]
     print(f"✅ YouTube : https://youtube.com/watch?v={vid}")
-    try:
-        yt.thumbnails().set(videoId=vid, media_body=MediaFileUpload(vignette, mimetype="image/jpeg")).execute()
-        print("✅ Miniature")
-    except Exception as e:
-        print(f"⚠️  Miniature non posée : {str(e)[:200]}")
+    poser_miniature(yt, vid, vignette)
     ajouter_playlist(yt, vid, progress)
     yt_commentaire.commenter(yt, vid, APP_URL, titre=comp["titre"], audio=True)
     return vid
@@ -500,6 +536,9 @@ def main():
     comps = load_json(COMPILATIONS)
     progress = load_json(PROGRESS_FILE) if os.path.exists(PROGRESS_FILE) else {}
     faites = progress.setdefault("faites", [])
+    if len(sys.argv) > 1 and sys.argv[1].strip() == "--vignettes":
+        remettre_miniatures()
+        return
     if len(sys.argv) > 1 and sys.argv[1].strip() == "--titres":
         retitrer()
         return

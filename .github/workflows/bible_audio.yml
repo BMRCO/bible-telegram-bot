@@ -35,6 +35,11 @@ on:
         required: false
         type: boolean
         default: false
+      vignette_seule:
+        description: 'Avec livre et chapitre : remet seulement la vignette de la video deja publiee'
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -98,6 +103,7 @@ jobs:
           IN_TESTAMENT: ${{ inputs.testament }}
           IN_CHAPITRE: ${{ inputs.chapitre }}
           ESSAI: ${{ inputs.essai && '1' || '' }}
+          VIGNETTE_SEULE: ${{ inputs.vignette_seule && '1' || '' }}
         run: |
           if [ -n "$IN_LIVRE" ] && [ -n "$IN_CHAPITRE" ]; then
             python bible_audio.py "$IN_LIVRE" "$IN_CHAPITRE"
