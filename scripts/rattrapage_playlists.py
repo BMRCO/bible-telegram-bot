@@ -47,6 +47,7 @@ LIBELLES = {
     "Prophéties Bibliques": PL["prophetie"],
     "Protection Divine": PL["protection"],
     "Psaume du Soir": PL["psaume_soir"],
+    "Les derniers temps": "⏳ Les derniers temps | Bible Louis Segond 1910",
 }
 
 # Titre de theme (thematic_meditation.THEMES[...]["title"]) -> cle
