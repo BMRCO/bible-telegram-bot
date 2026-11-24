@@ -172,6 +172,16 @@ def remplir(yt, etat):
         ecrire(yt.playlistItems().insert(part="snippet", body={"snippet": {
             "playlistId": pid, "resourceId": {"kind": "youtube#video", "videoId": vid}}}))
         faits += 1
+    # Une playlist vide est privee (24 nov. 2026, « Versets sur la mere ») :
+    # elle redevient publique des qu'elle recoit sa premiere video.
+    for pid in {p for _, p, _ in a_faire}:
+        st = yt.playlists().list(part="snippet,status", id=pid).execute().get("items", [])
+        if st and st[0]["status"]["privacyStatus"] != "public":
+            sn = st[0]["snippet"]
+            ecrire(yt.playlists().update(part="snippet,status", body={"id": pid, "snippet": {
+                "title": sn["title"], "description": sn.get("description", ""), "defaultLanguage": "fr"},
+                "status": {"privacyStatus": "public"}}))
+            print(f"👁️  Playlist rendue publique : {pid}")
     print(f"::notice::{faits} rangée(s)")
 
 

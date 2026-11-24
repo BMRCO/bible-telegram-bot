@@ -696,6 +696,13 @@ def upload(video, livre, ch, tl, rang):
                                            f"sans commentaire ajouté. Le texte complet est accessible "
                                            f"gratuitement, hors ligne et sans publicité sur LaBible.app."},
                 "status": {"privacyStatus": "public"}}).execute()["id"]
+            try:
+                import couvertures
+                couvertures.poser(yt, mes_pl[nom_pl], couvertures.couverture_livre_audio(
+                    nom_affiche(livre), "couverture_livre.jpg"))
+                print(f"🖼️  Couverture posée : {nom_pl}")
+            except Exception as e:
+                print(f"⚠️  Couverture non posée : {str(e)[:160]}")
         for titre in (nom_pl, PLAYLIST_COMPLETE):
             if titre in mes_pl:
                 snip = {"playlistId": mes_pl[titre], "resourceId": {"kind": "youtube#video", "videoId": vid}}

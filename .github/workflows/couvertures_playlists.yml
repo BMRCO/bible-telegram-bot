@@ -1,0 +1,30 @@
+name: Couvertures et titres des playlists YouTube
+
+# Corrections de l'audit du 24 nov. 2026 (scripts/couvertures_playlists.py) :
+# titre sans tiret long, couvertures manquantes, playlist vide rendue privee.
+# Idempotent, ne publie aucune video.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  couvertures:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install
+        run: pip install pillow google-api-python-client google-auth
+      - name: Corriger
+        env:
+          YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+          YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+          YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+        run: python scripts/couvertures_playlists.py

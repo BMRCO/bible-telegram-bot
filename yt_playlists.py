@@ -45,7 +45,7 @@ PLAYLISTS_THEMATIQUES = {
     "sagesse":    "\U0001f4a1 Sagesse Biblique",
     "jesus":      "✝️ Paroles de Jésus",
     "propheties": "\U0001f4ef  Prophéties Bibliques",
-    "psaumes":    "\U0001f3b5 Les Psaumes — Lectures Bibliques | Bible LSG1910",
+    "psaumes":    "\U0001f3b5 Les Psaumes | Lectures Bibliques | Bible LSG1910",
     "priere":     "\U0001f64f La Prière",
     "pardon":     "\U0001f90d Le Pardon",
     "guerison":   "\U0001f49a La Guérison",
