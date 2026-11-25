@@ -99,6 +99,13 @@ def segments(comp):
                 for n in range(v, int(m.group(4) or v) + 1):
                     items.append((f"{livre} {ch}:{n}", bot.load_verse(livre, ch, n)))
             out.append((None, items))
+        elif p.startswith("plage:"):
+            # « plage:Titre|Livre C:V-W » : un passage titre (paraboles, 25 nov. 2026)
+            titre_p, r = p[6:].split("|", 1)
+            m = re.match(r"^(.+?)\s+(\d+):(\d+)(?:-(\d+))?$", r.strip())
+            livre, ch, v = m.group(1), int(m.group(2)), int(m.group(3))
+            out.append((titre_p.strip(), [(f"{livre} {ch}:{n}", bot.load_verse(livre, ch, n))
+                                          for n in range(v, int(m.group(4) or v) + 1)]))
         else:
             m = re.match(r"^(.+?)\s+(\d+)$", p)
             livre, ch = m.group(1), int(m.group(2))

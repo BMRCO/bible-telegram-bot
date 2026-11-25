@@ -1844,6 +1844,22 @@ def post_to_facebook(image_path, ref, text, cat, cat_name, link_override=None):
         signaler_echec("Facebook", f"HTTP {r.status_code} — {r.text[:200]}")
 
 
+def post_lien_facebook(message, lien):
+    """Publication Facebook avec un lien (video YouTube trop longue pour un Reel)."""
+    if not should_post("facebook"):
+        print("⏭️  Facebook skip (filtro)")
+        return
+    if not (FB_PAGE_ID and FB_PAGE_TOKEN):
+        signaler_echec("Facebook lien", "FB_PAGE_TOKEN ou FB_PAGE_ID vide")
+        return
+    r = requests.post(f"https://graph.facebook.com/v25.0/{FB_PAGE_ID}/feed",
+                      data={"message": message, "link": lien, "access_token": FB_PAGE_TOKEN}, timeout=60)
+    if r.status_code == 200:
+        print(f"✅ Facebook (lien) — {r.json().get('id')}")
+    else:
+        signaler_echec("Facebook lien", f"HTTP {r.status_code} {r.text[:200]}")
+
+
 def publier_reel_facebook(video_path, description, plateforme="Facebook reel",
                           page_id=None, token=None):
     """Publie une video verticale courte (3 a 90 s) en Reel sur la Page.
@@ -3094,10 +3110,19 @@ def make_parabole_video(title, verses, progress=None):
     """
     W, H = 1080, 1920
     FPS = 30
-    SECS_PER_VERSE = 6  # secondes par verset
     SECS_TITLE = 4      # secondes pour le titre
     SECS_FINAL = 4      # secondes pour le final
-    TOTAL = FPS * (SECS_TITLE + len(verses) * SECS_PER_VERSE + SECS_FINAL)
+    # Temps de lecture selon la longueur du verset (25 nov. 2026, BC : laisser le
+    # temps de lire) : 6 s au moins, ~2,8 mots par seconde au-dela.
+    import bisect
+    DURS = [max(6.0, 2.5 + len(t.split()) / 2.8) for _, t in verses]
+    # Un Short YouTube ne depasse pas 3 min : on resserre si besoin (5 s au moins).
+    if SECS_TITLE + sum(DURS) + SECS_FINAL > 170:
+        k = (170 - SECS_TITLE - SECS_FINAL) / sum(DURS)
+        DURS = [max(5.0, d * k) for d in DURS]
+    DEBUTS = [sum(DURS[:i]) for i in range(len(DURS))]
+    SOMME = sum(DURS)
+    TOTAL = int(FPS * (SECS_TITLE + SOMME + SECS_FINAL))
 
     fp  = FONT_SERIF
     fpb = FONT_SERIF_BOLD
@@ -3203,12 +3228,12 @@ def make_parabole_video(title, verses, progress=None):
             draw.line([((W-300)//2, H//2+90), ((W+300)//2, H//2+90)], fill=blend(GOLD, a*0.5), width=1)
             draw.text(((W-sw)//2, H//2+105), sub, font=f_sub, fill=blend(SIL, a*0.7))
 
-        elif s < title_end + len(verses) * SECS_PER_VERSE:
+        elif s < title_end + SOMME:
             verse_s = s - title_end
-            verse_idx = int(verse_s / SECS_PER_VERSE)
-            verse_idx = min(verse_idx, len(verses)-1)
-            local_s = verse_s - verse_idx * SECS_PER_VERSE
-            a = ease(local_s/0.5) if local_s < 0.5 else (ease((SECS_PER_VERSE-local_s)/0.5) if local_s > SECS_PER_VERSE-0.5 else 1.0)
+            verse_idx = min(bisect.bisect_right(DEBUTS, verse_s) - 1, len(verses)-1)
+            local_s = verse_s - DEBUTS[verse_idx]
+            D = DURS[verse_idx]
+            a = ease(local_s/0.5) if local_s < 0.5 else (ease((D-local_s)/0.5) if local_s > D-0.5 else 1.0)
 
             ref_v, text_v = verses[verse_idx]
             num = f"{verse_idx+1}/{len(verses)}"
@@ -3235,7 +3260,7 @@ def make_parabole_video(title, verses, progress=None):
             draw.text((lx2-(wbbox[2]-wbbox[0]), H-185), WATERMARK, font=f_wm, fill=blend(SIL, a*0.85))
 
         else:
-            final_s = s - title_end - len(verses)*SECS_PER_VERSE
+            final_s = s - title_end - SOMME
             a = ease(final_s/0.8) if final_s < 0.8 else 1.0
             msg = "Lisez la Bible complète"
             bbox3 = draw.textbbox((0,0), msg, font=f_sub)
@@ -3277,7 +3302,9 @@ def pick_parabole(progress):
     arr = load_json(paraboles_file)
     index = progress.get("i_parabole", 0)
     if index >= len(arr):
-        index = 0
+        # Serie terminee (25 nov. 2026) : jamais deux fois la meme parabole.
+        print("::notice::Toutes les paraboles sont publiées : rien à faire")
+        sys.exit(0)
     parabole = arr[index]
     progress["i_parabole"] = index + 1
     return parabole
@@ -3287,7 +3314,19 @@ def main_parabole():
     progress = load_json(PROGRESS_FILE)
     parabole = pick_parabole(progress)
     title = parabole["title"]
-    verses = [(v["ref"], v["text"]) for v in parabole["verses"]]
+    # Le texte est TOUJOURS lu dans bible/lsg1910.json, jamais celui recopie dans
+    # paraboles_curated.json (regle du cahier, §3.2).
+    # Toute la plage « ref_range », sans verset saute : une parabole se lit entiere.
+    verses = []
+    m = re.match(r"^(.+?)\s+(\d+):(\d+)(?:-(\d+))?$", parabole.get("ref_range", ""))
+    if m:
+        livre, ch = m.group(1), int(m.group(2))
+        for n in range(int(m.group(3)), int(m.group(4) or m.group(3)) + 1):
+            verses.append((f"{livre} {ch}:{n}", clean_text(strip_rubric(load_verse(livre, ch, n)))))
+    else:
+        for v in parabole["verses"]:
+            mv = re.match(r"^(.+?)\s+(\d+):(\d+)$", v["ref"])
+            verses.append((v["ref"], clean_text(strip_rubric(load_verse(mv.group(1), int(mv.group(2)), int(mv.group(3)))))))
     print(f"📖 Parabole — {title} ({len(verses)} versets)")
 
     video = make_parabole_video(title, verses, progress)
@@ -3302,7 +3341,11 @@ def main_parabole():
 
     # Publier sur les plateformes
     cat = CATEGORIES["jesus"]
-    publier("Facebook reel", post_reel_to_facebook, video, title, verses[0][1] if verses else "", cat, "jesus")
+    # Les Reels Facebook s'arretent a 90 s : une parabole plus longue y part en
+    # lien vers la video YouTube (comme la Bible audio), apres l'envoi YouTube.
+    longue = duree_media(video) > 90
+    if not longue:
+        publier("Facebook reel", post_reel_to_facebook, video, title, verses[0][1] if verses else "", cat, "jesus")
     publier("Instagram reel", post_reel_to_instagram, video, title, verses[0][1] if verses else "", cat, "jesus")
 
     # YouTube — titre avec référence
@@ -3328,7 +3371,7 @@ def main_parabole():
             _ref0 = verses[0][0] if verses else ""
             _txt0 = verses[0][1] if verses else ""
             description = (f"✝️ {title}\n\n"
-                + "\n".join([f"{r} — {t}" for r, t in verses])
+                + "\n".join([f"{r} : {t}" for r, t in verses])
                 + f"\n\n📖 Lire le passage complet : {parabole_url}\n"
                 + f"🔔 Abonnez-vous pour plus de paraboles 🙏\n\n"
                 + f"🔗 {APP_URL}/liens\n\n"
@@ -3346,6 +3389,10 @@ def main_parabole():
             print(f"✅ YouTube publié — https://youtube.com/watch?v={response.get('id')}")
             import yt_playlists
             yt_playlists.ranger(youtube, response.get('id'), "parabole")
+            if longue:
+                publier("Facebook parabole", post_lien_facebook,
+                        f"✝️ {title}\n{ref_range}\n\nLa parabole lue dans la Bible Louis Segond 1910.\n"
+                        f"📖 {parabole_url}", f"https://youtube.com/watch?v={response.get('id')}")
     except Exception as e:
         signaler_echec("YouTube parabole", f"{type(e).__name__} : {e}")
 

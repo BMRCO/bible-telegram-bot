@@ -1,22 +1,145 @@
 {
  "_note": "Plan du Worker labible-horloge (heures UTC, multiples de 15 min). Lu par le Worker a chaque passage : modifier ce fichier suffit, sans redeployer. jours : 0 = dimanche ... 6 = samedi. condition semaine_sainte : du dimanche des Rameaux a Paques. si_actif : saute un workflow desactive (serie terminee). horloge_v2.yml : temoin du Worker v2 (les lancements en chaine des workflows se coupent quand il tourne).",
- "04:45": [{"workflow": "horloge_v2.yml"}],
- "05:30": [{"workflow": "meditation.yml"}],
- "05:45": [{"workflow": "holy_week.yml", "condition": "semaine_sainte"}],
- "06:30": [{"workflow": "publish.yml", "inputs": {"mode": "auto", "creneau": "matin"}}],
- "08:15": [{"workflow": "bible_audio.yml", "inputs": {"testament": "at"}}],
- "10:15": [{"workflow": "bible_audio.yml", "inputs": {"testament": "nt"}}],
- "11:00": [{"workflow": "quiz_du_jour.yml"}],
- "11:45": [{"workflow": "horloge_v2.yml"}],
- "12:00": [{"workflow": "derniers_temps.yml", "si_actif": true}],
- "12:15": [{"workflow": "tutoriels.yml", "si_actif": true}],
- "14:15": [{"workflow": "bible_audio.yml", "inputs": {"testament": "at"}}],
- "16:15": [{"workflow": "bible_audio.yml", "inputs": {"testament": "nt"}}],
- "16:45": [{"workflow": "horloge_v2.yml"}],
- "17:00": [{"workflow": "thematic_meditation.yml"}],
- "17:15": [{"workflow": "derniers_temps.yml", "inputs": {"second": "true"}, "si_actif": true}],
- "18:45": [{"workflow": "horloge_v2.yml"}],
- "19:00": [{"workflow": "publish.yml", "inputs": {"mode": "auto", "creneau": "soir"}}],
- "19:30": [{"workflow": "compilation_audio.yml", "jours": [0, 3]}],
- "20:15": [{"workflow": "bible_audio.yml", "inputs": {"testament": "at"}}]
+ "04:45": [
+  {
+   "workflow": "horloge_v2.yml"
+  }
+ ],
+ "05:30": [
+  {
+   "workflow": "meditation.yml"
+  }
+ ],
+ "05:45": [
+  {
+   "workflow": "holy_week.yml",
+   "condition": "semaine_sainte"
+  }
+ ],
+ "06:30": [
+  {
+   "workflow": "publish.yml",
+   "inputs": {
+    "mode": "auto",
+    "creneau": "matin"
+   }
+  }
+ ],
+ "08:15": [
+  {
+   "workflow": "bible_audio.yml",
+   "inputs": {
+    "testament": "at"
+   }
+  }
+ ],
+ "10:15": [
+  {
+   "workflow": "bible_audio.yml",
+   "inputs": {
+    "testament": "nt"
+   }
+  }
+ ],
+ "11:00": [
+  {
+   "workflow": "quiz_du_jour.yml"
+  }
+ ],
+ "11:45": [
+  {
+   "workflow": "horloge_v2.yml"
+  }
+ ],
+ "12:00": [
+  {
+   "workflow": "derniers_temps.yml",
+   "si_actif": true
+  }
+ ],
+ "12:15": [
+  {
+   "workflow": "tutoriels.yml",
+   "si_actif": true
+  }
+ ],
+ "13:30": [
+  {
+   "workflow": "publish.yml",
+   "inputs": {
+    "mode": "parabole"
+   },
+   "jours": [
+    1,
+    3,
+    5
+   ]
+  }
+ ],
+ "14:15": [
+  {
+   "workflow": "bible_audio.yml",
+   "inputs": {
+    "testament": "at"
+   }
+  }
+ ],
+ "16:15": [
+  {
+   "workflow": "bible_audio.yml",
+   "inputs": {
+    "testament": "nt"
+   }
+  }
+ ],
+ "16:45": [
+  {
+   "workflow": "horloge_v2.yml"
+  }
+ ],
+ "17:00": [
+  {
+   "workflow": "thematic_meditation.yml"
+  }
+ ],
+ "17:15": [
+  {
+   "workflow": "derniers_temps.yml",
+   "inputs": {
+    "second": "true"
+   },
+   "si_actif": true
+  }
+ ],
+ "18:45": [
+  {
+   "workflow": "horloge_v2.yml"
+  }
+ ],
+ "19:00": [
+  {
+   "workflow": "publish.yml",
+   "inputs": {
+    "mode": "auto",
+    "creneau": "soir"
+   }
+  }
+ ],
+ "19:30": [
+  {
+   "workflow": "compilation_audio.yml",
+   "jours": [
+    0,
+    3
+   ]
+  }
+ ],
+ "20:15": [
+  {
+   "workflow": "bible_audio.yml",
+   "inputs": {
+    "testament": "at"
+   }
+  }
+ ]
 }
