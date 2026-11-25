@@ -35,7 +35,6 @@ const PLAN_SECOURS = {
   "16:15": [{ workflow: "bible_audio.yml", inputs: { testament: "nt" } }],
   "16:45": [{ workflow: "horloge_v2.yml" }],
   "17:00": [{ workflow: "thematic_meditation.yml" }],
-  "17:15": [{ workflow: "derniers_temps.yml", inputs: { second: "true" }, si_actif: true }],
   "18:45": [{ workflow: "horloge_v2.yml" }],
   "19:00": [{ workflow: "publish.yml", inputs: { mode: "auto", creneau: "soir" } }],
   "19:30": [{ workflow: "compilation_audio.yml", jours: [0, 3] }],

@@ -63,19 +63,6 @@
    "si_actif": true
   }
  ],
- "13:30": [
-  {
-   "workflow": "publish.yml",
-   "inputs": {
-    "mode": "parabole"
-   },
-   "jours": [
-    1,
-    3,
-    5
-   ]
-  }
- ],
  "14:15": [
   {
    "workflow": "bible_audio.yml",
@@ -100,15 +87,6 @@
  "17:00": [
   {
    "workflow": "thematic_meditation.yml"
-  }
- ],
- "17:15": [
-  {
-   "workflow": "derniers_temps.yml",
-   "inputs": {
-    "second": "true"
-   },
-   "si_actif": true
   }
  ],
  "18:45": [
