@@ -19,26 +19,25 @@
 const DEPOT = "BMRCO/bible-telegram-bot";
 const PLAN_URL = "https://raw.githubusercontent.com/" + DEPOT + "/main/horloge/plan.json";
 
-// Copie de secours de horloge/plan.json (21 nov. 2026).
+// Copie de secours de horloge/plan.json (25 nov. 2026).
 const PLAN_SECOURS = {
   "04:45": [{ workflow: "horloge_v2.yml" }],
   "05:30": [{ workflow: "meditation.yml" }],
   "05:45": [{ workflow: "holy_week.yml", condition: "semaine_sainte" }],
-  "06:30": [{ workflow: "publish.yml", inputs: { mode: "auto", creneau: "matin" } }],
-  "08:15": [{ workflow: "bible_audio.yml", inputs: { testament: "at" } }],
-  "10:15": [{ workflow: "bible_audio.yml", inputs: { testament: "nt" } }],
-  "11:00": [{ workflow: "quiz_du_jour.yml" }],
+  "07:15": [{ workflow: "publish.yml", inputs: { mode: "auto", creneau: "matin" } }],
+  "09:00": [{ workflow: "bible_audio.yml", inputs: { testament: "at" } }],
+  "10:45": [{ workflow: "quiz_du_jour.yml" }],
   "11:45": [{ workflow: "horloge_v2.yml" }],
-  "12:00": [{ workflow: "derniers_temps.yml", si_actif: true }],
-  "12:15": [{ workflow: "tutoriels.yml", si_actif: true }],
-  "14:15": [{ workflow: "bible_audio.yml", inputs: { testament: "at" } }],
-  "16:15": [{ workflow: "bible_audio.yml", inputs: { testament: "nt" } }],
+  "12:30": [{ workflow: "derniers_temps.yml", si_actif: true }],
+  "13:15": [{ workflow: "tutoriels.yml", si_actif: true }],
+  "14:00": [{ workflow: "bible_audio.yml", inputs: { testament: "nt" } }],
+  "15:45": [{ workflow: "bible_audio.yml", inputs: { testament: "at" } }],
   "16:45": [{ workflow: "horloge_v2.yml" }],
-  "17:00": [{ workflow: "thematic_meditation.yml" }],
+  "17:15": [{ workflow: "thematic_meditation.yml" }],
   "18:45": [{ workflow: "horloge_v2.yml" }],
   "19:00": [{ workflow: "publish.yml", inputs: { mode: "auto", creneau: "soir" } }],
   "19:30": [{ workflow: "compilation_audio.yml", jours: [0, 3] }],
-  "20:15": [{ workflow: "bible_audio.yml", inputs: { testament: "at" } }],
+  "20:30": [{ workflow: "bible_audio.yml", inputs: { testament: "nt" } }]
 };
 
 function creneau(ms) {

@@ -108,8 +108,9 @@ jobs:
           if [ -n "$IN_LIVRE" ] && [ -n "$IN_CHAPITRE" ]; then
             python bible_audio.py "$IN_LIVRE" "$IN_CHAPITRE"
           else
-            # 14 nov. 2026 (decision de BC) : chaque jour 3 chapitres de l'Ancien
-            # Testament et 2 du Nouveau. Le Worker labible-horloge lance 5 passages
+            # 25 nov. 2026 (decision de BC, 10 publications par jour) : chaque jour
+            # 2 chapitres de l'Ancien Testament et 2 du Nouveau (3 + 2 du 14 au 25 nov.).
+            # Le Worker labible-horloge lance 4 passages
             # avec testament=at ou nt. Sans precision (lancement a la main) :
             # avant 18h UTC un chapitre de chaque, apres un de l'AT.
             if [ -n "$IN_TESTAMENT" ]; then LECTURES="$IN_TESTAMENT"

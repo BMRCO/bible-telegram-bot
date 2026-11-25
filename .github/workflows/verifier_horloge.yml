@@ -30,7 +30,7 @@ jobs:
           MANQUE=0
           # workflow:nombre attendu par jour (voir PLAN dans horloge/worker.js ; derniers_temps :
           # 12h00 par le Worker + le second, lance par thematic_meditation.yml, depuis le 21 nov. 2026)
-          for ATTENDU in publish.yml:2 meditation.yml:1 quiz_du_jour.yml:1 thematic_meditation.yml:1 bible_audio.yml:5 derniers_temps.yml:1; do
+          for ATTENDU in publish.yml:2 meditation.yml:1 quiz_du_jour.yml:1 thematic_meditation.yml:1 bible_audio.yml:4 derniers_temps.yml:1; do
             W=${ATTENDU%%:*}; N=${ATTENDU##*:}
             # Un workflow desactive expres (serie terminee) n'est plus attendu.
             if [ "$(gh api "repos/$DEPOT/actions/workflows/$W" --jq .state)" != "active" ]; then
