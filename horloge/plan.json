@@ -25,11 +25,19 @@
    }
   }
  ],
- "09:00": [
+ "08:15": [
   {
    "workflow": "bible_audio.yml",
    "inputs": {
     "testament": "at"
+   }
+  }
+ ],
+ "09:30": [
+  {
+   "workflow": "bible_audio.yml",
+   "inputs": {
+    "testament": "nt"
    }
   }
  ],
@@ -59,15 +67,15 @@
   {
    "workflow": "bible_audio.yml",
    "inputs": {
-    "testament": "nt"
+    "testament": "at"
    }
   }
  ],
- "15:45": [
+ "15:30": [
   {
    "workflow": "bible_audio.yml",
    "inputs": {
-    "testament": "at"
+    "testament": "nt"
    }
   }
  ],
@@ -79,6 +87,14 @@
  "17:15": [
   {
    "workflow": "thematic_meditation.yml"
+  }
+ ],
+ "18:15": [
+  {
+   "workflow": "bible_audio.yml",
+   "inputs": {
+    "testament": "at"
+   }
   }
  ],
  "18:45": [
