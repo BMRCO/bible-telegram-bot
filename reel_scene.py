@@ -28,6 +28,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 W, H, FPS = 1080, 1920, 30
 DUREE = 15.0
+# Reels de versets (faire_reel_doux) : 21 s. Le verset entier reste ~9 s a l'ecran
+# avant le carton (BC, 25 nov. 2026 : « deixa o versiculo inteiro mais tempo »).
+DUREE_DOUX = 21.0
 FONT = "fonts/EBGaramond-Regular.ttf"
 FONT_IT = "fonts/EBGaramond-Italic.ttf"
 CREME = (244, 236, 218)
@@ -374,12 +377,12 @@ def faire_reel_doux(texte, ref, cat_name, sortie, musique=None, ligne_fin="Lisez
            "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-"]
     if musique:
         cmd += ["-ss", "2", "-i", musique, "-filter_complex",
-                f"[1:a]volume=0.6,afade=t=in:d=1,afade=t=out:st={DUREE - 2}:d=2[a]",
+                f"[1:a]volume=0.6,afade=t=in:d=1,afade=t=out:st={DUREE_DOUX - 2}:d=2[a]",
                 "-map", "0:v", "-map", "[a]", "-c:a", "aac", "-b:a", "160k"]
     cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
-            "-t", str(DUREE), "-movflags", "+faststart", sortie]
+            "-t", str(DUREE_DOUX), "-movflags", "+faststart", sortie]
     p = subprocess.Popen(cmd, stdin=subprocess.PIPE)
-    for i in range(int(DUREE * FPS)):
+    for i in range(int(DUREE_DOUX * FPS)):
         t = i / FPS
         cadre = fond.copy()
         yy = (py - vit * t - BORD) % (H - 2 * BORD - 20) + BORD + 10
@@ -388,13 +391,13 @@ def faire_reel_doux(texte, ref, cat_name, sortie, musique=None, ligne_fin="Lisez
             x0, y0, s = int(px[k]), int(yy[k]), int(tai[k])
             zone = cadre[y0:y0 + s + 1, x0:x0 + s + 1]
             zone += (coul - zone) * (ecl[k] * 0.85)
-        sortie_v = 1.0 if t < 9.7 else ease((10.2 - t) / 0.5)
+        sortie_v = 1.0 if t < 15.5 else ease((16.0 - t) / 0.5)
         for bd, t0 in zip(bandes, debuts):
             _composer_bande(cadre, bd, ease((t - t0) / 0.9) * sortie_v)
         _composer_bande(cadre, pied, ease((t - debut_pied) / 0.9) * sortie_v)
-        _composer(cadre, fin, ease((t - 10.7) / 0.5))
-        if t > DUREE - 0.45:
-            cadre *= max(0.0, (DUREE - t) / 0.45)
+        _composer(cadre, fin, ease((t - 16.5) / 0.5))
+        if t > DUREE_DOUX - 0.45:
+            cadre *= max(0.0, (DUREE_DOUX - t) / 0.45)
         p.stdin.write(np.clip(cadre, 0, 255).astype(np.uint8).tobytes())
     p.stdin.close()
     if p.wait() != 0:

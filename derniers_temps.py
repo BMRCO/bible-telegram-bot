@@ -57,7 +57,7 @@ VIDEOS_FILE = "videos_derniers_temps.json"
 ESSAI = os.environ.get("ESSAI") == "1"
 
 W, H, FPS = 1080, 1920, 30
-DUREE = 20.0
+DUREE = 25.0  # 25 nov. 2026 : le verset entier reste ~9 s (BC)
 FONT = "fonts/EBGaramond-Regular.ttf"
 FONT_IT = "fonts/EBGaramond-Italic.ttf"
 
@@ -301,9 +301,9 @@ def faire_video(livre, ch, v, texte, ref, sortie):
         cadre = cadre.astype(np.float32)
         _composer(cadre, tete, _alpha(t, 0.2, DUREE - 0.4, 1.0))
         for bd, t0 in zip(bandes, debuts):
-            bande(cadre, bd, _alpha(t, t0, 14.6, 1.0))
-        bande(cadre, pied, _alpha(t, debut_pied, 14.6, 1.0))
-        _composer(cadre, fin, _alpha(t, 15.2, DUREE + 1, 0.6))
+            bande(cadre, bd, _alpha(t, t0, 19.6, 1.0))
+        bande(cadre, pied, _alpha(t, debut_pied, 19.6, 1.0))
+        _composer(cadre, fin, _alpha(t, 20.2, DUREE + 1, 0.6))
         if t > DUREE - 0.6:
             cadre *= max(0.0, (DUREE - t) / 0.6)
         p.stdin.write(np.clip(cadre, 0, 255).astype(np.uint8).tobytes())
