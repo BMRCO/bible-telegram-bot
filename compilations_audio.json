@@ -163,6 +163,10 @@
    "Psaumes 145",
    "Psaumes 146",
    "Psaumes 147"
-  ]
+  ],
+  "debit": "-14%",
+  "avant": 0.9,
+  "apres": 2.8,
+  "lecture_posee": true
  }
 ]

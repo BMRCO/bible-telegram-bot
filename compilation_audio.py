@@ -352,6 +352,22 @@ def musique_longue(duree, dossier):
     return sortie
 
 
+def lecture_posee(texte, base):
+    """Lecture lente et posee (series « pour dormir », BC 27 nov. 2026 : « a leitura
+    deve ser mais lenta e cuidada ») : chaque phrase est lue a part, avec un silence
+    apres ; ; : . ! ? (les virgules restent dans le souffle de la phrase)."""
+    morceaux = [m.strip() for m in re.findall(r"[^.;:!?]+[.;:!?»]*", texte) if m.strip()]
+    if len(morceaux) <= 1:
+        return pm.synthese(texte, base)
+    sons = []
+    for i, m in enumerate(morceaux):
+        sons.append(pm.synthese(m, f"{base}_{i}"))
+        if i < len(morceaux) - 1:
+            sons.append(np.zeros(int(SR * (0.75 if m.rstrip("»").endswith((".", "!", "?")) else 0.55)),
+                                 dtype=np.float32))
+    return np.concatenate(sons)
+
+
 def fabriquer(comp):
     global FOND, NATURE
     FOND = fond()
@@ -366,6 +382,12 @@ def fabriquer(comp):
         except Exception as e:
             print(f"⚠️  Fond de nature indisponible ({str(e)[:120]}) : fond habituel")
     EXT = ".png" if NATURE else ".jpg"
+    # Reglages de lecture propres a une compilation (« pour dormir ») : debit
+    # plus lent (prosodie native de la voix, pas d'etirement du son) et silences
+    # plus longs. Les autres lectures longues gardent les reglages habituels.
+    pm.DEBIT_VOIX = comp.get("debit", "-8%")
+    avant, apres = comp.get("avant", AVANT), comp.get("apres", APRES)
+    lire = lecture_posee if comp.get("lecture_posee") else pm.synthese
     segs = segments(comp)
     if LIMITE:
         reste, court = LIMITE, []
@@ -405,7 +427,7 @@ def fabriquer(comp):
             propre = clean_text(strip_rubric(texte)).rstrip(".")
             img = os.path.join(dossier, f"v{k:04d}{EXT}"); k += 1
             image_verset(comp["titre"], ref, propre, img)
-            ajouter(img, pm.synthese(pm.texte_a_lire(propre), os.path.join(dossier, f"a{k:04d}")), AVANT, APRES)
+            ajouter(img, lire(pm.texte_a_lire(propre), os.path.join(dossier, f"a{k:04d}")), avant, apres)
             print(f"  🎙️  {k}/{n_total + len(segs)}", end="\r")
     print()
     img = os.path.join(dossier, "fin" + EXT)
