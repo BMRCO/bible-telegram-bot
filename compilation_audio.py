@@ -197,7 +197,7 @@ def _centre(d, y, txt, font, fill):
 def cadre(titre_comp):
     if NATURE:
         # calque transparent pose sur la video : un voile sombre pour la lecture
-        im = Image.new("RGBA", (W, H), (0, 0, 0, 105))
+        im = Image.new("RGBA", (W, H), (0, 0, 0, 150))
     else:
         im = FOND.copy()
     d = ImageDraw.Draw(im)
@@ -210,7 +210,7 @@ def cadre(titre_comp):
 def image_verset(titre_comp, ref, texte, chemin):
     im, d = cadre(titre_comp)
     txt = f"« {texte} »"
-    for taille in range(62, 33, -2):
+    for taille in range(70 if NATURE else 62, 33, -2):
         f = _f(GAR, taille)
         lg = _lignes(d, txt, f, W - 360)
         hl = int(taille * 1.42)
@@ -229,8 +229,10 @@ def image_titre(comp, chemin, minutes=None):
     im, d = cadre("")
     _centre(d, 380, comp["titre"], _f(GAR, 96), CREME)
     _centre(d, 520, comp["sous_titre"], _f(GAR_IT, 54), OR_CLAIR)
-    if minutes:
-        _centre(d, 640, f"{minutes} min de lecture", _f(GAR, 40), GRIS)
+    if minutes and minutes >= 60:
+        # sans la duree en dessous d'une heure (comme le titre et la miniature)
+        h_, m_ = divmod(minutes, 60)
+        _centre(d, 640, f"{h_} h" + (f" {m_:02d}" if m_ else ""), _f(GAR, 40), GRIS)
     im.save(chemin, quality=92)
 
 
@@ -254,7 +256,7 @@ def miniature(comp, minutes, chemin):
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-nostdin", "-ss", "3", "-i", NATURE,
                         "-frames:v", "1", "-vf", f"scale={w}:{h}", image], check=True)
         im = Image.open(image).convert("RGB")
-        im = Image.blend(im, Image.new("RGB", (w, h), (0, 0, 0)), 0.38)
+        im = Image.blend(im, Image.new("RGB", (w, h), (0, 0, 0)), 0.5)
         return miniature_nature(comp, minutes, im, chemin)
     im = FOND.resize((w, h))
     d = ImageDraw.Draw(im)
