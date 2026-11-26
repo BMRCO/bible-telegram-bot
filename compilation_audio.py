@@ -475,7 +475,7 @@ def fabriquer(comp):
     if NATURE:
         fc += ";[0:v]fps=24[fond];[1:v]fps=24,format=rgba[cal];[fond][cal]overlay=format=auto,format=yuv420p[vid]"
         cmd += ["-filter_complex", fc, "-map", "[vid]", "-map", "[a]",
-                "-c:v", "libx264", "-preset", "veryfast", "-crf", "23"]
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", "27", "-maxrate", "3500k", "-bufsize", "7000k"]
     else:
         cmd += ["-filter_complex", fc, "-map", "0:v", "-map", "[a]",
                 "-vf", "fps=24,format=yuv420p", "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage",
