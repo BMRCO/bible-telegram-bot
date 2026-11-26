@@ -292,7 +292,7 @@ def miniature_nature(comp, minutes, im, chemin):
     """Grandes lettres dorees en capitales, lisibles sur un telephone."""
     from PIL import ImageFilter
     w, h = im.size
-    titre = comp["titre"].upper()
+    titre = comp.get("titre_miniature", comp["titre"]).upper()
     calque = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(calque)
     for taille in range(150, 60, -6):
@@ -301,15 +301,18 @@ def miniature_nature(comp, minutes, im, chemin):
         if len(lg) <= 2:
             break
     hl = int(taille * 1.02)
-    if minutes >= 60:
-        h_, m_ = divmod(minutes, 60)
-        t2 = f"{h_} h" + (f" {m_:02d}" if m_ else "") + " · Bible Louis Segond 1910"
+    if comp.get("sous_miniature"):
+        t2 = comp["sous_miniature"].format(duree=duree_lisible(minutes))
+    elif minutes >= 60:
+        t2 = duree_lisible(minutes) + " · Bible Louis Segond 1910"
     else:
         t2 = "Bible Louis Segond 1910"
-    f2 = _f(GAR_IT, 56)
+    f2 = _f(GAR_IT, 60)
     y = (h - (len(lg) * hl + 90)) // 2
     for l in lg:
-        d.text(((w - d.textlength(l, font=f)) / 2, y), l, font=f, fill=OR_CLAIR + (255,))
+        # trait epaissi (la marque n'a pas de graisse grasse) : lisible sur un telephone
+        d.text(((w - d.textlength(l, font=f)) / 2, y), l, font=f, fill=OR_CLAIR + (255,),
+               stroke_width=3, stroke_fill=OR_CLAIR + (255,))
         y += hl
     d.text(((w - d.textlength(t2, font=f2)) / 2, y + 26), t2, font=f2, fill=CREME + (255,))
     ombre = calque.split()[3].filter(ImageFilter.GaussianBlur(10)).point(lambda v: min(255, int(v * 1.4)))
@@ -472,6 +475,15 @@ def fabriquer(comp):
               f"[v][m]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=11[a]")
     else:
         fc = f"[{1 + o}:a]aformat=sample_rates=48000:channel_layouts=stereo,loudnorm=I=-16:TP=-1.5:LRA=11[a]"
+    if comp.get("pluie") and musique:
+        # pluie douce generee (aucun droit) : bruit rose filtre + grondement brun,
+        # tres bas et constant, sous la voix et la musique
+        fc = fc.replace("loudnorm=I=-16:TP=-1.5:LRA=11[a]", "loudnorm=I=-16:TP=-1.5:LRA=11[a0]")
+        fc += (f";anoisesrc=c=pink:a=0.5:d={total + 1:.1f},highpass=f=500,lowpass=f=7000,volume=0.45[rp];"
+               f"anoisesrc=c=brown:a=0.5:d={total + 1:.1f},lowpass=f=700,volume=0.7[rb];"
+               f"[rp][rb]amix=inputs=2:normalize=0,aformat=sample_rates=48000:channel_layouts=stereo,"
+               f"volume=0.16,afade=t=in:d=4,afade=t=out:st={max(0, total - 6):.2f}:d=6[pl];"
+               f"[a0][pl]amix=inputs=2:duration=first:normalize=0[a]")
     if NATURE:
         fc += ";[0:v]fps=24[fond];[1:v]fps=24,format=rgba[cal];[fond][cal]overlay=format=auto,format=yuv420p[vid]"
         cmd += ["-filter_complex", fc, "-map", "[vid]", "-map", "[a]",
@@ -490,9 +502,18 @@ def fabriquer(comp):
 
 
 # ─── YouTube ────────────────────────────────────────────────────────────────
+def duree_lisible(minutes):
+    h, m = divmod(minutes, 60)
+    return f"{h} h" + (f" {m:02d}" if m else "") if h else f"{m} min"
+
+
 def titre_video(comp, minutes):
     """Sans la duree (BC, 22 nov. 2026 : le YouTube l'affiche deja sur la miniature).
-    Seule une lecture d'une heure ou plus la porte, car c'est elle qu'on cherche."""
+    Seule une lecture d'une heure ou plus la porte, car c'est elle qu'on cherche.
+    Une compilation peut imposer son titre (« titre_youtube », avec {duree}) :
+    series « pour dormir », titre approuve par BC le 27 nov. 2026."""
+    if comp.get("titre_youtube"):
+        return comp["titre_youtube"].format(duree=duree_lisible(minutes))[:100]
     if minutes >= 60:
         h, m = divmod(minutes, 60)
         duree = f"{h} h" + (f" {m:02d}" if m else "")

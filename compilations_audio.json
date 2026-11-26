@@ -105,7 +105,11 @@
   "debit": "-14%",
   "avant": 0.9,
   "apres": 2.8,
-  "lecture_posee": true
+  "lecture_posee": true,
+  "titre_youtube": "Dormir avec la Bible 🌧️ | Psaumes au son de la pluie | {duree} | Bible Louis Segond 1910",
+  "titre_miniature": "Dormir avec la Parole",
+  "sous_miniature": "Psaumes · {duree}",
+  "pluie": true
  },
  {
   "id": "paix",
