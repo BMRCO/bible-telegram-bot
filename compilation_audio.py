@@ -139,6 +139,37 @@ def fond():
 
 
 FOND = None
+NATURE = None      # chemin de la boucle video de nature (series « pour dormir »)
+
+# Fonds de nature (Pixabay, licence Pixabay, sans Content ID), choisis par BC le
+# 27 nov. 2026. Telecharges a la fabrication, jamais gardes dans le depot.
+NATURE_VIDEOS = {
+    "pluie-feuilles": "https://cdn.pixabay.com/video/2021/09/04/87476-601149398_large.mp4",
+    "foret-rayons": "https://cdn.pixabay.com/video/2025/10/20/311049_large.mp4",
+    "foret-brume": "https://cdn.pixabay.com/video/2026/10/14/382582_large.mp4",
+    "brume-matin": "https://cdn.pixabay.com/video/2022/10/23/136182-764387455_large.mp4",
+}
+
+
+def boucle_nature(nom, dossier):
+    """Telecharge la video et en fait une boucle sans raccord visible : la fin se
+    fond dans le debut (fondu de 1,5 s). 1920x1080, 24 i/s, sans son."""
+    import requests
+    brut = os.path.join(dossier, f"nature_{nom}.mp4")
+    r = requests.get(NATURE_VIDEOS[nom], timeout=180, headers={"User-Agent": "Mozilla/5.0"})
+    r.raise_for_status()
+    open(brut, "wb").write(r.content)
+    d = min(bot.duree_media(brut) or 20.0, 40.0)
+    boucle = os.path.join(dossier, f"boucle_{nom}.mp4")
+    f = 1.5
+    fc = (f"[0:v]scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,fps=24,"
+          f"format=yuv420p,split=2[a][b];"
+          f"[a]trim={f}:{d},setpts=PTS-STARTPTS[corps];[b]trim=0:{f},setpts=PTS-STARTPTS[debut];"
+          f"[corps][debut]xfade=transition=fade:duration={f}:offset={d - 2 * f:.3f}[v]")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-nostdin", "-i", brut, "-filter_complex", fc,
+                    "-map", "[v]", "-an", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", boucle],
+                   check=True)
+    return boucle
 
 
 def _lignes(d, texte, font, largeur):
@@ -157,11 +188,18 @@ def _lignes(d, texte, font, largeur):
 
 
 def _centre(d, y, txt, font, fill):
-    d.text(((W - d.textlength(txt, font=font)) / 2, y), txt, font=font, fill=fill)
+    x = (W - d.textlength(txt, font=font)) / 2
+    if NATURE:
+        d.text((x + 3, y + 3), txt, font=font, fill=(0, 0, 0, 170))
+    d.text((x, y), txt, font=font, fill=fill)
 
 
 def cadre(titre_comp):
-    im = FOND.copy()
+    if NATURE:
+        # calque transparent pose sur la video : un voile sombre pour la lecture
+        im = Image.new("RGBA", (W, H), (0, 0, 0, 105))
+    else:
+        im = FOND.copy()
     d = ImageDraw.Draw(im)
     _centre(d, 54, "LaBible.app  ·  Bible Louis Segond 1910", _f(GAR, 34), GRIS)
     d.line([(W / 2 - 60, 124), (W / 2 + 60, 124)], fill=OR, width=2)
@@ -211,6 +249,13 @@ def image_fin(chemin):
 
 def miniature(comp, minutes, chemin):
     w, h = 1280, 720
+    if NATURE:
+        image = chemin + ".nature.jpg"
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-nostdin", "-ss", "3", "-i", NATURE,
+                        "-frames:v", "1", "-vf", f"scale={w}:{h}", image], check=True)
+        im = Image.open(image).convert("RGB")
+        im = Image.blend(im, Image.new("RGB", (w, h), (0, 0, 0)), 0.38)
+        return miniature_nature(comp, minutes, im, chemin)
     im = FOND.resize((w, h))
     d = ImageDraw.Draw(im)
     for taille in range(112, 50, -4):
@@ -239,6 +284,37 @@ def miniature(comp, minutes, chemin):
     d.line([(w / 2 - 70, y), (w / 2 + 70, y)], fill=OR, width=3)
     d.text(((w - d.textlength(t2, font=f2)) / 2, y + 24), t2, font=f2, fill=OR_CLAIR)
     im.save(chemin, quality=92)
+
+
+def miniature_nature(comp, minutes, im, chemin):
+    """Grandes lettres dorees en capitales, lisibles sur un telephone."""
+    from PIL import ImageFilter
+    w, h = im.size
+    titre = comp["titre"].upper()
+    calque = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(calque)
+    for taille in range(150, 60, -6):
+        f = _f(GAR, taille)
+        lg = _lignes(d, titre, f, w - 120)
+        if len(lg) <= 2:
+            break
+    hl = int(taille * 1.02)
+    if minutes >= 60:
+        h_, m_ = divmod(minutes, 60)
+        t2 = f"{h_} h" + (f" {m_:02d}" if m_ else "") + " · Bible Louis Segond 1910"
+    else:
+        t2 = "Bible Louis Segond 1910"
+    f2 = _f(GAR_IT, 56)
+    y = (h - (len(lg) * hl + 90)) // 2
+    for l in lg:
+        d.text(((w - d.textlength(l, font=f)) / 2, y), l, font=f, fill=OR_CLAIR + (255,))
+        y += hl
+    d.text(((w - d.textlength(t2, font=f2)) / 2, y + 26), t2, font=f2, fill=CREME + (255,))
+    ombre = calque.split()[3].filter(ImageFilter.GaussianBlur(10)).point(lambda v: min(255, int(v * 1.4)))
+    base = im.convert("RGBA")
+    base.paste(Image.new("RGBA", (w, h), (0, 0, 0, 255)), (4, 6), ombre)
+    base.alpha_composite(calque)
+    base.convert("RGB").save(chemin, quality=92)
 
 
 # ─── Montage ────────────────────────────────────────────────────────────────
@@ -275,11 +351,19 @@ def musique_longue(duree, dossier):
 
 
 def fabriquer(comp):
-    global FOND
+    global FOND, NATURE
     FOND = fond()
     dossier = "compilation_tmp"
     shutil.rmtree(dossier, ignore_errors=True)
     os.makedirs(dossier)
+    NATURE = None
+    if comp.get("nature"):
+        try:
+            NATURE = boucle_nature(comp["nature"], dossier)
+            print(f"🌿 Fond de nature : {comp['nature']}")
+        except Exception as e:
+            print(f"⚠️  Fond de nature indisponible ({str(e)[:120]}) : fond habituel")
+    EXT = ".png" if NATURE else ".jpg"
     segs = segments(comp)
     if LIMITE:
         reste, court = LIMITE, []
@@ -304,7 +388,7 @@ def fabriquer(comp):
         t += d
 
     # titre (sans voix : la musique s'installe)
-    img = os.path.join(dossier, "titre.jpg")
+    img = os.path.join(dossier, "titre" + EXT)
     image_titre(comp, img)
     chapitres.append((0, comp["titre"]))
     ajouter(img, None, 0, 0, TITRE_DUREE_MIN)
@@ -312,22 +396,22 @@ def fabriquer(comp):
     for titre_seg, items in segs:
         if titre_seg:
             chapitres.append((t, titre_seg))
-            img = os.path.join(dossier, f"s{k:04d}.jpg"); k += 1
+            img = os.path.join(dossier, f"s{k:04d}{EXT}"); k += 1
             image_segment(comp["titre"], titre_seg, img)
             ajouter(img, pm.synthese(f"{titre_seg}.", os.path.join(dossier, f"a{k:04d}")), 0.8, 1.6)
         for ref, texte in items:
             propre = clean_text(strip_rubric(texte)).rstrip(".")
-            img = os.path.join(dossier, f"v{k:04d}.jpg"); k += 1
+            img = os.path.join(dossier, f"v{k:04d}{EXT}"); k += 1
             image_verset(comp["titre"], ref, propre, img)
             ajouter(img, pm.synthese(pm.texte_a_lire(propre), os.path.join(dossier, f"a{k:04d}")), AVANT, APRES)
             print(f"  🎙️  {k}/{n_total + len(segs)}", end="\r")
     print()
-    img = os.path.join(dossier, "fin.jpg")
+    img = os.path.join(dossier, "fin" + EXT)
     image_fin(img)
     ajouter(img, None, 0, 0, FIN_DUREE)
     total = t
     minutes = max(1, round(total / 60))
-    image_titre(comp, os.path.join(dossier, "titre.jpg"), minutes)   # avec la duree
+    image_titre(comp, os.path.join(dossier, "titre" + EXT), minutes)   # avec la duree
 
     # voix
     voix = np.zeros(int(total * SR) + SR, dtype=np.float32)
@@ -349,18 +433,30 @@ def fabriquer(comp):
     musique = musique_longue(total, dossier)
     sortie = f"compilation_{comp['id']}.mp4"
     tmp = sortie + ".tmp.mp4"
-    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", liste, "-i", wav]
+    # Avec un fond de nature, la boucle video passe en entree 0 et les images
+    # (transparentes) se posent dessus ; les entrees audio decalent d'un rang.
+    o = 1 if NATURE else 0
+    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-nostdin"]
+    if NATURE:
+        cmd += ["-stream_loop", "-1", "-i", NATURE]
+    cmd += ["-f", "concat", "-safe", "0", "-i", liste, "-i", wav]
     if musique:
         cmd += ["-i", musique]
-        fc = (f"[1:a]aformat=sample_rates=48000:channel_layouts=stereo,asplit=2[v][sc];"
-              f"[2:a]volume=0.14,afade=t=in:d=3,afade=t=out:st={max(0, total - 6):.2f}:d=6[m0];"
+        fc = (f"[{1 + o}:a]aformat=sample_rates=48000:channel_layouts=stereo,asplit=2[v][sc];"
+              f"[{2 + o}:a]volume=0.14,afade=t=in:d=3,afade=t=out:st={max(0, total - 6):.2f}:d=6[m0];"
               f"[m0][sc]sidechaincompress={pm.DUCKING}[m];"
               f"[v][m]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=11[a]")
     else:
-        fc = "[1:a]aformat=sample_rates=48000:channel_layouts=stereo,loudnorm=I=-16:TP=-1.5:LRA=11[a]"
-    cmd += ["-filter_complex", fc, "-map", "0:v", "-map", "[a]",
-            "-vf", "fps=24,format=yuv420p", "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage",
-            "-crf", "22", "-c:a", "aac", "-b:a", "160k", "-t", f"{total:.2f}", "-movflags", "+faststart", tmp]
+        fc = f"[{1 + o}:a]aformat=sample_rates=48000:channel_layouts=stereo,loudnorm=I=-16:TP=-1.5:LRA=11[a]"
+    if NATURE:
+        fc += ";[0:v]fps=24[fond];[1:v]fps=24,format=rgba[cal];[fond][cal]overlay=format=auto,format=yuv420p[vid]"
+        cmd += ["-filter_complex", fc, "-map", "[vid]", "-map", "[a]",
+                "-c:v", "libx264", "-preset", "veryfast", "-crf", "23"]
+    else:
+        cmd += ["-filter_complex", fc, "-map", "0:v", "-map", "[a]",
+                "-vf", "fps=24,format=yuv420p", "-c:v", "libx264", "-preset", "veryfast", "-tune", "stillimage",
+                "-crf", "22"]
+    cmd += ["-c:a", "aac", "-b:a", "160k", "-t", f"{total:.2f}", "-movflags", "+faststart", tmp]
     subprocess.run(cmd, check=True)
     os.replace(tmp, sortie)
     vignette = f"compilation_{comp['id']}.jpg"
@@ -399,8 +495,9 @@ def poser_miniature(yt, vid, vignette, essais=3):
 def remettre_miniatures():
     """compilation = « --vignettes » : refait la miniature des lectures longues deja
     publiees (format actuel, sans la duree). Ne publie rien."""
-    global FOND
+    global FOND, NATURE
     FOND = fond()
+    NATURE = None
     comps = {c["id"]: c for c in load_json(COMPILATIONS)}
     videos = load_json(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else {}
     yt = youtube()
