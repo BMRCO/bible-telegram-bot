@@ -833,6 +833,44 @@ def upload(video, vignette, comp, minutes, chapitres, progress):
     return vid
 
 
+# ─── Facebook : lien vers chaque lecture longue (BC, 27 nov. 2026 : « coloca
+# sempre o link »). Les videos « pour dormir » tournent sur trois textes
+# approuves par BC le 27 nov. 2026 ; le verset est lu dans la Bible et passe
+# par clean_text (Éternel accentue). Les autres : titre et lien.
+TEXTES_DORMIR = [
+    ("Ce soir, endormez-vous dans la paix de Dieu 🌧️", 4, 8,
+     "Fermez les yeux. Laissez la Parole veiller sur votre nuit."),
+    ("Le sommeil ne vient pas ? Écoutez la Parole 🌧️", 121, 4,
+     "Pendant que vous dormez, Il veille."),
+    ("Déposez la journée. Reposez-vous dans la Parole 🌧️", 23, 2,
+     "Les Psaumes, au son de la pluie, pour toute la nuit."),
+]
+
+
+def verset_psaume(ch, v):
+    for x in load_json("bible/lsg1910.json")["verses"]:
+        if x["book_name"].startswith("Psaume") and x["chapter"] == ch and x["verse"] == v:
+            return clean_text(x["text"])
+    raise ValueError(f"Psaumes {ch}:{v} introuvable")
+
+
+def message_facebook(comp, lien, progress):
+    if comp.get("pluie") or "dormir" in comp["id"]:
+        i = progress.get("fb_dormir", 0)
+        accroche, ch, v, fin = TEXTES_DORMIR[i % len(TEXTES_DORMIR)]
+        progress["fb_dormir"] = i + 1
+        return f"{accroche}\n\n« {verset_psaume(ch, v)} » Psaumes {ch}:{v}\n\n{fin}\n▶️ {lien}"
+    return f"{comp['titre']} 📖\n\n▶️ {lien}"
+
+
+def lien_facebook(comp, vid, progress):
+    lien = f"https://youtu.be/{vid}"
+    try:
+        bot.post_lien_facebook(message_facebook(comp, lien, progress), lien)
+    except Exception as e:
+        signaler_echec("Facebook lien (compilation)", f"{type(e).__name__} : {e}")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 def main():
     comps = load_json(COMPILATIONS)
@@ -846,6 +884,17 @@ def main():
         return
     if len(sys.argv) > 1 and sys.argv[1].strip() == "--playlist":
         rattraper_playlist()
+        return
+    if len(sys.argv) > 1 and sys.argv[1].strip().startswith("--facebook"):
+        # rattrapage : lien Facebook d'une lecture deja publiee (« --facebook <id> »)
+        cid = sys.argv[1].split()[-1]
+        vid = load_json(VIDEOS_FILE).get(cid)
+        comp = next((c for c in comps if c["id"] == cid), None)
+        if not (vid and comp):
+            sys.exit(f"pas de video publiee pour {cid}")
+        lien_facebook(comp, vid, progress)
+        save_json(PROGRESS_FILE, progress)
+        finaliser("compilation")
         return
     if len(sys.argv) > 1 and sys.argv[1].strip():
         comp = next((c for c in comps if c["id"] == sys.argv[1].strip()), None)
@@ -876,6 +925,7 @@ def main():
         videos = load_json(VIDEOS_FILE) if os.path.exists(VIDEOS_FILE) else {}
         videos[comp["id"]] = vid
         save_json(VIDEOS_FILE, videos)
+        lien_facebook(comp, vid, progress)
         save_json(PROGRESS_FILE, progress)
     finaliser("compilation")
 
