@@ -342,11 +342,12 @@ def faire_reel_doux(texte, ref, cat_name, sortie, musique=None, ligne_fin="Lisez
     d.text((cx, H - BORD - 56), "LaBible.app", font=ImageFont.truetype(FONT_SANS, 28), fill=ACC + (255,), anchor="ms")
     pied = _bande(vers, oy - 20, H - BORD - 20)
 
-    # rythme : les lignes se succedent jusqu'a ~6,5 s, puis le pied de carte
+    # rythme : le verset entier est lisible en ~1,5 s (BC, 27 nov. 2026 : les Shorts
+    # baissaient depuis l'apparition lente, ligne a ligne, sur ~6,5 s)
     n_l = len(bandes)
-    pas = min(0.9, 5.4 / max(1, n_l - 1))
-    debuts = [0.3 + i * pas for i in range(n_l)]
-    debut_pied = debuts[-1] + 0.6
+    pas = min(0.25, 0.9 / max(1, n_l - 1))
+    debuts = [0.1 + i * pas for i in range(n_l)]
+    debut_pied = debuts[-1] + 0.3
 
     fin = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(fin)
@@ -393,8 +394,8 @@ def faire_reel_doux(texte, ref, cat_name, sortie, musique=None, ligne_fin="Lisez
             zone += (coul - zone) * (ecl[k] * 0.85)
         sortie_v = 1.0 if t < 15.5 else ease((16.0 - t) / 0.5)
         for bd, t0 in zip(bandes, debuts):
-            _composer_bande(cadre, bd, ease((t - t0) / 0.9) * sortie_v)
-        _composer_bande(cadre, pied, ease((t - debut_pied) / 0.9) * sortie_v)
+            _composer_bande(cadre, bd, ease((t - t0) / 0.5) * sortie_v)
+        _composer_bande(cadre, pied, ease((t - debut_pied) / 0.5) * sortie_v)
         _composer(cadre, fin, ease((t - 16.5) / 0.5))
         if t > DUREE_DOUX - 0.45:
             cadre *= max(0.0, (DUREE_DOUX - t) / 0.45)

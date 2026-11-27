@@ -261,10 +261,10 @@ def faire_video(livre, ch, v, texte, ref, sortie):
     bandes = [np_bande(c) for c in lignes_c]
     pied = np_bande(pied_c)
     fin = np_calque(calque_fin())
-    # rythme : les lignes se succedent de 1 s a ~9 s, puis la reference
-    pas = min(1.1, 8.0 / max(1, len(bandes) - 1))
-    debuts = [1.0 + i * pas for i in range(len(bandes))]
-    debut_pied = debuts[-1] + 0.8
+    # rythme : le verset entier est lisible en ~1,5 s (BC, 27 nov. 2026)
+    pas = min(0.25, 0.9 / max(1, len(bandes) - 1))
+    debuts = [0.1 + i * pas for i in range(len(bandes))]
+    debut_pied = debuts[-1] + 0.3
 
     def bande(cadre, b, a):
         if a <= 0:
@@ -301,8 +301,8 @@ def faire_video(livre, ch, v, texte, ref, sortie):
         cadre = cadre.astype(np.float32)
         _composer(cadre, tete, _alpha(t, 0.2, DUREE - 0.4, 1.0))
         for bd, t0 in zip(bandes, debuts):
-            bande(cadre, bd, _alpha(t, t0, 19.6, 1.0))
-        bande(cadre, pied, _alpha(t, debut_pied, 19.6, 1.0))
+            bande(cadre, bd, _alpha(t, t0, 19.6, 0.5))
+        bande(cadre, pied, _alpha(t, debut_pied, 19.6, 0.5))
         _composer(cadre, fin, _alpha(t, 20.2, DUREE + 1, 0.6))
         if t > DUREE - 0.6:
             cadre *= max(0.0, (DUREE - t) / 0.6)
