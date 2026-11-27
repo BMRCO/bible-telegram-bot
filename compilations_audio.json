@@ -122,23 +122,23 @@
   ]
  },
  {
-  "id": "psaumes-150",
-  "titre": "Les 150 Psaumes pour dormir",
-  "sous_titre": "Le livre des Psaumes en entier",
+  "id": "psaumes-dormir-1",
+  "titre": "Psaumes 1 à 75 pour dormir",
+  "sous_titre": "Le livre des Psaumes, première partie",
   "nature": [
    "foret-brume",
    "pluie-feuilles",
    "brume-matin",
    "foret-rayons"
   ],
-  "pluie": true,
+  "debit": "-14%",
+  "avant": 0.9,
+  "apres": 2.8,
   "lecture_posee": true,
-  "debit": "-8%",
-  "avant": 0.8,
-  "apres": 1.8,
-  "titre_youtube": "PSAUMES POUR DORMIR 🌧️ | Les 150 Psaumes au son de la pluie | {duree} | Bible Louis Segond 1910",
+  "pluie": true,
+  "titre_youtube": "PSAUMES POUR DORMIR 🌧️ | Psaumes 1 à 75 au son de la pluie | {duree} | Bible Louis Segond 1910",
   "miniature_lignes": [
-   "Les 150 Psaumes",
+   "Psaumes 1 à 75",
    "pour dormir",
    "au son de la pluie · {duree}"
   ],
@@ -217,7 +217,31 @@
    "Psaumes 72",
    "Psaumes 73",
    "Psaumes 74",
-   "Psaumes 75",
+   "Psaumes 75"
+  ]
+ },
+ {
+  "id": "psaumes-dormir-2",
+  "titre": "Psaumes 76 à 150 pour dormir",
+  "sous_titre": "Le livre des Psaumes, seconde partie",
+  "nature": [
+   "brume-matin",
+   "foret-rayons",
+   "foret-brume",
+   "pluie-feuilles"
+  ],
+  "debit": "-14%",
+  "avant": 0.9,
+  "apres": 2.8,
+  "lecture_posee": true,
+  "pluie": true,
+  "titre_youtube": "PSAUMES POUR DORMIR 🌧️ | Psaumes 76 à 150 au son de la pluie | {duree} | Bible Louis Segond 1910",
+  "miniature_lignes": [
+   "Psaumes 76 à 150",
+   "pour dormir",
+   "au son de la pluie · {duree}"
+  ],
+  "passages": [
    "Psaumes 76",
    "Psaumes 77",
    "Psaumes 78",
@@ -293,6 +317,61 @@
    "Psaumes 148",
    "Psaumes 149",
    "Psaumes 150"
+  ]
+ },
+ {
+  "id": "proverbes-dormir",
+  "titre": "Proverbes pour dormir",
+  "sous_titre": "Le livre des Proverbes en entier",
+  "nature": [
+   "foret-rayons",
+   "brume-matin",
+   "pluie-feuilles",
+   "foret-brume"
+  ],
+  "debit": "-14%",
+  "avant": 0.9,
+  "apres": 2.8,
+  "lecture_posee": true,
+  "pluie": true,
+  "titre_youtube": "PROVERBES POUR DORMIR 🌧️ | Les Proverbes au son de la pluie | {duree} | Bible Louis Segond 1910",
+  "miniature_lignes": [
+   "Les Proverbes",
+   "pour dormir",
+   "au son de la pluie · {duree}"
+  ],
+  "passages": [
+   "Proverbes 1",
+   "Proverbes 2",
+   "Proverbes 3",
+   "Proverbes 4",
+   "Proverbes 5",
+   "Proverbes 6",
+   "Proverbes 7",
+   "Proverbes 8",
+   "Proverbes 9",
+   "Proverbes 10",
+   "Proverbes 11",
+   "Proverbes 12",
+   "Proverbes 13",
+   "Proverbes 14",
+   "Proverbes 15",
+   "Proverbes 16",
+   "Proverbes 17",
+   "Proverbes 18",
+   "Proverbes 19",
+   "Proverbes 20",
+   "Proverbes 21",
+   "Proverbes 22",
+   "Proverbes 23",
+   "Proverbes 24",
+   "Proverbes 25",
+   "Proverbes 26",
+   "Proverbes 27",
+   "Proverbes 28",
+   "Proverbes 29",
+   "Proverbes 30",
+   "Proverbes 31"
   ]
  },
  {

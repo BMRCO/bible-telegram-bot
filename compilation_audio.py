@@ -857,7 +857,9 @@ def verset_psaume(ch, v):
 def message_facebook(comp, lien, progress):
     if comp.get("pluie") or "dormir" in comp["id"]:
         i = progress.get("fb_dormir", 0)
-        accroche, ch, v, fin = TEXTES_DORMIR[i % len(TEXTES_DORMIR)]
+        # le 3e texte parle des Psaumes : les autres livres ne prennent que les deux premiers
+        textes = TEXTES_DORMIR if "psaume" in comp["id"] else TEXTES_DORMIR[:2]
+        accroche, ch, v, fin = textes[i % len(textes)]
         progress["fb_dormir"] = i + 1
         return f"{accroche}\n\n« {verset_psaume(ch, v)} » Psaumes {ch}:{v}\n\n{fin}\n▶️ {lien}"
     return f"{comp['titre']} 📖\n\n▶️ {lien}"
