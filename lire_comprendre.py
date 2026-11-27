@@ -126,15 +126,17 @@ def calque(seg, ep):
     y0 = HAUT_IMAGE - 300
     alpha[y0:HAUT_IMAGE] = np.linspace(0, 1, HAUT_IMAGE - y0) ** 1.4
     alpha[HAUT_IMAGE:] = 1
-    alpha[:230] = np.maximum(alpha[:230], np.linspace(0.55, 0, 230))   # lisibilite du bandeau
+    alpha[:300] = np.maximum(alpha[:300], np.linspace(0.8, 0, 300) ** 0.8)   # lisibilite du bandeau
     px[..., 3] = (alpha[:, None] * 255).astype(np.uint8)
     im = Image.fromarray(px, "RGBA")
     d = ImageDraw.Draw(im)
 
     # bandeau de la serie, en haut a gauche
-    d.text((MARGE, 92), "LIRE ET COMPRENDRE LA BIBLE", font=police(SANS_GRAS, 30),
-           fill=OR + (255,))
-    d.text((MARGE, 136), ep["titre_court"], font=police(SANS, 28), fill=BLANC + (230,))
+    for dx, dy, coul in ((2, 2, (0, 0, 0, 200)), (0, 0, None)):
+        d.text((MARGE + dx, 92 + dy), "LIRE ET COMPRENDRE LA BIBLE", font=police(SANS_GRAS, 30),
+               fill=coul or OR + (255,))
+        d.text((MARGE + dx, 136 + dy), ep["titre_court"], font=police(SANS, 28),
+               fill=coul or BLANC + (240,))
 
     y = HAUT_IMAGE - 120
     if seg.get("grand"):
