@@ -49,6 +49,9 @@ W, H = 1920, 1080
 SR = pm.SR
 GAR = "fonts/EBGaramond-Regular.ttf"
 GAR_IT = "fonts/EBGaramond-Italic.ttf"
+# Lettre grasse et etroite des miniatures « pour dormir » (BC, 27 nov. 2026 : capes
+# lisibles sur un telephone). Anton, SIL Open Font License (fonts/OFL-Anton.txt).
+ANTON = "fonts/Anton-Regular.woff"
 OR = (214, 178, 106)
 OR_CLAIR = (236, 210, 150)
 CREME = (244, 236, 218)
@@ -302,6 +305,8 @@ def miniature(comp, minutes, chemin):
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-nostdin", "-ss", "3", "-i", NATURE,
                         "-frames:v", "1", "-vf", f"scale={w}:{h}", image], check=True)
         im = Image.open(image).convert("RGB")
+        if comp.get("miniature_lignes"):
+            return miniature_forte(comp, minutes, im, chemin)
         im = Image.blend(im, Image.new("RGB", (w, h), (0, 0, 0)), 0.5)
         return miniature_nature(comp, minutes, im, chemin)
     im = FOND.resize((w, h))
@@ -332,6 +337,44 @@ def miniature(comp, minutes, chemin):
     d.line([(w / 2 - 70, y), (w / 2 + 70, y)], fill=OR, width=3)
     d.text(((w - d.textlength(t2, font=f2)) / 2, y + 24), t2, font=f2, fill=OR_CLAIR)
     im.save(chemin, quality=92)
+
+
+def miniature_forte(comp, minutes, im, chemin):
+    """Miniature en lettres grasses : premiere ligne dorée, les suivantes en blanc,
+    la derniere plus petite ; « LaBible.app · Louis Segond 1910 » discret en bas.
+    comp["miniature_lignes"] : liste de lignes, {duree} remplace par la duree."""
+    from PIL import ImageFilter
+    w, h = im.size
+    # assombrir, plus fort sur les bords
+    y_, x_ = np.ogrid[:h, :w]
+    vign = 0.38 + 0.37 * np.clip(((x_ - w / 2) / (w * 0.6)) ** 2 + ((y_ - h / 2) / (h * 0.6)) ** 2, 0, 1)
+    a = np.asarray(im.convert("RGB"), dtype=np.float32) * (1 - vign[..., None])
+    base = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8)).convert("RGBA")
+    lignes = [l.format(duree=duree_lisible(minutes)).upper() for l in comp["miniature_lignes"]]
+    calque = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    d = ImageDraw.Draw(calque)
+    polices = []
+    for i, l in enumerate(lignes):
+        maxi = 150 if i < len(lignes) - 1 else 74
+        t = maxi
+        while t > 30 and d.textlength(l, font=_f(ANTON, t)) > w - 110:
+            t -= 4
+        polices.append(_f(ANTON, t))
+    hauteurs = [int(f.size * 1.08) for f in polices]
+    if len(hauteurs) > 1:
+        hauteurs[-2] += 22          # un peu d'air avant la ligne du bas
+    y = (h - sum(hauteurs) - 40) // 2
+    for i, (l, f) in enumerate(zip(lignes, polices)):
+        couleur = (247, 205, 92) if i == 0 else (250, 248, 242)
+        d.text(((w - d.textlength(l, font=f)) / 2, y), l, font=f, fill=couleur + (255,))
+        y += hauteurs[i]
+    pied = _f(GAR, 30)
+    marque = "LaBible.app  ·  Louis Segond 1910"
+    d.text(((w - d.textlength(marque, font=pied)) / 2, h - 62), marque, font=pied, fill=CREME + (230,))
+    ombre = calque.split()[3].filter(ImageFilter.GaussianBlur(8))
+    base.paste(Image.new("RGBA", (w, h), (0, 0, 0, 255)), (5, 7), ombre)
+    base.alpha_composite(calque)
+    base.convert("RGB").save(chemin, quality=93)
 
 
 def miniature_nature(comp, minutes, im, chemin):
@@ -466,18 +509,43 @@ def fabriquer(comp):
     chapitres.append((0, comp["titre"]))
     ajouter(img, None, 0, 0, TITRE_DUREE_MIN)
 
+    # 1) toutes les voix d'abord, en parallele : une lecture de plusieurs heures
+    #    compte des milliers de syntheses (27 nov. 2026, series « pour dormir »)
+    from concurrent.futures import ThreadPoolExecutor
+    travaux, kk = [], k
+    for titre_seg, items in segs:
+        if titre_seg:
+            kk += 1
+            travaux.append((pm.synthese, f"{titre_seg}.", os.path.join(dossier, f"a{kk:04d}")))
+        for ref, texte in items:
+            kk += 1
+            propre = clean_text(strip_rubric(texte)).rstrip(".")
+            travaux.append((lire, pm.texte_a_lire(propre), os.path.join(dossier, f"a{kk:04d}")))
+    fait = [0]
+
+    def un(job):
+        f, txt, base = job
+        r = f(txt, base)
+        fait[0] += 1
+        if fait[0] % 50 == 0:
+            print(f"  🎙️  {fait[0]}/{len(travaux)}")
+        return r
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        voix_lues = list(ex.map(un, travaux))
+    voix_lues.reverse()
+
+    # 2) images et minutage, dans l'ordre
     for titre_seg, items in segs:
         if titre_seg:
             chapitres.append((t, titre_seg))
             img = os.path.join(dossier, f"s{k:04d}{EXT}"); k += 1
             image_segment(comp["titre"], titre_seg, img)
-            ajouter(img, pm.synthese(f"{titre_seg}.", os.path.join(dossier, f"a{k:04d}")), 0.8, 1.6)
+            ajouter(img, voix_lues.pop(), 0.8, 1.6)
         for ref, texte in items:
             propre = clean_text(strip_rubric(texte)).rstrip(".")
             img = os.path.join(dossier, f"v{k:04d}{EXT}"); k += 1
             image_verset(comp["titre"], ref, propre, img)
-            ajouter(img, lire(pm.texte_a_lire(propre), os.path.join(dossier, f"a{k:04d}")), avant, apres)
-            print(f"  🎙️  {k}/{n_total + len(segs)}", end="\r")
+            ajouter(img, voix_lues.pop(), avant, apres)
     print()
     img = os.path.join(dossier, "fin" + EXT)
     image_fin(img)
@@ -539,7 +607,10 @@ def fabriquer(comp):
                    f"volume=0.16,afade=t=in:d=4,afade=t=out:st={max(0, total - 6):.2f}:d=6[pl];"
                    f"[a0][pl]amix=inputs=2:duration=first:normalize=0[a]")
     if NATURE:
-        fc += ";[0:v]fps=24[fond];[1:v]fps=24,format=rgba[cal];[fond][cal]overlay=format=auto,format=yuv420p[vid]"
+        # au-dela de 3 h : 1280x720, pour un fichier et un rendu raisonnables
+        ech = ",scale=1280:720" if total > 3 * 3600 else ""
+        fc += (f";[0:v]fps=24[fond0];[fond0]null{ech}[fond];[1:v]fps=24,format=rgba{ech}[cal];"
+               "[fond][cal]overlay=format=auto,format=yuv420p[vid]")
         cmd += ["-filter_complex", fc, "-map", "[vid]", "-map", "[a]",
                 "-c:v", "libx264", "-preset", "veryfast", "-crf", "27", "-maxrate", "3500k", "-bufsize", "7000k"]
     else:
