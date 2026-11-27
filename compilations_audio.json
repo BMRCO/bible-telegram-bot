@@ -380,6 +380,23 @@
   "sous_titre": "La paix que donne la Parole",
   "passages": [
    "theme:paix"
+  ],
+  "debit": "-14%",
+  "avant": 0.9,
+  "apres": 2.8,
+  "lecture_posee": true,
+  "pluie": true,
+  "nature": [
+   "brume-matin",
+   "pluie-feuilles",
+   "foret-brume",
+   "foret-rayons"
+  ],
+  "titre_youtube": "Versets de paix pour dormir 🌧️ | Au son de la pluie | {duree} | Bible Louis Segond 1910",
+  "miniature_lignes": [
+   "Versets de paix",
+   "pour dormir",
+   "au son de la pluie · {duree}"
   ]
  },
  {
@@ -399,6 +416,23 @@
    "Psaumes 40",
    "Psaumes 42",
    "Psaumes 43"
+  ],
+  "debit": "-14%",
+  "avant": 0.9,
+  "apres": 2.8,
+  "lecture_posee": true,
+  "pluie": true,
+  "nature": [
+   "pluie-feuilles",
+   "foret-brume",
+   "foret-rayons",
+   "brume-matin"
+  ],
+  "titre_youtube": "Psaumes de confiance pour dormir 🌧️ | Au son de la pluie | {duree} | Bible Louis Segond 1910",
+  "miniature_lignes": [
+   "Psaumes de confiance",
+   "pour dormir",
+   "au son de la pluie · {duree}"
   ]
  },
  {
@@ -407,6 +441,23 @@
   "sous_titre": "L’espérance qui ne trompe point",
   "passages": [
    "theme:esperance"
+  ],
+  "debit": "-14%",
+  "avant": 0.9,
+  "apres": 2.8,
+  "lecture_posee": true,
+  "pluie": true,
+  "nature": [
+   "foret-brume",
+   "foret-rayons",
+   "brume-matin",
+   "pluie-feuilles"
+  ],
+  "titre_youtube": "Versets d’espérance pour dormir 🌧️ | Au son de la pluie | {duree} | Bible Louis Segond 1910",
+  "miniature_lignes": [
+   "Versets d’espérance",
+   "pour dormir",
+   "au son de la pluie · {duree}"
   ]
  },
  {
@@ -426,6 +477,23 @@
    "Psaumes 34",
    "Psaumes 8",
    "Psaumes 19"
+  ],
+  "debit": "-14%",
+  "avant": 0.9,
+  "apres": 2.8,
+  "lecture_posee": true,
+  "pluie": true,
+  "nature": [
+   "foret-rayons",
+   "brume-matin",
+   "pluie-feuilles",
+   "foret-brume"
+  ],
+  "titre_youtube": "Psaumes de louange pour dormir 🌧️ | Au son de la pluie | {duree} | Bible Louis Segond 1910",
+  "miniature_lignes": [
+   "Psaumes de louange",
+   "pour dormir",
+   "au son de la pluie · {duree}"
   ]
  },
  {
@@ -434,6 +502,23 @@
   "sous_titre": "Des promesses pour chaque jour",
   "passages": [
    "theme:promesses"
+  ],
+  "debit": "-14%",
+  "avant": 0.9,
+  "apres": 2.8,
+  "lecture_posee": true,
+  "pluie": true,
+  "nature": [
+   "brume-matin",
+   "pluie-feuilles",
+   "foret-brume",
+   "foret-rayons"
+  ],
+  "titre_youtube": "Les promesses de la Bible pour dormir 🌧️ | Au son de la pluie | {duree} | Bible Louis Segond 1910",
+  "miniature_lignes": [
+   "Promesses de la Bible",
+   "pour dormir",
+   "au son de la pluie · {duree}"
   ]
  }
 ]

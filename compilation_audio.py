@@ -377,7 +377,7 @@ def miniature_forte(comp, minutes, im, chemin):
     vign = 0.38 + 0.37 * np.clip(((x_ - w / 2) / (w * 0.6)) ** 2 + ((y_ - h / 2) / (h * 0.6)) ** 2, 0, 1)
     a = np.asarray(im.convert("RGB"), dtype=np.float32) * (1 - vign[..., None])
     base = Image.fromarray(np.clip(a, 0, 255).astype(np.uint8)).convert("RGBA")
-    lignes = [l.format(duree=duree_lisible(minutes)).upper() for l in comp["miniature_lignes"]]
+    lignes = [avec_duree(l, minutes).upper() for l in comp["miniature_lignes"]]
     calque = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(calque)
     polices = []
@@ -660,13 +660,23 @@ def duree_lisible(minutes):
     return f"{h} h" + (f" {m:02d}" if m else "") if h else f"{m} min"
 
 
+def avec_duree(texte, minutes):
+    """{duree} seulement a partir d'une heure (BC, 22 nov. 2026 : pas de minutes) ;
+    en dessous, la duree et son separateur disparaissent."""
+    if minutes >= 60:
+        return texte.format(duree=duree_lisible(minutes))
+    for motif in (" | {duree}", " · {duree}", "{duree}"):
+        texte = texte.replace(motif, "")
+    return texte.strip()
+
+
 def titre_video(comp, minutes):
     """Sans la duree (BC, 22 nov. 2026 : le YouTube l'affiche deja sur la miniature).
     Seule une lecture d'une heure ou plus la porte, car c'est elle qu'on cherche.
     Une compilation peut imposer son titre (« titre_youtube », avec {duree}) :
     series « pour dormir », titre approuve par BC le 27 nov. 2026."""
     if comp.get("titre_youtube"):
-        return comp["titre_youtube"].format(duree=duree_lisible(minutes))[:100]
+        return avec_duree(comp["titre_youtube"], minutes)[:100]
     if minutes >= 60:
         h, m = divmod(minutes, 60)
         duree = f"{h} h" + (f" {m:02d}" if m else "")
