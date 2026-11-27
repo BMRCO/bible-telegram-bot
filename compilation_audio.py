@@ -151,6 +151,52 @@ NATURE_VIDEOS = {
 }
 
 
+# Vraie pluie enregistree (BC, 27 nov. : le bruit genere « parece interferencia ») :
+# « Rain (loopable) » de Ylmir, OpenGameArt, licence CC0 (sans attribution),
+# quatre boucles de 25 a 45 s enregistrees a une fenetre.
+PLUIE_ZIP = "https://opengameart.org/sites/default/files/Rain%20OGG.zip"
+
+
+def pluie_enregistree(dossier):
+    """Telecharge les boucles de pluie et les enchaine en une piste d'environ 2 min,
+    en fondu croise, qui tournera en boucle sous la voix. None si indisponible."""
+    import io
+    import zipfile
+    import requests
+    try:
+        r = requests.get(PLUIE_ZIP, timeout=120, headers={"User-Agent": "Mozilla/5.0"})
+        r.raise_for_status()
+        z = zipfile.ZipFile(io.BytesIO(r.content))
+        noms = sorted(n for n in z.namelist() if n.lower().endswith((".ogg", ".mp3", ".wav")))
+        if not noms:
+            return None
+        fichiers = []
+        for n in noms:
+            f = os.path.join(dossier, "pluie_" + os.path.basename(n))
+            open(f, "wb").write(z.read(n))
+            fichiers.append(f)
+        sortie = os.path.join(dossier, "pluie.wav")
+        if len(fichiers) == 1:
+            subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-nostdin", "-i", fichiers[0],
+                            "-ar", "48000", "-ac", "2", sortie], check=True)
+            return sortie
+        cmd = ["ffmpeg", "-y", "-loglevel", "error", "-nostdin"]
+        for f in fichiers:
+            cmd += ["-i", f]
+        fc, prec = "", "[0:a]"
+        for i in range(1, len(fichiers)):
+            fc += f"{prec}[{i}:a]acrossfade=d=3[x{i}];"
+            prec = f"[x{i}]"
+        fc = fc.rstrip(";")
+        subprocess.run(cmd + ["-filter_complex", fc, "-map", prec, "-ar", "48000", "-ac", "2", sortie],
+                       check=True)
+        print(f"🌧️  Pluie enregistrée : {len(fichiers)} boucle(s)")
+        return sortie
+    except Exception as e:
+        print(f"⚠️  Pluie enregistrée indisponible ({str(e)[:120]}) : pluie générée")
+        return None
+
+
 def boucle_nature(nom, dossier):
     """Telecharge la video et en fait une boucle sans raccord visible : la fin se
     fond dans le debut (fondu de 1,5 s). 1920x1080, 24 i/s, sans son."""
@@ -475,15 +521,23 @@ def fabriquer(comp):
               f"[v][m]amix=inputs=2:duration=first:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=11[a]")
     else:
         fc = f"[{1 + o}:a]aformat=sample_rates=48000:channel_layouts=stereo,loudnorm=I=-16:TP=-1.5:LRA=11[a]"
+    pluie = pluie_enregistree(dossier) if comp.get("pluie") else None
     if comp.get("pluie") and musique:
-        # pluie douce generee (aucun droit) : bruit rose filtre + grondement brun,
-        # tres bas et constant, sous la voix et la musique
         fc = fc.replace("loudnorm=I=-16:TP=-1.5:LRA=11[a]", "loudnorm=I=-16:TP=-1.5:LRA=11[a0]")
-        fc += (f";anoisesrc=c=pink:a=0.5:d={total + 1:.1f},highpass=f=500,lowpass=f=7000,volume=0.45[rp];"
-               f"anoisesrc=c=brown:a=0.5:d={total + 1:.1f},lowpass=f=700,volume=0.7[rb];"
-               f"[rp][rb]amix=inputs=2:normalize=0,aformat=sample_rates=48000:channel_layouts=stereo,"
-               f"volume=0.16,afade=t=in:d=4,afade=t=out:st={max(0, total - 6):.2f}:d=6[pl];"
-               f"[a0][pl]amix=inputs=2:duration=first:normalize=0[a]")
+        if pluie:
+            # vraie pluie en boucle, assez presente pour s'entendre, sous la voix
+            cmd += ["-stream_loop", "-1", "-i", pluie]
+            ip = 3 + o
+            fc += (f";[{ip}:a]aformat=sample_rates=48000:channel_layouts=stereo,volume=0.45,"
+                   f"afade=t=in:d=4,afade=t=out:st={max(0, total - 6):.2f}:d=6[pl];"
+                   f"[a0][pl]amix=inputs=2:duration=first:normalize=0[a]")
+        else:
+            # repli : pluie generee (bruit rose filtre + grondement brun)
+            fc += (f";anoisesrc=c=pink:a=0.5:d={total + 1:.1f},highpass=f=500,lowpass=f=7000,volume=0.45[rp];"
+                   f"anoisesrc=c=brown:a=0.5:d={total + 1:.1f},lowpass=f=700,volume=0.7[rb];"
+                   f"[rp][rb]amix=inputs=2:normalize=0,aformat=sample_rates=48000:channel_layouts=stereo,"
+                   f"volume=0.16,afade=t=in:d=4,afade=t=out:st={max(0, total - 6):.2f}:d=6[pl];"
+                   f"[a0][pl]amix=inputs=2:duration=first:normalize=0[a]")
     if NATURE:
         fc += ";[0:v]fps=24[fond];[1:v]fps=24,format=rgba[cal];[fond][cal]overlay=format=auto,format=yuv420p[vid]"
         cmd += ["-filter_complex", fc, "-map", "[vid]", "-map", "[a]",
