@@ -1,0 +1,70 @@
+name: Lire et comprendre la Bible (episodes)
+
+# Serie proposee par BC le 27 nov. 2026. Pour l'instant : essais seulement.
+# La video et sa planche vont sur la branche jetable echantillons-lire
+# (les artefacts d'Actions ne sont pas lisibles depuis la session de Claude).
+
+on:
+  workflow_dispatch:
+    inputs:
+      episode:
+        description: 'Identifiant de l episode (lire_comprendre.json)'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lire-comprendre
+  cancel-in-progress: false
+
+jobs:
+  episode:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pillow requests numpy edge-tts==7.3.1
+
+      - name: Install ffmpeg
+        timeout-minutes: 12
+        run: |
+          APT="sudo timeout 150 apt-get -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 -o Acquire::Retries=1"
+          if command -v ffmpeg >/dev/null || { $APT update -qq && $APT install -y -qq ffmpeg; }; then
+            ffmpeg -version | head -1; exit 0
+          fi
+          echo "::warning::apt-get indisponible : ffmpeg statique (imageio-ffmpeg) utilise a la place"
+          python3 -m pip install -q imageio-ffmpeg
+          mkdir -p "$HOME/bin" && ln -sf "$(python3 -c 'import imageio_ffmpeg as i; print(i.get_ffmpeg_exe())')" "$HOME/bin/ffmpeg"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+
+      - name: Episode
+        env:
+          TELEGRAM_BOT_TOKEN: unused
+          TELEGRAM_CHANNEL: unused
+        run: python lire_comprendre.py "${{ inputs.episode }}"
+
+      - name: Echantillons (branche echantillons-lire)
+        run: |
+          mkdir -p /tmp/ech && cp echantillons/* /tmp/ech/
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan echantillons-lire
+          git rm -rq --cached . || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp /tmp/ech/* .
+          git add .
+          git commit -q -m "Essai Lire et comprendre"
+          git push -f origin echantillons-lire

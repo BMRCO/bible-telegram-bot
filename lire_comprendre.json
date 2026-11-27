@@ -1,0 +1,34 @@
+[
+ {
+  "id": "psaume-23-il-tu",
+  "titre_youtube": "Pourquoi le Psaume 23 passe-t-il de « il » à « tu » ?",
+  "titre_court": "Psaume 23 · De « il » à « tu »",
+  "reference_finale": "Psaumes 23:1-5",
+  "segments": [
+   {"voix": "Au début du Psaume 23, David dit : « L'Éternel est mon berger. »",
+    "verset": "Psaumes 23:1", "surligne": ["L'Éternel est mon berger"],
+    "video": "https://cdn.pixabay.com/video/2025/11/24/317821_large.mp4"},
+   {"voix": "Dans les versets suivants, il décrit ce que fait le berger : « Il me fait reposer », « Il me dirige ».",
+    "verset": "Psaumes 23:2", "surligne": ["Il me fait reposer", "Il me dirige"],
+    "video": "https://cdn.pixabay.com/video/2021/07/19/82030-577893668_large.mp4"},
+   {"voix": "« Il restaure mon âme ».",
+    "verset": "Psaumes 23:3", "surligne": ["Il restaure mon âme"],
+    "video": "https://cdn.pixabay.com/video/2020/11/28/57646-486125328_large.mp4"},
+   {"voix": "Puis, au verset 4, David évoque « la vallée de l'ombre de la mort ».",
+    "verset": "Psaumes 23:4", "surligne": ["la vallée de l'ombre de la mort"],
+    "video": "https://cdn.pixabay.com/video/2018/04/30/15909-267503876_large.mp4"},
+   {"voix": "À ce moment-là, il s'adresse directement à Dieu : « Car tu es avec moi. »",
+    "verset": "Psaumes 23:4", "surligne": ["car tu es avec moi"],
+    "video": "https://cdn.pixabay.com/video/2018/04/30/15909-267503876_large.mp4", "debut": 6},
+   {"voix": "Le changement tient à un mot : « il » devient « tu ». Au début du psaume, David parle de Dieu. Au milieu de la vallée, il lui parle.",
+    "grand": "« il » → « tu »", "sous_grand": "Il parle de Dieu. Puis il lui parle.",
+    "video": "https://cdn.pixabay.com/video/2019/11/04/28690-371200522_large.mp4"},
+   {"voix": "Et le « tu » continue au verset 5 : « Tu dresses devant moi une table ».",
+    "verset": "Psaumes 23:5", "surligne": ["Tu dresses devant moi une table", "Tu oins d'huile ma tête"],
+    "video": "https://cdn.pixabay.com/video/2022/05/19/117500-712236883_large.mp4"},
+   {"voix": "Dans la vallée, Dieu n'est plus celui dont on parle. Il est celui à qui l'on parle, parce qu'il est là : « car tu es avec moi ».",
+    "verset": "Psaumes 23:4", "surligne": ["car tu es avec moi"],
+    "video": "https://cdn.pixabay.com/video/2019/11/11/28975-372617944_large.mp4"}
+  ]
+ }
+]
