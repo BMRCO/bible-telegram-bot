@@ -58,7 +58,12 @@
   "id": "psaumes-dormir",
   "titre": "Psaumes pour dormir",
   "sous_titre": "Psaumes de confiance et de paix",
-  "nature": "pluie-feuilles",
+  "nature": [
+   "pluie-feuilles",
+   "foret-brume",
+   "foret-rayons",
+   "brume-matin"
+  ],
   "passages": [
    "Psaumes 4",
    "Psaumes 3",
@@ -120,7 +125,12 @@
   "id": "psaumes-150",
   "titre": "Les 150 Psaumes pour dormir",
   "sous_titre": "Le livre des Psaumes en entier",
-  "nature": "foret-brume",
+  "nature": [
+   "foret-brume",
+   "pluie-feuilles",
+   "brume-matin",
+   "foret-rayons"
+  ],
   "pluie": true,
   "lecture_posee": true,
   "debit": "-8%",

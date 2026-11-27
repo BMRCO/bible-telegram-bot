@@ -221,6 +221,33 @@ def boucle_nature(nom, dossier):
     return boucle
 
 
+def cycle_nature(noms, dossier, plan=180, fondu=4):
+    """Plusieurs paysages a la suite (BC, 27 nov. 2026 : « varias paisagens ») :
+    chacun reste `plan` secondes, puis se fond lentement dans le suivant, et le
+    dernier se fond dans le premier, si bien que le cycle tourne sans raccord
+    sous une lecture de plusieurs heures."""
+    boucles = [boucle_nature(n, dossier) for n in noms]
+    if len(boucles) == 1:
+        return boucles[0]
+    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-nostdin"]
+    for b in boucles + [boucles[0]]:
+        cmd += ["-stream_loop", "-1", "-i", b]
+    n = len(boucles)
+    fc = f"[0:v]trim={fondu}:{plan},setpts=PTS-STARTPTS[s0];"
+    for k in range(1, n):
+        fc += f"[{k}:v]trim=0:{plan},setpts=PTS-STARTPTS[s{k}];"
+    fc += f"[{n}:v]trim=0:{fondu},setpts=PTS-STARTPTS[s{n}];"
+    prec, long = "[s0]", plan - fondu
+    for k in range(1, n + 1):
+        lk = plan if k < n else fondu
+        fc += f"{prec}[s{k}]xfade=transition=fade:duration={fondu}:offset={long - fondu:.3f}[x{k}];"
+        prec, long = f"[x{k}]", long + lk - fondu
+    cycle = os.path.join(dossier, "cycle_nature.mp4")
+    subprocess.run(cmd + ["-filter_complex", fc.rstrip(";"), "-map", prec, "-an", "-c:v", "libx264",
+                          "-preset", "veryfast", "-crf", "20", "-t", f"{long:.3f}", cycle], check=True)
+    return cycle
+
+
 def _lignes(d, texte, font, largeur):
     mots, lignes, cur = texte.split(), [], ""
     for m in mots:
@@ -469,8 +496,9 @@ def fabriquer(comp):
     NATURE = None
     if comp.get("nature"):
         try:
-            NATURE = boucle_nature(comp["nature"], dossier)
-            print(f"🌿 Fond de nature : {comp['nature']}")
+            noms = comp["nature"] if isinstance(comp["nature"], list) else [comp["nature"]]
+            NATURE = cycle_nature(noms, dossier)
+            print(f"🌿 Fond de nature : {', '.join(noms)}")
         except Exception as e:
             print(f"⚠️  Fond de nature indisponible ({str(e)[:120]}) : fond habituel")
     EXT = ".png" if NATURE else ".jpg"
