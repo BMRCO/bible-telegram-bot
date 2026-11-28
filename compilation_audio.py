@@ -531,11 +531,15 @@ def fabriquer(comp):
         plans.append((img, d))
         t += d
 
-    # titre (sans voix : la musique s'installe)
-    img = os.path.join(dossier, "titre" + EXT)
-    image_titre(comp, img)
-    chapitres.append((0, comp["titre"]))
-    ajouter(img, None, 0, 0, TITRE_DUREE_MIN)
+    # titre (sans voix : la musique s'installe). Les videos « pour dormir »
+    # commencent sans attendre (BC, 28 nov. 2026 : deux tiers des spectateurs
+    # partaient dans la premiere minute) : pluie et voix des la premiere seconde.
+    sans_attente = bool(comp.get("pluie"))
+    if not sans_attente:
+        chapitres.append((0, comp["titre"]))   # sinon le 1er passage ouvre les chapitres a 0:00
+        img = os.path.join(dossier, "titre" + EXT)
+        image_titre(comp, img)
+        ajouter(img, None, 0, 0, TITRE_DUREE_MIN)
 
     # 1) toutes les voix d'abord, en parallele : une lecture de plusieurs heures
     #    compte des milliers de syntheses (27 nov. 2026, series « pour dormir »)
@@ -625,7 +629,7 @@ def fabriquer(comp):
             cmd += ["-stream_loop", "-1", "-i", pluie]
             ip = 3 + o
             fc += (f";[{ip}:a]aformat=sample_rates=48000:channel_layouts=stereo,volume=0.45,"
-                   f"afade=t=in:d=4,afade=t=out:st={max(0, total - 6):.2f}:d=6[pl];"
+                   f"afade=t=in:d=1,afade=t=out:st={max(0, total - 6):.2f}:d=6[pl];"
                    f"[a0][pl]amix=inputs=2:duration=first:normalize=0[a]")
         else:
             # repli : pluie generee (bruit rose filtre + grondement brun)
@@ -745,6 +749,8 @@ def retitrer():
 def description(comp, chapitres):
     lignes = [f"{comp['titre']}. {comp['sous_titre']}.",
               "Le texte de la Bible Louis Segond 1910, lu verset après verset.", ""]
+    if chapitres and chapitres[0][0] > 0:          # YouTube exige un chapitre a 0:00
+        chapitres = [(0, comp["titre"])] + list(chapitres)
     if len(chapitres) >= 3:
         lignes += [f"{hms(t)} {nom}" for t, nom in chapitres] + [""]
     lignes += [f"📖 Lire la Bible : {APP_URL}",

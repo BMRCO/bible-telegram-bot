@@ -1,0 +1,38 @@
+name: Echantillons de musique (videos pour dormir)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  musique:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Dependances
+        run: |
+          python -m pip install --upgrade pip
+          pip install pillow requests numpy edge-tts==7.3.1
+          sudo timeout 150 apt-get update -qq && sudo timeout 150 apt-get install -y -qq ffmpeg || true
+          ffmpeg -version | head -1
+      - name: Echantillons
+        env:
+          TELEGRAM_BOT_TOKEN: unused
+          TELEGRAM_CHANNEL: unused
+        run: python scripts/echantillons_musique.py
+      - name: Branche echantillons-musique
+        run: |
+          mkdir -p /tmp/ech && cp echantillons/* /tmp/ech/
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout --orphan echantillons-musique
+          git rm -rq --cached . || true
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp /tmp/ech/* .
+          git add . && git commit -q -m "Echantillons musique" && git push -f origin echantillons-musique
