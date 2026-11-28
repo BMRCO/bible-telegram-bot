@@ -23,12 +23,13 @@ PISTES = {
     "1_another_august": "013_Another_August.mp3",          # cynicmusic, CC0
     "2_calm_ambient_1": "001_Synthwave_4k.mp3",            # cynicmusic, CC0
     "3_calm_ambient_3": "006_lifeWave2k.mp3",              # cynicmusic, CC0
-    "4_first_light": "first_light_particles.wav",          # Yoiyami, CC0
+    "4_first_light": "first_light_particles.wav",          # Yoiyami, CC0 (lien a trouver)
 }
 VERSETS = [
     "L'Éternel est mon berger : je ne manquerai de rien",
     "Il me fait reposer dans de verts pâturages, Il me dirige près des eaux paisibles",
     "Il restaure mon âme, Il me conduit dans les sentiers de la justice, à cause de son nom",
+    "Quand je marche dans la vallée de l'ombre de la mort, je ne crains aucun mal, car tu es avec moi",
 ]
 D = "travail_musique"
 os.makedirs(D, exist_ok=True)
@@ -64,7 +65,7 @@ for nom, fichier in PISTES.items():
           f"[1:a]volume=0.14,afade=t=in:d=1,afade=t=out:st={duree - 4:.1f}:d=4[m0];"
           f"[m0][sc]sidechaincompress={pm.DUCKING}[m];"
           f"[v][m]amix=inputs=2:duration=longest:normalize=0,loudnorm=I=-16:TP=-1.5:LRA=11[a0];"
-          f"[2:a]aformat=sample_rates=48000:channel_layouts=stereo,volume=0.45,afade=t=in:d=1,"
+          f"[2:a]aformat=sample_rates=48000:channel_layouts=stereo,{ca.PLUIE_FILTRE},afade=t=in:d=8,"
           f"afade=t=out:st={duree - 4:.1f}:d=4[pl];[a0][pl]amix=inputs=2:duration=first:normalize=0[a]")
     subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", wav, "-ss", "20", "-stream_loop", "-1",
                     "-i", src, "-stream_loop", "-1", "-i", pluie, "-filter_complex", fc, "-map", "[a]",

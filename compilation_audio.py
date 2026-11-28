@@ -158,6 +158,7 @@ NATURE_VIDEOS = {
 # « Rain (loopable) » de Ylmir, OpenGameArt, licence CC0 (sans attribution),
 # quatre boucles de 25 a 45 s enregistrees a une fenetre.
 PLUIE_ZIP = "https://opengameart.org/sites/default/files/Rain%20OGG.zip"
+PLUIE_FILTRE = "lowpass=f=3800,volume=0.22"   # pluie legere (BC, 28 nov. 2026)
 
 
 def pluie_enregistree(dossier):
@@ -628,8 +629,11 @@ def fabriquer(comp):
             # vraie pluie en boucle, assez presente pour s'entendre, sous la voix
             cmd += ["-stream_loop", "-1", "-i", pluie]
             ip = 3 + o
-            fc += (f";[{ip}:a]aformat=sample_rates=48000:channel_layouts=stereo,volume=0.45,"
-                   f"afade=t=in:d=1,afade=t=out:st={max(0, total - 6):.2f}:d=6[pl];"
+            # BC, 28 nov. 2026 : « chuva mais ligeira » : plus bas, aigus adoucis,
+            # entree progressive sur 8 s (la voix, elle, commence tout de suite)
+            fc += (f";[{ip}:a]aformat=sample_rates=48000:channel_layouts=stereo,"
+                   f"{PLUIE_FILTRE},"
+                   f"afade=t=in:d=8,afade=t=out:st={max(0, total - 6):.2f}:d=6[pl];"
                    f"[a0][pl]amix=inputs=2:duration=first:normalize=0[a]")
         else:
             # repli : pluie generee (bruit rose filtre + grondement brun)
